@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowUp, CircleCheck, CircleSlash, Square } from "lucide-react";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ApiError, api, askStream } from "../api.ts";
+import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
 import { CitationChip } from "../components/trust.tsx";
 import { Toggle } from "../components/ui.tsx";
@@ -76,7 +77,7 @@ function Answer({ result, onOpen }: { result: AskResult; onOpen: (c: Citation) =
           key={s.i}
           className={s.status === "unsupported" ? "line-through opacity-60" : undefined}
         >
-          {s.text}
+          <SafeText text={s.text} />
           {s.citations.map((c) => (
             <CitationChip key={c.chunkId} index={n(c)} citation={c} onOpen={onOpen} />
           ))}
@@ -214,7 +215,9 @@ export function AskPage() {
                         {t.drafts.length ? "Verifying each statement…" : "Searching your sources…"}
                       </p>
                       {t.drafts.length > 0 && (
-                        <p className="font-answer leading-[26px]">{t.drafts.join(" ")}</p>
+                        <p className="font-answer leading-[26px]">
+                          <SafeText text={t.drafts.join(" ")} />
+                        </p>
                       )}
                       <span
                         className="pulse-dot inline-block size-2 rounded-full bg-accent-strong"

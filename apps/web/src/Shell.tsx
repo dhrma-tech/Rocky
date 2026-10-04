@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
-import { MessageSquareText, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
+import {
+  ListChecks,
+  MessageSquareText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, api } from "./api.ts";
 import { LocalBadge } from "./components/trust.tsx";
@@ -8,6 +14,7 @@ import { cls, IconButton } from "./components/ui.tsx";
 
 const NAV = [
   { to: "/", label: "Ask", icon: MessageSquareText },
+  { to: "/actions", label: "Actions", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -15,6 +22,13 @@ const NAV = [
 export function Shell() {
   const [collapsed, setCollapsed] = useState(false);
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings, retry: false });
+  const pending = useQuery({
+    queryKey: ["actions", "draft"],
+    queryFn: () => api.actions("draft"),
+    refetchInterval: 15_000,
+    enabled: settings.isSuccess,
+  });
+  const pendingCount = pending.data?.actions.length ?? 0;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -76,6 +90,17 @@ export function Shell() {
           >
             <Icon size={20} aria-hidden className="shrink-0 text-accent-strong" />
             {!collapsed && label}
+            {to === "/actions" && pendingCount > 0 && (
+              <span
+                className={cls(
+                  "rounded-full bg-accent px-1.5 text-[11px] font-medium leading-4 text-on-accent",
+                  collapsed ? "absolute right-1 top-1" : "ml-auto",
+                )}
+              >
+                {pendingCount}
+                <span className="sr-only"> waiting for approval</span>
+              </span>
+            )}
           </Link>
         ))}
       </nav>

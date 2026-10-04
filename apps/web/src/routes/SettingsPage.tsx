@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, KeyRound } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { api } from "../api.ts";
+import { DeleteEverything } from "../components/DeleteEverything.tsx";
 import { BudgetMeter } from "../components/trust.tsx";
 import { Badge, Button, Toggle } from "../components/ui.tsx";
 import { getTheme, setTheme, type Theme } from "../theme.ts";
@@ -122,6 +123,7 @@ export function SettingsPage() {
               <p className="text-sm text-secondary">
                 Data folder: <span className="font-mono text-xs">{s.dataDir}</span>
               </p>
+              <DeleteEverything />
             </Section>
 
             <Section id="models" title="Models">

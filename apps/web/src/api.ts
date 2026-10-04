@@ -1,4 +1,14 @@
-import type { AskEvent, AskRequest, AskResult, Hardware, SettingsUpdate } from "@rocky/contracts";
+import type {
+  ActionRecord,
+  ActionStatus,
+  AskEvent,
+  AskRequest,
+  AskResult,
+  AuditRow,
+  AuditVerify,
+  Hardware,
+  SettingsUpdate,
+} from "@rocky/contracts";
 
 /** Error from the daemon: `code` is stable (BUDGET_EXCEEDED, EGRESS_BLOCKED, …), message is shown verbatim. */
 export class ApiError extends Error {
@@ -81,6 +91,28 @@ export const api = {
     call<AnchorView>(
       `/documents/${encodeURIComponent(documentId)}/anchor?chunk=${encodeURIComponent(chunkId)}`,
     ),
+  actions: (status?: ActionStatus) =>
+    call<{ actions: ActionRecord[] }>(`/actions${status ? `?status=${status}` : ""}`),
+  editAction: (id: string, payload: unknown) =>
+    call<ActionRecord>(`/actions/${id}`, { method: "PATCH", body: JSON.stringify({ payload }) }),
+  approveAction: (id: string, payloadHash: string) =>
+    call<ActionRecord>(`/actions/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ payloadHash }),
+    }),
+  executeAction: (id: string) => call<ActionRecord>(`/actions/${id}/execute`, { method: "POST" }),
+  rejectAction: (id: string) => call<ActionRecord>(`/actions/${id}/reject`, { method: "POST" }),
+  cloneAction: (id: string) => call<ActionRecord>(`/actions/${id}/clone`, { method: "POST" }),
+  audit: (cursor?: number) =>
+    call<{ entries: AuditRow[]; nextCursor: number | null }>(
+      `/audit${cursor ? `?cursor=${cursor}` : ""}`,
+    ),
+  verifyAudit: () => call<AuditVerify>("/audit/verify", { method: "POST" }),
+  deleteEverything: () =>
+    call<{ deleting: string }>("/deletion", {
+      method: "POST",
+      body: JSON.stringify({ target: { everything: true }, confirm: "DELETE" }),
+    }),
   ingest: (path: string) =>
     call<{ results: { status: string; path: string; reason?: string }[] }>("/ingest", {
       method: "POST",
