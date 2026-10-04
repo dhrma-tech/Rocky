@@ -229,7 +229,7 @@ describe("ask", () => {
     expect(r.notFound).toBe(true);
   });
 
-  it("shows quote-checked sentences as partial when the verifier cannot run", async () => {
+  it("withholds quote-checked sentences when the verifier cannot run", async () => {
     const id = chunkId("Acme contract");
     const { fetch } = models(
       () => ({
@@ -239,10 +239,16 @@ describe("ask", () => {
       () => "not json at all",
     );
     const h = harness(db, fetch);
-    const r = await ask({ db, router: h.router, embedder }, { question: "Acme renewal?" });
-    expect(r.notFound).toBe(false);
-    expect(r.answer[0]).toMatchObject({ status: "partial", reason: "verifier unavailable" });
+    const deps = { db, router: h.router, embedder };
+    const r = await ask(deps, { question: "Acme renewal?" });
+    expect(r.notFound).toBe(true);
+    expect(r.answer).toEqual([]);
     expect(r.verifierError).toBeTruthy();
+    const flagged = await ask(deps, { question: "Acme renewal?", showFlagged: true });
+    expect(flagged.answer[0]).toMatchObject({
+      status: "unsupported",
+      reason: "verifier unavailable",
+    });
   });
 
   it("returns not found when the model says so", async () => {

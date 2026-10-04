@@ -236,10 +236,10 @@ export async function ask(
         );
       }
     } catch (err) {
-      // The quote check already passed; without a verifier the sentence is shown, marked partial.
+      // Non-negotiable #4: an answer needs both passes. Unverified sentences are not shown.
       verifierError = err instanceof Error ? err.message : String(err);
       for (const it of toVerify)
-        status.set(it.i, { status: "partial", reason: "verifier unavailable" });
+        status.set(it.i, { status: "unsupported", reason: "verifier unavailable" });
     }
   }
 

@@ -63,7 +63,7 @@ export const AskResultSchema = z.object({
   closestMatches: z.array(ClosestMatchSchema),
   path: PathInfoSchema.nullable(),
   verifierPath: PathInfoSchema.nullable(),
-  /** Set when the verifier could not run; quote-checked sentences are then shown as partial. */
+  /** Set when the verifier could not run; its sentences are then withheld as unsupported. */
   verifierError: z.string().optional(),
   usage: UsageSchema,
 });
