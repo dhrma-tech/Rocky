@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
+  FolderWatcher,
   JobRunner,
   type OpenRuntimeOptions,
   openRuntime,
@@ -53,12 +54,21 @@ export async function startDaemon(opts: {
   const auth = new Auth({ token: installToken(rt), port });
   const runner = new JobRunner(rt.db, rt.jobHandlers, { log });
   runner.start();
+  const watcher = new FolderWatcher({
+    db: rt.db,
+    blobsDir: rt.paths.blobs,
+    onIngested: () => runner.poke(),
+    log,
+  });
+  // The initial scan can take a while on big folders; the API comes up without waiting for it.
+  void watcher.start().catch((e: unknown) => log(`watch start failed: ${String(e)}`));
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
     rt,
     auth,
     poke: () => runner.poke(),
+    rewatch: () => watcher.start(),
     ...(fs.existsSync(path.join(webDir, "index.html")) ? { webDir } : {}),
   });
   const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" });
@@ -76,6 +86,7 @@ export async function startDaemon(opts: {
     url,
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
+      await watcher.stop();
       await runner.stop();
       fs.rmSync(daemonInfoFile(opts.dataDir), { force: true });
       rt.close();

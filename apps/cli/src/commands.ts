@@ -2,15 +2,19 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AskResult } from "@rocky/contracts";
 import {
+  addWatchedFolder,
   ask,
   type EvalReport,
   ingestPath,
   keychainSecrets,
+  listWatchedFolders,
   loadEvalSet,
   openRuntime,
+  removeWatchedFolder,
   repoConfigDir,
   resolveDataDir,
   runEval,
+  type WatchedFolder,
 } from "@rocky/core";
 
 const repoRoot = path.resolve(repoConfigDir, "..");
@@ -226,4 +230,99 @@ export async function openCommand(opts: { dataDir?: string | undefined }) {
     `Open this link within 60 seconds (single use):\n${base}/auth/bootstrap?code=${code}`,
   );
   return 0;
+}
+
+/** The running daemon's base URL and token, or null if it is not running. */
+async function daemonClient(dir: string): Promise<{ base: string; token: string } | null> {
+  const { daemonInfoFile } = await import("@rocky/daemon");
+  const file = daemonInfoFile(dir);
+  if (!fs.existsSync(file)) return null;
+  const { port } = JSON.parse(fs.readFileSync(file, "utf8")) as { port: number };
+  const token = keychainSecrets().get("daemon-token");
+  const base = `http://127.0.0.1:${port}`;
+  const up = await fetch(`${base}/api/v1/health`, { signal: AbortSignal.timeout(1500) }).catch(
+    () => null,
+  );
+  return up?.ok && token ? { base, token } : null;
+}
+
+export async function watchCommand(
+  action: "add" | "list" | "remove",
+  target: string | undefined,
+  opts: { dataDir?: string | undefined; recursive?: boolean },
+) {
+  const { dir } = resolveDataDir({ flag: opts.dataDir });
+  const client = await daemonClient(dir);
+  if (client) {
+    const headers = { authorization: `Bearer ${client.token}`, "content-type": "application/json" };
+    const url = `${client.base}/api/v1/watched-folders`;
+    const res =
+      action === "add"
+        ? await fetch(url, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              path: path.resolve(target ?? "."),
+              recursive: opts.recursive !== false,
+            }),
+          })
+        : action === "remove"
+          ? await fetch(`${url}/${encodeURIComponent(path.resolve(target ?? ""))}`, {
+              method: "DELETE",
+              headers,
+            })
+          : await fetch(url, { headers });
+    const body = (await res.json()) as {
+      error?: string;
+      folders?: WatchedFolder[];
+      folder?: WatchedFolder;
+    };
+    if (!res.ok) {
+      console.error(body.error ?? `daemon returned ${res.status}`);
+      return 1;
+    }
+    printWatch(action, body.folders ?? (body.folder ? [body.folder] : []), true);
+    return 0;
+  }
+
+  const rt = await openRuntime({ dataDir: dir });
+  try {
+    if (action === "add") {
+      const f = addWatchedFolder(rt.db, target ?? ".", { recursive: opts.recursive !== false });
+      printWatch(action, [f], false);
+    } else if (action === "remove") {
+      if (!removeWatchedFolder(rt.db, target ?? "")) {
+        console.error(`Not a watched folder: ${target}`);
+        return 1;
+      }
+      printWatch(action, [], false);
+    } else printWatch(action, listWatchedFolders(rt.db), false);
+    return 0;
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    return 1;
+  } finally {
+    rt.close();
+  }
+}
+
+function printWatch(action: string, folders: WatchedFolder[], live: boolean) {
+  if (action === "remove") {
+    console.log("Stopped watching. Documents already imported stay until you delete them.");
+    return;
+  }
+  if (action === "list" && folders.length === 0) {
+    console.log("No watched folders. Add one with `rocky watch add <folder>`.");
+    return;
+  }
+  for (const f of folders)
+    console.log(
+      `${f.path}${f.recursive ? "" : " (top level only)"}${f.enabled ? "" : " (paused)"}`,
+    );
+  if (action === "add")
+    console.log(
+      live
+        ? "Watching now. New and changed files are imported automatically."
+        : "Saved. The daemon imports it when it starts (`rocky daemon`).",
+    );
 }

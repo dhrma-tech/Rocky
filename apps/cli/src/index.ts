@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { askCommand, daemonCommand, evalCommand, ingestCommand, openCommand } from "./commands.ts";
+import {
+  askCommand,
+  daemonCommand,
+  evalCommand,
+  ingestCommand,
+  openCommand,
+  watchCommand,
+} from "./commands.ts";
 import { doctorCommand } from "./doctor.ts";
 
 const program = new Command()
@@ -77,6 +84,26 @@ program
   .description("print a one-time sign-in link for the web UI")
   .action(async () => {
     process.exitCode = await openCommand({ dataDir: dataDir() });
+  });
+
+const watchCmd = program
+  .command("watch")
+  .description("folders whose files are imported automatically");
+watchCmd
+  .command("add")
+  .argument("<folder>", "folder to watch")
+  .option("--no-recursive", "only the top level, not subfolders")
+  .action(async (folder: string, opts: { recursive: boolean }) => {
+    process.exitCode = await watchCommand("add", folder, { ...opts, dataDir: dataDir() });
+  });
+watchCmd.command("list").action(async () => {
+  process.exitCode = await watchCommand("list", undefined, { dataDir: dataDir() });
+});
+watchCmd
+  .command("remove")
+  .argument("<folder>", "watched folder path or id")
+  .action(async (folder: string) => {
+    process.exitCode = await watchCommand("remove", folder, { dataDir: dataDir() });
   });
 
 await program.parseAsync();

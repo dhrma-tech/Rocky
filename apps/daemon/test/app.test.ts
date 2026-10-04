@@ -259,4 +259,39 @@ describe("API", () => {
     expect(await (await get("/..%2fsecret.txt")).text()).not.toContain("do not serve");
     expect(await (await get("/%2e%2e/secret.txt")).text()).not.toContain("do not serve");
   });
+
+  it("watched folders: add, list, remove, and restart watching on each change", async () => {
+    let restarts = 0;
+    const watched = createApp({
+      rt,
+      auth,
+      rewatch: async () => {
+        restarts++;
+      },
+    });
+    const call = (p: string, init: RequestInit = {}) =>
+      watched.request(`${BASE}/api/v1${p}`, {
+        ...init,
+        headers: { host: `127.0.0.1:${PORT}`, ...bearer },
+      });
+    const folder = path.join(dir, "notes");
+    fs.mkdirSync(folder);
+    const add = await call("/watched-folders", {
+      method: "POST",
+      body: JSON.stringify({ path: folder }),
+    });
+    expect(add.status).toBe(200);
+    const { folder: f } = (await add.json()) as { folder: { id: string; path: string } };
+    expect(f.path).toBe(folder);
+    const bad = await call("/watched-folders", {
+      method: "POST",
+      body: JSON.stringify({ path: path.join(dir, "missing") }),
+    });
+    expect(bad.status).toBe(400);
+    const list = (await (await call("/watched-folders")).json()) as { folders: unknown[] };
+    expect(list.folders).toHaveLength(1);
+    expect((await call(`/watched-folders/${f.id}`, { method: "DELETE" })).status).toBe(200);
+    expect((await call(`/watched-folders/${f.id}`, { method: "DELETE" })).status).toBe(404);
+    expect(restarts).toBe(2);
+  });
 });

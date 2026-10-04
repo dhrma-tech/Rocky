@@ -7,12 +7,15 @@ import {
   SettingsUpdateSchema,
 } from "@rocky/contracts";
 import {
+  addWatchedFolder,
   ask,
   blobPath,
   deleteDocument,
   ingestPath,
+  listWatchedFolders,
   type Runtime,
   redact,
+  removeWatchedFolder,
   SECRET_NAMES,
   type SecretName,
   saveAppConfig,
@@ -43,6 +46,7 @@ const POLICY_CODES = new Set([
 ]);
 
 const IngestBody = z.object({ path: z.string().min(1) }).strict();
+const WatchBody = z.object({ path: z.string().min(1), recursive: z.boolean().optional() }).strict();
 const SecretBody = z.object({ value: z.string().min(1).max(4096) }).strict();
 /** The daemon token is internal; the API can only write provider keys. */
 const WRITABLE_SECRETS: readonly SecretName[] = SECRET_NAMES.filter((n) => n !== "daemon-token");
@@ -66,9 +70,11 @@ export interface AppDeps {
   poke?: () => void;
   /** Built web UI to serve at `/` (Phase 1 web shell). */
   webDir?: string;
+  /** Restarts folder watching after the folder list changes. */
+  rewatch?: () => Promise<void>;
 }
 
-export function createApp({ rt, auth, poke, webDir }: AppDeps): Hono {
+export function createApp({ rt, auth, poke, webDir, rewatch }: AppDeps): Hono {
   const app = new Hono();
   app.use("*", auth.hostGuard());
 
@@ -135,6 +141,32 @@ export function createApp({ rt, auth, poke, webDir }: AppDeps): Hono {
     const results = await ingestPath(rt.db, rt.paths.blobs, parsed.data.path);
     poke?.();
     return c.json({ results });
+  });
+
+  // --- Watched folders ---
+  api.get("/watched-folders", (c) => c.json({ folders: listWatchedFolders(rt.db) }));
+
+  api.post("/watched-folders", async (c) => {
+    const parsed = WatchBody.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success)
+      return c.json({ error: "body must be {path, recursive?}", code: "BAD_REQUEST" }, 400);
+    let folder: ReturnType<typeof addWatchedFolder>;
+    try {
+      folder = addWatchedFolder(rt.db, parsed.data.path, {
+        ...(parsed.data.recursive === undefined ? {} : { recursive: parsed.data.recursive }),
+      });
+    } catch (err) {
+      return c.json({ error: errorBody(err).error, code: "BAD_REQUEST" }, 400);
+    }
+    await rewatch?.();
+    return c.json({ folder });
+  });
+
+  api.delete("/watched-folders/:id", async (c) => {
+    if (!removeWatchedFolder(rt.db, c.req.param("id")))
+      return c.json({ error: "not a watched folder", code: "NOT_FOUND" }, 404);
+    await rewatch?.();
+    return c.json({ removed: true });
   });
 
   // --- Documents and the source viewer ---
