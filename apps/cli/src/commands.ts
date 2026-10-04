@@ -5,6 +5,7 @@ import {
   ask,
   type EvalReport,
   ingestPath,
+  keychainSecrets,
   loadEvalSet,
   openRuntime,
   repoConfigDir,
@@ -179,4 +180,50 @@ export async function evalCommand(opts: {
   } finally {
     rt.close();
   }
+}
+
+export async function daemonCommand(opts: { dataDir?: string | undefined; port?: string }) {
+  const { startDaemon } = await import("@rocky/daemon");
+  const { dir } = resolveDataDir({ flag: opts.dataDir });
+  const d = await startDaemon({ dataDir: dir, ...(opts.port ? { port: Number(opts.port) } : {}) });
+  console.log(
+    `Rocky daemon on ${d.url}. Run \`rocky open\` to sign in the browser. Ctrl+C stops it.`,
+  );
+  await new Promise<void>((resolve) => {
+    process.once("SIGINT", resolve);
+    process.once("SIGTERM", resolve);
+  });
+  await d.stop();
+  return 0;
+}
+
+/** Mints a one-time sign-in code from the running daemon and prints the bootstrap URL. */
+export async function openCommand(opts: { dataDir?: string | undefined }) {
+  const { daemonInfoFile } = await import("@rocky/daemon");
+  const { dir } = resolveDataDir({ flag: opts.dataDir });
+  const infoFile = daemonInfoFile(dir);
+  if (!fs.existsSync(infoFile)) {
+    console.error("The daemon is not running. Start it with `rocky daemon`.");
+    return 1;
+  }
+  const { port } = JSON.parse(fs.readFileSync(infoFile, "utf8")) as { port: number };
+  const token = keychainSecrets().get("daemon-token");
+  if (!token) {
+    console.error("No install token in the keychain. Start the daemon once with `rocky daemon`.");
+    return 1;
+  }
+  const base = `http://127.0.0.1:${port}`;
+  const res = await fetch(`${base}/api/v1/auth/codes`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}` },
+  }).catch(() => null);
+  if (!res?.ok) {
+    console.error(`Could not reach the daemon at ${base}. Is it running?`);
+    return 1;
+  }
+  const { code } = (await res.json()) as { code: string };
+  console.log(
+    `Open this link within 60 seconds (single use):\n${base}/auth/bootstrap?code=${code}`,
+  );
+  return 0;
 }

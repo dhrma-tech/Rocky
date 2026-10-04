@@ -7,6 +7,7 @@
   "dependencies": {
     "@rocky/contracts": "workspace:*",
     "@rocky/core": "workspace:*",
+    "@rocky/daemon": "workspace:*",
     "commander": "15.0.0"
   }
 }

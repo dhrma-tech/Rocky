@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { askCommand, evalCommand, ingestCommand } from "./commands.ts";
+import { askCommand, daemonCommand, evalCommand, ingestCommand, openCommand } from "./commands.ts";
 import { doctorCommand } from "./doctor.ts";
 
 const program = new Command()
@@ -63,5 +63,20 @@ program
       process.exitCode = await evalCommand({ ...opts, dataDir: dataDir() });
     },
   );
+
+program
+  .command("daemon")
+  .description("run the local daemon (API, background jobs, web UI) on 127.0.0.1")
+  .option("--port <n>", "port (default from rocky.yaml, 7337)")
+  .action(async (opts: { port?: string }) => {
+    process.exitCode = await daemonCommand({ ...opts, dataDir: dataDir() });
+  });
+
+program
+  .command("open")
+  .description("print a one-time sign-in link for the web UI")
+  .action(async () => {
+    process.exitCode = await openCommand({ dataDir: dataDir() });
+  });
 
 await program.parseAsync();

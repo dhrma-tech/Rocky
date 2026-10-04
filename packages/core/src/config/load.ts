@@ -40,6 +40,13 @@ export function loadAppConfig(dataDir: string): AppConfig {
   return AppConfigSchema.parse(raw);
 }
 
+/** Writes `<dataDir>/rocky.yaml` (validated first). */
+export function saveAppConfig(dataDir: string, config: AppConfig): void {
+  const file = dataPaths(dataDir).config;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, YAML.stringify(AppConfigSchema.parse(config)));
+}
+
 /** Repo-level `config/` directory (model IDs and prices live here, never in code). */
 export const repoConfigDir = fileURLToPath(new URL("../../../../config/", import.meta.url));
 

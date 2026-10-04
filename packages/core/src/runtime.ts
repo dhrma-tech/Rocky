@@ -2,7 +2,7 @@ import type { AppConfig, Hardware } from "@rocky/contracts";
 import { loadAppConfig } from "./config/load.ts";
 import { type DataPaths, dataPaths } from "./config/paths.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
-import { JobRunner } from "./jobs/runner.ts";
+import { type JobHandler, JobRunner } from "./jobs/runner.ts";
 import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
 import { ProviderGate } from "./router/gate.ts";
 import { loadPolicy } from "./router/policy.ts";
@@ -22,6 +22,9 @@ export interface Runtime {
   router: Router;
   embedder: Embedder;
   hardware: Hardware;
+  secrets: SecretStore;
+  /** Handlers for every job type; the daemon runs them in a JobRunner. */
+  jobHandlers: Record<string, JobHandler>;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
   drainJobs(log?: (msg: string) => void): Promise<number>;
   close(): void;
@@ -49,6 +52,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   const policy = loadPolicy(opts.dataDir);
   const prices = loadPrices(opts.dataDir);
   const localOnly = () => config.localOnly || Boolean(opts.localOnly);
+  const secrets = opts.secrets ?? keychainSecrets();
   const gate = new ProviderGate(db, {
     settings: () => ({
       localOnly: localOnly(),
@@ -56,7 +60,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
       ollamaBaseUrl: config.ollama.baseUrl,
     }),
     prices: () => prices,
-    secrets: opts.secrets ?? keychainSecrets(),
+    secrets,
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
   const router = new Router({
@@ -72,6 +76,13 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
 
+  const jobHandlers: Record<string, JobHandler> = {
+    [EMBED_JOB]: async (job) => {
+      const { documentId } = job.payload as { documentId: string };
+      await embedDocument(db, embedder, documentId);
+    },
+  };
+
   return {
     dataDir: opts.dataDir,
     paths,
@@ -81,17 +92,9 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     router,
     embedder,
     hardware,
-    drainJobs: (log) =>
-      new JobRunner(
-        db,
-        {
-          [EMBED_JOB]: async (job) => {
-            const { documentId } = job.payload as { documentId: string };
-            await embedDocument(db, embedder, documentId);
-          },
-        },
-        log ? { log } : {},
-      ).drain(),
+    secrets,
+    jobHandlers,
+    drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => db.close(),
   };
 }

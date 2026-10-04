@@ -6,8 +6,20 @@ export const AppConfigSchema = z.object({
   budget: z.object({ monthlyCapUsd: z.number().nonnegative().default(10) }).prefault({}),
   ollama: z.object({ baseUrl: z.url().default("http://127.0.0.1:11434") }).prefault({}),
   whisper: z.object({ model: z.enum(["base", "small"]).default("small") }).prefault({}),
+  daemon: z.object({ port: z.number().int().min(1024).max(65535).default(7337) }).prefault({}),
 });
 export type AppConfig = z.infer<typeof AppConfigSchema>;
+
+/** PUT /api/v1/settings: the user-editable subset. The data dir moves via `rocky`, not the API. */
+export const SettingsUpdateSchema = z
+  .object({
+    localOnly: z.boolean(),
+    budget: z.object({ monthlyCapUsd: z.number().nonnegative().max(10_000) }),
+    ollama: z.object({ baseUrl: z.url() }),
+  })
+  .partial()
+  .strict();
+export type SettingsUpdate = z.infer<typeof SettingsUpdateSchema>;
 
 /** Bootstrap pointer: `%APPDATA%\Rocky\location.yaml`, lets the data dir live on another drive. */
 export const LocationFileSchema = z.object({ dataDir: z.string().min(1) });

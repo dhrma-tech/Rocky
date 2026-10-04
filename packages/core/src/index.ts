@@ -5,6 +5,7 @@ export * from "./config/paths.ts";
 export * from "./doctor.ts";
 export * from "./evals/run.ts";
 export * from "./ingest/chunker.ts";
+export * from "./ingest/delete.ts";
 export * from "./ingest/embed-job.ts";
 export * from "./ingest/ingest-file.ts";
 export * from "./ingest/parsers/index.ts";
