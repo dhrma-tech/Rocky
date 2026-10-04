@@ -1,17 +1,37 @@
-# Task routing policy. Model IDs are config, never hard-coded. Re-verify before release.
-# User override: <dataDir>/config/policies.yaml (deep-merged). Spec: docs/specs/router.md
+# Task routing policy. Spec: docs/specs/router.md. Model IDs are config, never hard-coded.
+# User override: <dataDir>/config/policies.yaml (deep-merged). Re-verify model IDs before release.
+#
+# primary/fallback: a model alias (below) or tier(<alias> if <cond> else <alias>), cond = ram>=N && gpu
+# escalate_on: json_invalid_x2 | timeout_<n>s | input_tokens><n> | provider_down | refusal
+# local_allowed: false means the task never runs locally (it fails under local-only mode).
 tasks:
   tag: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_60s] }
+  title: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_60s] }
+  classify: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_60s] }
+  chunk_summary: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_120s] }
+  doc_summary: { primary: local:medium, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_180s, "input_tokens>12000"] }
   meeting_summary: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: api:strong, escalate_on: ["input_tokens>12000", json_invalid_x2] }
-  chat: { primary: api:strong, fallback: local:medium }
-  verify: { primary: api:cheap, fallback: local:small }
+  extract: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: api:strong, escalate_on: ["input_tokens>12000", json_invalid_x2] }
+  chat: { primary: api:strong, fallback: local:medium, max_tokens: 4000 }
+  verify: { primary: api:cheap, fallback: local:small, max_tokens: 2000 }
+  judge: { primary: api:strong, fallback: local:medium, max_tokens: 2000 }
   quiz_gen: { primary: local:medium, exam_grade: api:strong }
+  quiz_grade: { primary: local:medium, exam_grade: api:strong }
+  flashcard_gen: { primary: local:medium, fallback: api:cheap }
+  mindmap: { primary: local:medium, fallback: api:cheap }
+  routine: { primary: api:strong, fallback: local:medium }
   draft: { primary: api:strong }
-  propose_actions: { primary: api:strong, local_allowed: false_below_14b }
+  # local_allowed stays false until a >=14B local model is configured (router.md).
+  propose_actions: { primary: api:strong, local_allowed: false }
 models:
   api:strong: anthropic/claude-sonnet-5-5
-  api:cheap: anthropic/claude-haiku-4-5-20251001
-  local:small: ollama/qwen3.5:4b # Phase 0 spike: 5/5 valid JSON, ~9 s/call on CPU with reasoning_effort none
-  local:medium: ollama/TBD
+  api:cheap: anthropic/claude-haiku-4-5
+  # Phase 0 spike: 5/5 valid JSON, ~9 s/call on CPU with reasoning_effort none.
+  local:small: ollama/qwen3.5:4b
+  # Same model until a GPU or a stronger local model is available (user decision 2026-10-04).
+  local:medium: ollama/qwen3.5:4b
   embed: ollama/nomic-embed-text
   transcribe: whisper/ggml-small
+# Extra request fields per model. qwen3.5 is a thinking model: ~40 s/call on CPU unless reasoning is off.
+model_options:
+  ollama/qwen3.5:4b: { reasoning_effort: none }

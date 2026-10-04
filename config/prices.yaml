@@ -1,0 +1,6 @@
+# USD per 1M tokens, used for budget pre-checks and usage_log costs. User-editable, since prices change.
+# Anthropic first-party rates verified 2026-10-04. Models missing here are blocked while a budget cap is set.
+# User override: <dataDir>/config/prices.yaml (deep-merged).
+anthropic/claude-sonnet-5-5: { input: 2.0, output: 10.0 }
+anthropic/claude-haiku-4-5: { input: 1.0, output: 5.0 }
+anthropic/claude-opus-5-5: { input: 4.0, output: 20.0 }
