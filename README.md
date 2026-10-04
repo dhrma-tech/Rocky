@@ -2,7 +2,7 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 1 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files works from the CLI and a local web UI.
+> Status: early development (Phase 2 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, the approval queue and the audit log work from the CLI and a local web UI.
 
 ## Quickstart (developers)
 
@@ -22,7 +22,11 @@ pnpm rocky ingest ~/Notes                  # import a file or folder
 pnpm rocky watch add ~/Notes               # or keep a folder in sync (needs the daemon)
 pnpm rocky ask "What did we decide about pricing?"
 pnpm rocky ask --local-only "…"            # never leaves this machine
+pnpm rocky secrets set anthropic           # API key into the OS keychain (input hidden)
+pnpm rocky audit verify                    # check the append-only audit log's hash chain
 ```
+
+Actions that write to your apps wait in an approval queue (web UI → Actions). Nothing runs until you approve the exact payload shown, and every step is in the audit log.
 
 Web UI:
 
