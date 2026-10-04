@@ -16,6 +16,8 @@ import {
   repoConfigDir,
   resolveDataDir,
   runEval,
+  SECRET_NAMES,
+  type SecretName,
   verifyAuditChain,
   type WatchedFolder,
 } from "@rocky/core";
@@ -350,4 +352,66 @@ export async function auditVerifyCommand(opts: { dataDir?: string | undefined; j
   } finally {
     db.close();
   }
+}
+
+/** Reads a secret without echoing it: raw-mode keystrokes on a terminal, or piped stdin. */
+async function readSecret(prompt: string): Promise<string> {
+  const stdin = process.stdin;
+  if (!stdin.isTTY) {
+    let data = "";
+    for await (const chunk of stdin) data += String(chunk);
+    return data.trim();
+  }
+  process.stderr.write(prompt);
+  stdin.setRawMode(true);
+  stdin.resume();
+  stdin.setEncoding("utf8");
+  return new Promise((resolve, reject) => {
+    let value = "";
+    const done = (err?: Error) => {
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdin.off("data", onData);
+      process.stderr.write("\n");
+      if (err) reject(err);
+      else resolve(value.trim());
+    };
+    const onData = (s: string) => {
+      for (const ch of s) {
+        if (ch === "\r" || ch === "\n") return done();
+        if (ch === "\u0003") return done(new Error("Cancelled"));
+        if (ch === "\u007f" || ch === "\b") value = value.slice(0, -1);
+        else if (ch >= " ") value += ch;
+      }
+    };
+    stdin.on("data", onData);
+  });
+}
+
+const PROVIDER_SECRETS = SECRET_NAMES.filter((n) => n !== "daemon-token");
+
+export async function secretsCommand(action: "set" | "list" | "delete", name: string | undefined) {
+  const store = keychainSecrets();
+  if (action === "list") {
+    for (const n of PROVIDER_SECRETS)
+      console.log(`${n.padEnd(18)} ${store.has(n) ? "stored" : "-"}`);
+    return 0;
+  }
+  if (!name || !(PROVIDER_SECRETS as readonly string[]).includes(name)) {
+    console.error(`Unknown secret "${name ?? ""}". Choose one of: ${PROVIDER_SECRETS.join(", ")}.`);
+    return 1;
+  }
+  const key = name as SecretName;
+  if (action === "delete") {
+    console.log(store.delete(key) ? `Deleted ${key}.` : `No ${key} secret was stored.`);
+    return 0;
+  }
+  const value = await readSecret(`${key} key (input hidden): `);
+  if (!value) {
+    console.error("Nothing entered; no change.");
+    return 1;
+  }
+  store.set(key, value);
+  console.log(`Stored ${key} in the OS keychain.`);
+  return 0;
 }

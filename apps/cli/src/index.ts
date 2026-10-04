@@ -7,6 +7,7 @@ import {
   evalCommand,
   ingestCommand,
   openCommand,
+  secretsCommand,
   watchCommand,
 } from "./commands.ts";
 import { doctorCommand } from "./doctor.ts";
@@ -95,6 +96,26 @@ program
   .option("--json", "print the result as JSON")
   .action(async (opts: { json?: boolean }) => {
     process.exitCode = await auditVerifyCommand({ ...opts, dataDir: dataDir() });
+  });
+
+const secretsCmd = program
+  .command("secrets")
+  .description("API keys in the OS keychain (never shown, never in files)");
+secretsCmd
+  .command("set")
+  .argument("<name>", "anthropic, google or openai_compatible")
+  .description("store a key (typed hidden, or piped on stdin)")
+  .action(async (name: string) => {
+    process.exitCode = await secretsCommand("set", name);
+  });
+secretsCmd.command("list").action(async () => {
+  process.exitCode = await secretsCommand("list", undefined);
+});
+secretsCmd
+  .command("delete")
+  .argument("<name>")
+  .action(async (name: string) => {
+    process.exitCode = await secretsCommand("delete", name);
   });
 
 const watchCmd = program
