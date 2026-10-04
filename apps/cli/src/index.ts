@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { askCommand, evalCommand, ingestCommand } from "./commands.ts";
 import { doctorCommand } from "./doctor.ts";
 
 const program = new Command()
@@ -16,5 +17,51 @@ program
     const { dataDir } = program.opts<{ dataDir?: string }>();
     process.exitCode = await doctorCommand({ ...opts, dataDir });
   });
+
+const dataDir = () => program.opts<{ dataDir?: string }>().dataDir;
+
+program
+  .command("ingest")
+  .description("import a file or folder into memory and embed it")
+  .argument("<path>", "file or folder")
+  .action(async (target: string) => {
+    process.exitCode = await ingestCommand(target, { dataDir: dataDir() });
+  });
+
+program
+  .command("ask")
+  .description("ask a question; answers cite your sources or say not found")
+  .argument("<question...>", "the question")
+  .option("--local-only", "keep every model call on this machine")
+  .option("--show-flagged", "also show sentences that failed verification")
+  .option("--json", "print the full result as JSON")
+  .action(
+    async (
+      words: string[],
+      opts: { localOnly?: boolean; showFlagged?: boolean; json?: boolean },
+    ) => {
+      process.exitCode = await askCommand(words.join(" "), { ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
+  .command("eval")
+  .description("run an eval set (evals/<set>) and check the Phase 1 gates")
+  .option("--set <name>", "eval set: public or private", "public")
+  .option("--local-only", "run every model call locally")
+  .option("--fresh", "rebuild the eval database from the corpus")
+  .option("--limit <n>", "only run the first n questions")
+  .option("--json", "print the full report as JSON")
+  .action(
+    async (opts: {
+      set: string;
+      localOnly?: boolean;
+      fresh?: boolean;
+      limit?: string;
+      json?: boolean;
+    }) => {
+      process.exitCode = await evalCommand({ ...opts, dataDir: dataDir() });
+    },
+  );
 
 await program.parseAsync();

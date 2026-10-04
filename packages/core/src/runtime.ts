@@ -1,0 +1,97 @@
+import type { AppConfig, Hardware } from "@rocky/contracts";
+import { loadAppConfig } from "./config/load.ts";
+import { type DataPaths, dataPaths } from "./config/paths.ts";
+import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
+import { JobRunner } from "./jobs/runner.ts";
+import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
+import { ProviderGate } from "./router/gate.ts";
+import { loadPolicy } from "./router/policy.ts";
+import { loadPrices } from "./router/prices.ts";
+import { Router } from "./router/router.ts";
+import { keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
+import { type Db, openDb } from "./store/db.ts";
+import { migrate } from "./store/migrate.ts";
+import { detectHardware } from "./system/hardware.ts";
+
+export interface Runtime {
+  dataDir: string;
+  paths: DataPaths;
+  config: AppConfig;
+  db: Db;
+  gate: ProviderGate;
+  router: Router;
+  embedder: Embedder;
+  hardware: Hardware;
+  /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
+  drainJobs(log?: (msg: string) => void): Promise<number>;
+  close(): void;
+}
+
+export interface OpenRuntimeOptions {
+  dataDir: string;
+  /** DB file; defaults to `<dataDir>/rocky.db`. Evals use their own file. */
+  dbFile?: string;
+  /** Forces local-only for this runtime on top of the config setting. */
+  localOnly?: boolean;
+  secrets?: SecretStore;
+  fetch?: typeof fetch;
+  hardware?: Hardware;
+}
+
+/** Wires store, config, router and embedder for one data dir (CLI, evals, daemon). */
+export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
+  const paths = dataPaths(opts.dataDir);
+  const config = loadAppConfig(opts.dataDir);
+  const db = openDb(opts.dbFile ?? paths.db);
+  migrate(db, { backupDir: paths.backups });
+
+  const hardware = opts.hardware ?? (await detectHardware());
+  const policy = loadPolicy(opts.dataDir);
+  const prices = loadPrices(opts.dataDir);
+  const localOnly = () => config.localOnly || Boolean(opts.localOnly);
+  const gate = new ProviderGate(db, {
+    settings: () => ({
+      localOnly: localOnly(),
+      monthlyCapUsd: config.budget.monthlyCapUsd,
+      ollamaBaseUrl: config.ollama.baseUrl,
+    }),
+    prices: () => prices,
+    secrets: opts.secrets ?? keychainSecrets(),
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+  });
+  const router = new Router({
+    gate,
+    policy: () => policy,
+    hardware: () => hardware,
+    globalLocalOnly: localOnly,
+  });
+  const embedModel = policy.models.embed?.split("/").slice(1).join("/") ?? "nomic-embed-text";
+  const embedder = ollamaEmbedder({
+    baseUrl: config.ollama.baseUrl,
+    model: embedModel,
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+  });
+
+  return {
+    dataDir: opts.dataDir,
+    paths,
+    config,
+    db,
+    gate,
+    router,
+    embedder,
+    hardware,
+    drainJobs: (log) =>
+      new JobRunner(
+        db,
+        {
+          [EMBED_JOB]: async (job) => {
+            const { documentId } = job.payload as { documentId: string };
+            await embedDocument(db, embedder, documentId);
+          },
+        },
+        log ? { log } : {},
+      ).drain(),
+    close: () => db.close(),
+  };
+}
