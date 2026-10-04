@@ -38,20 +38,24 @@ Boundaries:
 - Only `core/src/router/gate.ts` imports provider SDKs.
 - Only `core/src/actions/service.ts` invokes executors.
 
-## Commands (fill in as Phase 0 lands)
+## Commands
 
 ```
-pnpm i                      # install
-pnpm test                   # vitest, all packages
-pnpm test --filter security # security suite (must stay green)
-pnpm lint                   # biome
-pnpm dev                    # daemon + web in watch mode
-pnpm rocky <cmd>            # CLI: doctor, ask, ingest, sync, record, notebooks, study, actions, routines, mcp, eval, audit
+pnpm i                      # install (better-sqlite3 uses bundled prebuilds; no compiler needed)
+pnpm test                   # vitest: unit + security + spikes projects
+pnpm test:security          # security suite (must stay green)
+pnpm test:spikes            # Phase 0 spikes (Ollama/whisper ones skip if not installed)
+pnpm lint                   # biome check (pnpm format to fix)
+pnpm typecheck              # tsc --noEmit
+pnpm rocky doctor [--fix]   # machine checks; --fix fetches pinned whisper-cli + model
+pnpm dev                    # daemon + web in watch mode (Phase 1)
 ```
+
+No build step: Node ≥ 22.18 runs `.ts` directly (type stripping). Use erasable syntax only (no enums, namespaces, parameter properties) and `.ts` extensions in relative imports. Workspace packages export `./src/index.ts`.
 
 ## Conventions
 
-- TypeScript strict, ESM, Node ≥ 22. zod for every boundary (HTTP, config, LLM structured output, connector payloads).
+- TypeScript strict, ESM, Node ≥ 22.18. zod for every boundary (HTTP, config, LLM structured output, connector payloads).
 - IDs are ULIDs. Time is ms UTC integers in the DB.
 - Model IDs and prices live in `config/*.yaml`, never in code.
 - Tests: Vitest. Connector tests use recorded, scrubbed fixtures. No live API calls in CI.
