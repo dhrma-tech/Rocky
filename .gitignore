@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+# local data, never committed
+RockyData/
+data/
+*.db
+*.db-wal
+*.db-shm
+*.bin
+*.gguf
+evals/private/
+.vitest-*
