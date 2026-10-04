@@ -7,6 +7,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "dev": "node --watch ../cli/src/index.ts daemon"
+  },
   "dependencies": {
     "@hono/node-server": "2.1.3",
     "@rocky/contracts": "workspace:*",

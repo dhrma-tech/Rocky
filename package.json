@@ -16,7 +16,8 @@
     "test:security": "vitest run --project security --passWithNoTests",
     "test:spikes": "vitest run --project spikes",
     "build:web": "pnpm --filter @rocky/web build",
-    "dev:web": "pnpm --filter @rocky/web dev"
+    "dev:web": "pnpm --filter @rocky/web dev",
+    "dev": "pnpm --parallel --filter @rocky/daemon --filter @rocky/web dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

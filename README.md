@@ -2,11 +2,11 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 0 of [docs/PLAN.md](docs/PLAN.md)). Nothing user-facing yet.
+> Status: early development (Phase 1 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files works from the CLI and a local web UI.
 
 ## Quickstart (developers)
 
-Requires Node 22.18+, pnpm 10, and optionally [Ollama](https://ollama.com) for local models.
+Requires Node 22.18+, pnpm 10, and [Ollama](https://ollama.com) with `nomic-embed-text` for embeddings. Answers use Claude when an Anthropic key is stored, and local models otherwise (or always, in local-only mode).
 
 ```sh
 pnpm i
@@ -14,6 +14,27 @@ pnpm test
 pnpm rocky doctor        # checks RAM, GPU, Ollama, sqlite-vec, disk, keychain
 pnpm rocky doctor --fix  # downloads the pinned whisper-cli build and model (Windows x64)
 ```
+
+Ask over your own files:
+
+```sh
+pnpm rocky ingest ~/Notes                  # import a file or folder
+pnpm rocky watch add ~/Notes               # or keep a folder in sync (needs the daemon)
+pnpm rocky ask "What did we decide about pricing?"
+pnpm rocky ask --local-only "…"            # never leaves this machine
+```
+
+Web UI:
+
+```sh
+pnpm build:web
+pnpm rocky daemon                          # API and UI on http://127.0.0.1:7337
+pnpm rocky open                            # prints a one-time sign-in link
+```
+
+`pnpm dev` runs the daemon and the Vite dev server (http://127.0.0.1:5173) in watch mode.
+
+Evals: `pnpm rocky eval --set public [--local-only]` runs the 30-question public set and checks the Phase 1 gates.
 
 Data lives in `%APPDATA%\Rocky` by default. Override it with `ROCKY_DATA_DIR` or `--data-dir`.
 
