@@ -4,16 +4,19 @@ import type { AskResult } from "@rocky/contracts";
 import {
   addWatchedFolder,
   ask,
+  dataPaths,
   type EvalReport,
   ingestPath,
   keychainSecrets,
   listWatchedFolders,
   loadEvalSet,
+  openDb,
   openRuntime,
   removeWatchedFolder,
   repoConfigDir,
   resolveDataDir,
   runEval,
+  verifyAuditChain,
   type WatchedFolder,
 } from "@rocky/core";
 
@@ -325,4 +328,26 @@ function printWatch(action: string, folders: WatchedFolder[], live: boolean) {
         ? "Watching now. New and changed files are imported automatically."
         : "Saved. The daemon imports it when it starts (`rocky daemon`).",
     );
+}
+
+export async function auditVerifyCommand(opts: { dataDir?: string | undefined; json?: boolean }) {
+  const { dir } = resolveDataDir({ flag: opts.dataDir });
+  const file = dataPaths(dir).db;
+  if (!fs.existsSync(file)) {
+    console.error(`No database at ${file}.`);
+    return 1;
+  }
+  const db = openDb(file, { readonly: true });
+  try {
+    const r = verifyAuditChain(db);
+    if (opts.json) console.log(JSON.stringify(r));
+    else if (r.ok) console.log(`Audit log intact: ${r.checked} entries verified.`);
+    else
+      console.log(
+        `Audit log BROKEN at entry ${r.firstBrokenSeq}: ${r.reason}. ${r.checked} entries before it verified.`,
+      );
+    return r.ok ? 0 : 1;
+  } finally {
+    db.close();
+  }
 }

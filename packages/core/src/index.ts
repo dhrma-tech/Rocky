@@ -4,6 +4,7 @@ export * from "./actions/service.ts";
 export * from "./actions/types.ts";
 export * from "./assistant/ask.ts";
 export * from "./audit/append.ts";
+export * from "./audit/verify.ts";
 export * from "./capture/watch.ts";
 export * from "./config/load.ts";
 export * from "./config/paths.ts";

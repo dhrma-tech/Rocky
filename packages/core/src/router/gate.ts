@@ -82,8 +82,20 @@ export class ProviderGate {
     if (!price) throw new UnknownPrice(`${target.provider}/${target.model}`);
     const estimate = costUsd(price, estimateTokens(req.system + req.prompt), req.maxTokens);
     const spent = monthSpend(this.db, this.now());
-    if (spent + estimate > s.monthlyCapUsd)
+    if (spent + estimate > s.monthlyCapUsd) {
+      appendAudit(this.db, {
+        eventType: "budget_blocked",
+        actor: "system",
+        meta: {
+          provider: target.provider,
+          model: target.model,
+          capUsd: s.monthlyCapUsd,
+          spentUsd: spent,
+          estimateUsd: estimate,
+        },
+      });
       throw new BudgetExceeded(s.monthlyCapUsd, spent, estimate);
+    }
   }
 
   async call<T>(target: Target, req: GateRequest<T>): Promise<GateResult<T>> {

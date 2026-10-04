@@ -55,7 +55,7 @@ export const rowHash = (r: AuditRowHashInput) =>
 
 /**
  * Appends one hash-chained audit row (SECURITY.md): row_hash = sha256(prev_hash ‖ canonical(row)).
- * The table's triggers reject UPDATE and DELETE. Verification (`rocky audit verify`) is Phase 2.
+ * The table's triggers reject UPDATE and DELETE; `verifyAuditChain` (audit/verify.ts) checks the chain.
  */
 export function appendAudit(db: Db, e: AuditEvent): { seq: number; rowHash: string } {
   return db.transaction(() => {

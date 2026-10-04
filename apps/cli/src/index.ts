@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import {
   askCommand,
+  auditVerifyCommand,
   daemonCommand,
   evalCommand,
   ingestCommand,
@@ -84,6 +85,16 @@ program
   .description("print a one-time sign-in link for the web UI")
   .action(async () => {
     process.exitCode = await openCommand({ dataDir: dataDir() });
+  });
+
+program
+  .command("audit")
+  .description("audit log tools")
+  .command("verify")
+  .description("recompute the audit hash chain and report the first broken entry")
+  .option("--json", "print the result as JSON")
+  .action(async (opts: { json?: boolean }) => {
+    process.exitCode = await auditVerifyCommand({ ...opts, dataDir: dataDir() });
   });
 
 const watchCmd = program

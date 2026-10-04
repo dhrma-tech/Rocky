@@ -1,5 +1,4 @@
-// SECURITY.md: "Audit log is append-only". Phase 1 covers append + triggers + chain links;
-// full `rocky audit verify` and payload purge arrive in Phase 2.
+// SECURITY.md: "Audit log is append-only": append, triggers and chain links.
 import { describe, expect, it } from "vitest";
 import { appendAudit, canonical, GENESIS_HASH, rowHash } from "../../src/audit/append.ts";
 import { memoryDb } from "../helpers.ts";
