@@ -76,6 +76,23 @@ export function quoteMatches(quote: string, chunkTexts: string[]): boolean {
   return chunkTexts.some((t) => normalizeForQuote(t).includes(q));
 }
 
+/**
+ * Texts a quote may come from: each cited chunk, plus the source text just around it. Chunks
+ * split mid-sentence, so a verbatim quote can straddle a chunk edge; the window extends the chunk
+ * by the quote's length on both sides of its span in documents.raw_text.
+ */
+export function citedSourceTexts(db: Db, cited: RetrievedChunk[], quote: string): string[] {
+  const pad = quote.length + 20;
+  const raw = db.prepare("select substr(raw_text, ?, ?) as t from documents where id = ?");
+  return cited.flatMap((c) => {
+    const start = Math.max(0, c.charStart - pad);
+    const row = raw.get(start + 1, c.charEnd + pad - start, c.documentId) as
+      | { t: string | null }
+      | undefined;
+    return row?.t ? [c.text, row.t] : [c.text];
+  });
+}
+
 function answerPrompt(question: string, chunks: RetrievedChunk[]): string {
   const blocks = chunks.map((c) =>
     wrapUntrusted(c.text, {
@@ -185,12 +202,7 @@ export async function ask(
     const cited = s.citations.map((id) => byId.get(id)).filter((c) => c !== undefined);
     if (cited.length === 0) {
       status.set(i, { status: "unsupported", reason: "no valid citation" });
-    } else if (
-      !quoteMatches(
-        s.quote,
-        cited.map((c) => c.text),
-      )
-    ) {
+    } else if (!quoteMatches(s.quote, citedSourceTexts(deps.db, cited, s.quote))) {
       status.set(i, { status: "unsupported", reason: "quote not found in cited chunks" });
     } else {
       toVerify.push({ i, text: s.text, quote: s.quote });

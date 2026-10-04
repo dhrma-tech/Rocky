@@ -124,6 +124,7 @@ export function formatReport(r: EvalReport): string {
   });
   const g = (k: keyof EvalReport["gates"], label: string) => {
     const x = r.gates[k];
+    if (x.skipped) return `  n/a  ${label.padEnd(18)} nothing to measure in this subset`;
     return `  ${x.pass ? "PASS" : "FAIL"} ${label.padEnd(18)} ${pct(x.value)} (min ${pct(x.min)})`;
   };
   return [

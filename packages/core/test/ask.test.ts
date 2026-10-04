@@ -1,10 +1,11 @@
 import type { AskEvent } from "@rocky/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ask, normalizeForQuote, quoteMatches } from "../src/assistant/ask.ts";
+import { ask, citedSourceTexts, normalizeForQuote, quoteMatches } from "../src/assistant/ask.ts";
 import type { Db } from "../src/index.ts";
 import { embedDocument } from "../src/ingest/embed-job.ts";
 import { markdownBlocks } from "../src/ingest/parsers/text-blocks.ts";
 import { upsertDocument } from "../src/ingest/upsert.ts";
+import type { RetrievedChunk } from "../src/retrieval/retrieve.ts";
 import { fakeEmbedder, memoryDb } from "./helpers.ts";
 import { fakeProviders, harness } from "./router-helpers.ts";
 
@@ -69,6 +70,30 @@ describe("quote check", () => {
     expect(quoteMatches(Array(41).fill("word").join(" "), [Array(41).fill("word").join(" ")])).toBe(
       false,
     );
+  });
+});
+
+describe("citedSourceTexts", () => {
+  it("accepts a verbatim quote that straddles the cited chunk's edge, but not text far away", () => {
+    const doc = db
+      .prepare("select id, raw_text from documents where title = 'Vendor renewal'")
+      .get() as {
+      id: string;
+      raw_text: string;
+    };
+    const raw = doc.raw_text;
+    const chunk = {
+      id: "c",
+      documentId: doc.id,
+      text: raw.slice(0, 40),
+      charStart: 0,
+      charEnd: 40,
+    } as RetrievedChunk;
+    const straddling = raw.slice(30, 60);
+    expect(quoteMatches(straddling, [chunk.text])).toBe(false);
+    expect(quoteMatches(straddling, citedSourceTexts(db, [chunk], straddling))).toBe(true);
+    const far = raw.slice(raw.length - 12);
+    expect(quoteMatches(far, citedSourceTexts(db, [chunk], far))).toBe(false);
   });
 });
 

@@ -69,7 +69,10 @@ export interface EvalReport {
   citationValidity: number;
   abstention: { correct: number; total: number; rate: number };
   correctness: number;
-  gates: Record<keyof typeof PHASE1_GATES, { value: number; min: number; pass: boolean }>;
+  gates: Record<
+    keyof typeof PHASE1_GATES,
+    { value: number; min: number; skipped: boolean; pass: boolean }
+  >;
   pass: boolean;
   usage: Usage;
   results: QuestionResult[];
@@ -220,11 +223,17 @@ export async function runEval(
     answerable.reduce((s, r) => s + (r.correctness ?? 0), 0),
     answerable.length,
   );
-  const gate = (value: number, min: number) => ({ value, min, pass: value >= min });
+  // A gate with nothing to measure (e.g. a --limit subset without unanswerable questions) is skipped.
+  const gate = (value: number, min: number, n: number) => ({
+    value,
+    min,
+    skipped: n === 0,
+    pass: n === 0 || value >= min,
+  });
   const gates = {
-    hitAt5: gate(hitAt5, PHASE1_GATES.hitAt5),
-    citationValidity: gate(citationValidity, PHASE1_GATES.citationValidity),
-    abstention: gate(abstention.rate, PHASE1_GATES.abstention),
+    hitAt5: gate(hitAt5, PHASE1_GATES.hitAt5, answerable.length),
+    citationValidity: gate(citationValidity, PHASE1_GATES.citationValidity, shown),
+    abstention: gate(abstention.rate, PHASE1_GATES.abstention, unanswerable.length),
   };
   return {
     set,
