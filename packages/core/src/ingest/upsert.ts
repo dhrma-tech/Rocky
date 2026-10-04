@@ -1,5 +1,6 @@
 import type { SourceType } from "@rocky/contracts";
 import { ulid } from "ulid";
+import { flagInstructions } from "../security/flagger.ts";
 import { sha256 } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
 import { type ChunkDraft, chunkDocument } from "./chunker.ts";
@@ -83,7 +84,15 @@ export function upsertDocument(db: Db, input: UpsertInput): UpsertResult {
     }
 
     const drafts = chunkDocument(parsed);
-    const meta = JSON.stringify({ ...(parsed.meta ?? {}), ...(input.meta ?? {}) });
+    // Instruction-like content is flagged (down-weighted in retrieval, badged in the UI).
+    const flags = flagInstructions(`${parsed.title}
+${parsed.text}`);
+    const meta = JSON.stringify({
+      ...(parsed.meta ?? {}),
+      ...(input.meta ?? {}),
+      ...(flags.suspicious ? { flags: flags.reasons } : {}),
+    });
+    const suspicious = flags.suspicious ? 1 : 0;
     let documentId: string;
     if (existing) {
       documentId = existing.id;
@@ -91,7 +100,7 @@ export function upsertDocument(db: Db, input: UpsertInput): UpsertResult {
       db.prepare("delete from chunks where document_id = ?").run(documentId);
       db.prepare(
         `update documents set source_type = ?, mime = ?, uri = ?, title = ?, updated_at = ?, ingested_at = ?,
-         raw_text = ?, content_hash = ?, meta = ?, blob_hash = ? where id = ?`,
+         raw_text = ?, content_hash = ?, meta = ?, blob_hash = ?, suspicious = ? where id = ?`,
       ).run(
         sourceType,
         input.mime ?? null,
@@ -103,13 +112,14 @@ export function upsertDocument(db: Db, input: UpsertInput): UpsertResult {
         contentHash,
         meta,
         input.blobHash ?? null,
+        suspicious,
         documentId,
       );
     } else {
       documentId = ulid(now);
       db.prepare(
         `insert into documents (id, connector_id, external_id, source_type, mime, uri, title, created_at, updated_at,
-         ingested_at, raw_text, content_hash, meta, blob_hash) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ingested_at, raw_text, content_hash, meta, blob_hash, suspicious) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         documentId,
         connectorId,
@@ -125,6 +135,7 @@ export function upsertDocument(db: Db, input: UpsertInput): UpsertResult {
         contentHash,
         meta,
         input.blobHash ?? null,
+        suspicious,
       );
     }
     insertChunks(db, documentId, parsed.title, drafts);

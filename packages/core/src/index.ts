@@ -29,6 +29,7 @@ export * from "./router/prices.ts";
 export * from "./router/router.ts";
 export * from "./runtime.ts";
 export * from "./secrets/keychain.ts";
+export * from "./security/flagger.ts";
 export * from "./security/redact.ts";
 export * from "./security/untrusted.ts";
 export * from "./store/blobs.ts";
