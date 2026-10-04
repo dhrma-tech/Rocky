@@ -48,9 +48,12 @@ export async function startDaemon(opts: {
   log?: (msg: string) => void;
   /** Test seams (secrets, fetch, hardware). */
   runtime?: Omit<OpenRuntimeOptions, "dataDir">;
+  /** Runs once the runtime is open, e.g. to register action definitions (tests, dev smoke). */
+  setup?: (rt: Runtime) => void;
 }): Promise<RunningDaemon> {
   const log = redactingLogger(opts.log ?? ((m) => console.error(m)));
   const rt = await openRuntime({ ...opts.runtime, dataDir: opts.dataDir });
+  opts.setup?.(rt);
   const port = opts.port ?? rt.config.daemon.port;
   const auth = new Auth({ token: installToken(rt), port });
   const runner = new JobRunner(rt.db, rt.jobHandlers, { log });
