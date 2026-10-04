@@ -15,6 +15,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@napi-rs/keyring": "2.1.0",
     "@types/better-sqlite3": "^9.6.0"
   }
 }
