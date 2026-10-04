@@ -8,6 +8,7 @@ export * from "./audit/verify.ts";
 export * from "./capture/watch.ts";
 export * from "./config/load.ts";
 export * from "./config/paths.ts";
+export * from "./deletion/service.ts";
 export * from "./doctor.ts";
 export * from "./evals/run.ts";
 export * from "./ingest/chunker.ts";
