@@ -1,3 +1,4 @@
+export * from "./assistant/ask.ts";
 export * from "./audit/append.ts";
 export * from "./config/load.ts";
 export * from "./config/paths.ts";
