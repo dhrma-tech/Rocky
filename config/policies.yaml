@@ -11,7 +11,7 @@ tasks:
 models:
   api:strong: anthropic/claude-sonnet-5-5
   api:cheap: anthropic/claude-haiku-4-5-20251001
-  local:small: ollama/TBD-phase0-spike
+  local:small: ollama/qwen3.5:4b # Phase 0 spike: 5/5 valid JSON, ~9 s/call on CPU with reasoning_effort none
   local:medium: ollama/TBD
   embed: ollama/nomic-embed-text
   transcribe: whisper/ggml-small
