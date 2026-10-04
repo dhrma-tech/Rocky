@@ -1,0 +1,141 @@
+/* Design tokens: docs/DESIGN.md §2–3. Components use semantic tokens only; never raw hex. */
+:root {
+  /* palette (§2.1) */
+  --pal-periwinkle: #d0d9e6;
+  --pal-blush: #f2d3d3;
+  --pal-rose: #edb0b1;
+  --pal-red: #e67e7f;
+  --pal-cocoa: #915e56;
+  /* derived (§2.2) */
+  --ink: #2e1e1c;
+  --ink-2: #50342f;
+  --ink-3: #6d4640;
+  --canvas: #eaeef4;
+  --canvas-soft: #f1f4f8;
+  --raised: #f8f9fb;
+  --sidebar: #dde4ed;
+  --blush-tint: #f8e9e9;
+  --occlusion: #9ca3ac;
+  /* semantic, light (§2.3) */
+  --bg-page: var(--canvas);
+  --bg-sunken: var(--pal-periwinkle);
+  --bg-sidebar: var(--sidebar);
+  --bg-raised: var(--raised);
+  --bg-overlay: var(--raised);
+  --scrim: rgba(46, 30, 28, 0.38);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --text-on-accent: var(--ink);
+  --link: var(--pal-cocoa);
+  --link-hover: #82544d;
+  --accent: var(--pal-red);
+  --accent-hover: #e98d8e;
+  --accent-pressed: #d07273;
+  --accent-soft: var(--pal-blush);
+  --accent-soft-hover: var(--blush-tint);
+  --accent-2: var(--pal-rose);
+  --accent-strong: var(--pal-cocoa);
+  --focus-ring: var(--pal-cocoa);
+  --border-base: #d3d5da;
+  --border-strong: #c1c0c4;
+  --layer-faint: rgba(46, 30, 28, 0.03);
+  --layer-subtle: rgba(46, 30, 28, 0.06);
+  --layer-strong: rgba(46, 30, 28, 0.1);
+  --success: #2f6b49;
+  --warning: #86580f;
+  --danger: #b23a48;
+  --info: #3f6299;
+  /* elevation (§3.4) */
+  --shadow-raised-sm:
+    -4px -4px 10px rgba(255, 255, 255, 0.95), 5px 6px 14px rgba(156, 163, 172, 0.43);
+  --shadow-raised-md:
+    -8px -8px 20px rgba(255, 255, 255, 0.95), 10px 12px 26px rgba(156, 163, 172, 0.47);
+  --shadow-raised-lg:
+    -11px -11px 28px rgba(255, 255, 255, 0.95), 14px 17px 38px rgba(156, 163, 172, 0.52);
+  --shadow-inset-sm:
+    inset 3px 3px 7px rgba(156, 163, 172, 0.45), inset -3px -3px 7px rgba(255, 255, 255, 0.9);
+  --shadow-float: 0 14px 32px rgba(120, 128, 140, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --composer-glow: 0 0 0 3px rgba(145, 94, 86, 0.25);
+  /* motion (§3.5) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ui: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --dur-fast: 180ms;
+  --dur-base: 240ms;
+  --dur-panel: 320ms;
+  /* fonts: owner decision pending (§0.2 #1); system stacks until chosen */
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-answer: var(--font-sans);
+  color-scheme: light;
+}
+
+/* Dark theme (§2.4); kept in one mixin-free block and repeated for the system preference. */
+:root[data-theme="dark"] {
+  --bg-page: #1a110f;
+  --bg-sidebar: #150e0c;
+  --bg-raised: #261816;
+  --bg-overlay: #31201d;
+  --bg-sunken: #130c0b;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --text-primary: #f9ebeb;
+  --text-secondary: #9da1aa;
+  --text-tertiary: #7e7f85;
+  --link: var(--pal-rose);
+  --link-hover: var(--pal-blush);
+  --accent-soft: rgba(230, 126, 127, 0.16);
+  --accent-soft-hover: var(--layer-strong);
+  --accent-strong: var(--pal-rose);
+  --focus-ring: var(--pal-rose);
+  --border-base: rgba(249, 235, 235, 0.12);
+  --border-strong: rgba(249, 235, 235, 0.22);
+  --layer-faint: rgba(249, 235, 235, 0.03);
+  --layer-subtle: rgba(249, 235, 235, 0.06);
+  --layer-strong: rgba(249, 235, 235, 0.1);
+  --success: #7fc79a;
+  --warning: #e0b060;
+  --danger: #f08a94;
+  --info: #8fb2e6;
+  --shadow-raised-sm: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-raised-md: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-raised-lg: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 16px 48px rgba(0, 0, 0, 0.55);
+  --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --composer-glow: 0 0 0 3px rgba(237, 176, 177, 0.25);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-page: #1a110f;
+    --bg-sidebar: #150e0c;
+    --bg-raised: #261816;
+    --bg-overlay: #31201d;
+    --bg-sunken: #130c0b;
+    --scrim: rgba(0, 0, 0, 0.55);
+    --text-primary: #f9ebeb;
+    --text-secondary: #9da1aa;
+    --text-tertiary: #7e7f85;
+    --link: var(--pal-rose);
+    --link-hover: var(--pal-blush);
+    --accent-soft: rgba(230, 126, 127, 0.16);
+    --accent-soft-hover: var(--layer-strong);
+    --accent-strong: var(--pal-rose);
+    --focus-ring: var(--pal-rose);
+    --border-base: rgba(249, 235, 235, 0.12);
+    --border-strong: rgba(249, 235, 235, 0.22);
+    --layer-faint: rgba(249, 235, 235, 0.03);
+    --layer-subtle: rgba(249, 235, 235, 0.06);
+    --layer-strong: rgba(249, 235, 235, 0.1);
+    --success: #7fc79a;
+    --warning: #e0b060;
+    --danger: #f08a94;
+    --info: #8fb2e6;
+    --shadow-raised-sm: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 4px 14px rgba(0, 0, 0, 0.35);
+    --shadow-raised-md: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 8px 24px rgba(0, 0, 0, 0.4);
+    --shadow-raised-lg: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 16px 48px rgba(0, 0, 0, 0.55);
+    --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.55);
+    --composer-glow: 0 0 0 3px rgba(237, 176, 177, 0.25);
+    color-scheme: dark;
+  }
+}

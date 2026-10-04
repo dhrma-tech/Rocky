@@ -2,8 +2,10 @@
   "extends": "./tsconfig.base.json",
   "include": [
     "apps/*/src/**/*.ts",
+    "apps/*/test/**/*.ts",
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
     "vitest.config.ts"
-  ]
+  ],
+  "exclude": ["apps/web"]
 }

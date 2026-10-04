@@ -200,17 +200,17 @@ describe("API", () => {
     expect(done.notFound).toBe(false);
     const cite = done.answer[0].citations[0];
 
-    const anchor = await (
+    const anchor = (await (
       await req(`/api/v1/documents/${cite.documentId}/anchor?chunk=${cite.chunkId}`, {
         headers: bearer,
       })
-    ).json();
+    ).json()) as { text: string; charStart: number; charEnd: number };
     expect(anchor).toMatchObject({ viewer: "text", title: "Renewal" });
     expect(anchor.text.slice(anchor.charStart, anchor.charEnd)).toContain("CloudHost");
 
-    const doc = await (
+    const doc = (await (
       await req(`/api/v1/documents/${cite.documentId}`, { headers: bearer })
-    ).json();
+    ).json()) as { blobUrl: string };
     const range = await req(doc.blobUrl, { headers: { ...bearer, range: "bytes=2-8" } });
     expect(range.status).toBe(206);
     expect(await range.text()).toBe("Renewal");

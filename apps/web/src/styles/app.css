@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Tailwind utilities map onto semantic tokens only (DESIGN.md §9). Default palette is disabled. */
+@theme inline {
+  --color-*: initial;
+  --color-page: var(--bg-page);
+  --color-sunken: var(--bg-sunken);
+  --color-sidebar: var(--bg-sidebar);
+  --color-raised: var(--bg-raised);
+  --color-overlay: var(--bg-overlay);
+  --color-scrim: var(--scrim);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-on-accent: var(--text-on-accent);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-hover: var(--accent-soft-hover);
+  --color-accent-2: var(--accent-2);
+  --color-accent-strong: var(--accent-strong);
+  --color-border-base: var(--border-base);
+  --color-border-strong: var(--border-strong);
+  --color-layer-faint: var(--layer-faint);
+  --color-layer-subtle: var(--layer-subtle);
+  --color-layer-strong: var(--layer-strong);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-answer: var(--font-answer);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+
+  --shadow-raised-sm: var(--shadow-raised-sm);
+  --shadow-raised-md: var(--shadow-raised-md);
+  --shadow-raised-lg: var(--shadow-raised-lg);
+  --shadow-inset-sm: var(--shadow-inset-sm);
+  --shadow-float: var(--shadow-float);
+
+  --ease-out: var(--ease-out);
+  --ease-ui: var(--ease-ui);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One focus style everywhere (§5.3): 2 px ring, 2 px offset. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--link);
+}
+a:hover {
+  color: var(--link-hover);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: the reduced-motion override must beat every component transition */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: end of reduced-motion block */
+
+@keyframes rocky-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: rocky-pulse 1.2s var(--ease-ui) infinite;
+}
