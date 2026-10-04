@@ -1,0 +1,17 @@
+# Task routing policy. Model IDs are config, never hard-coded. Re-verify before release.
+# User override: <dataDir>/config/policies.yaml (deep-merged). Spec: docs/specs/router.md
+tasks:
+  tag: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_60s] }
+  meeting_summary: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: api:strong, escalate_on: ["input_tokens>12000", json_invalid_x2] }
+  chat: { primary: api:strong, fallback: local:medium }
+  verify: { primary: api:cheap, fallback: local:small }
+  quiz_gen: { primary: local:medium, exam_grade: api:strong }
+  draft: { primary: api:strong }
+  propose_actions: { primary: api:strong, local_allowed: false_below_14b }
+models:
+  api:strong: anthropic/claude-sonnet-5-5
+  api:cheap: anthropic/claude-haiku-4-5-20251001
+  local:small: ollama/TBD-phase0-spike
+  local:medium: ollama/TBD
+  embed: ollama/nomic-embed-text
+  transcribe: whisper/ggml-small
