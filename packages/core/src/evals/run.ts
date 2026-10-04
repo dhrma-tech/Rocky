@@ -3,8 +3,8 @@ import path from "node:path";
 import type { AskResult, PathInfo, Usage } from "@rocky/contracts";
 import YAML from "yaml";
 import { z } from "zod";
-import { ask, normalizeForQuote } from "../assistant/ask.ts";
-import { retrieve } from "../retrieval/retrieve.ts";
+import { ask, citedSourceTexts, normalizeForQuote } from "../assistant/ask.ts";
+import { type RetrievedChunk, retrieve } from "../retrieval/retrieve.ts";
 import type { Runtime } from "../runtime.ts";
 import { UNTRUSTED_RULE, wrapUntrusted } from "../security/untrusted.ts";
 import type { Db } from "../store/db.ts";
@@ -99,9 +99,32 @@ function goldHit(db: Db, chunkIds: string[], gold: EvalQuestion["gold"]): boolea
   });
 }
 
-const chunkText = (db: Db, id: string) =>
-  (db.prepare("select text from chunks where id = ?").get(id) as { text: string } | undefined)
-    ?.text ?? "";
+/**
+ * What the judge sees for a citation: the same source window the quote check accepts (the
+ * chunk plus text just around it), so a quote that straddles a chunk edge is judged fairly.
+ */
+function citedContext(db: Db, chunkId: string, quote: string): string {
+  const c = db
+    .prepare("select id, document_id, text, char_start, char_end from chunks where id = ?")
+    .get(chunkId) as
+    | { id: string; document_id: string; text: string; char_start: number; char_end: number }
+    | undefined;
+  if (!c) return "";
+  const texts = citedSourceTexts(
+    db,
+    [
+      {
+        id: c.id,
+        documentId: c.document_id,
+        text: c.text,
+        charStart: c.char_start,
+        charEnd: c.char_end,
+      } as RetrievedChunk,
+    ],
+    quote,
+  );
+  return texts[texts.length - 1] ?? c.text;
+}
 
 async function judge(
   rt: Runtime,
@@ -111,7 +134,9 @@ async function judge(
 ): Promise<{ out: z.infer<typeof JudgeSchema>; usage: Usage }> {
   const items = r.answer.map((s) => {
     const sources = s.citations
-      .map((c) => wrapUntrusted(chunkText(rt.db, c.chunkId), { id: c.chunkId, source: c.title }))
+      .map((c) =>
+        wrapUntrusted(citedContext(rt.db, c.chunkId, c.quote), { id: c.chunkId, source: c.title }),
+      )
       .join("\n");
     return `Sentence ${s.i}: ${s.text}\nCited sources:\n${sources}`;
   });
