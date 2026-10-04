@@ -15,7 +15,11 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@ai-sdk/anthropic": "4.0.71",
+    "@ai-sdk/google": "4.0.87",
+    "@ai-sdk/openai-compatible": "3.0.62",
     "@napi-rs/keyring": "2.1.0",
-    "@types/better-sqlite3": "^9.6.0"
+    "@types/better-sqlite3": "^9.6.0",
+    "ai": "7.0.127"
   }
 }
