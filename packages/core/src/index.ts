@@ -1,3 +1,7 @@
+export * from "./actions/echo.ts";
+export * from "./actions/registry.ts";
+export * from "./actions/service.ts";
+export * from "./actions/types.ts";
 export * from "./assistant/ask.ts";
 export * from "./audit/append.ts";
 export * from "./capture/watch.ts";

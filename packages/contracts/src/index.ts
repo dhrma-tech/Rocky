@@ -1,3 +1,4 @@
+export * from "./actions.ts";
 export * from "./assistant.ts";
 export * from "./config.ts";
 export * from "./doctor.ts";
