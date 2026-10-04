@@ -1,0 +1,169 @@
+# Public eval set (PLAN §6). Gold quotes must appear verbatim (whitespace-normalized) in the named corpus file.
+# answerable: false means the system must answer "Not found in your sources".
+questions:
+  # --- Lecture PDF facts (page anchors) ---
+  - id: pdf-1
+    bucket: pdf
+    question: What does the law of demand state?
+    answer: Other things being equal, a higher price leads to a lower quantity demanded and a lower price to a higher quantity demanded.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "a higher price leads to a lower quantity demanded" }]
+  - id: pdf-2
+    bucket: pdf
+    question: What is the equilibrium price and quantity in the gasoline example?
+    answer: $1.40 per gallon, with 600 million gallons demanded and supplied.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "the market reaches equilibrium at a price of $1.40 per gallon" }]
+  - id: pdf-3
+    bucket: pdf
+    question: What is a price ceiling, and what is a common example?
+    answer: A legal maximum price; rent control is a common example.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "A price ceiling is a legal maximum on the price at which a good can be sold" }]
+  - id: pdf-4
+    bucket: pdf
+    question: What happens when a price floor is set above the equilibrium price?
+    answer: It creates a surplus because quantity supplied exceeds quantity demanded.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "When a price floor is set above the equilibrium price, it creates a surplus" }]
+  - id: pdf-5
+    bucket: pdf
+    question: What is the difference between a normal good and an inferior good?
+    answer: Demand for a normal good rises with income; demand for an inferior good falls when income rises.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "An inferior good is one for which demand falls when income rises" }]
+  - id: pdf-6
+    bucket: pdf
+    question: What does ceteris paribus mean in the lecture notes?
+    answer: Latin for other things being equal; all other factors are held constant while price varies.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "ceteris paribus, Latin for other things being equal" }]
+  - id: pdf-7
+    bucket: pdf
+    question: Which factors shift the supply curve?
+    answer: Production costs, technology, natural conditions like weather, and government policies such as taxes, subsidies and regulations.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "The main factors that shift supply are the costs of production" }]
+  - id: pdf-8
+    bucket: pdf
+    question: What example of complements do the notes give?
+    answer: Golf clubs and golf balls.
+    gold: [{ file: econ-lecture-notes.pdf, quote: "such as golf clubs and golf balls" }]
+
+  # --- Meeting transcript (timestamp anchors) ---
+  - id: tr-1
+    bucket: transcript
+    question: Who is sending the revised pricing deck, and by when?
+    answer: Priya, to the board by Friday, September 19.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "I'll send the revised pricing deck to the board by Friday, September 19" }]
+  - id: tr-2
+    bucket: transcript
+    question: What did we decide about the free tier?
+    answer: Drop the free tier and keep a 14-day trial instead.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "We decided to drop the free tier and keep a 14-day trial instead" }]
+  - id: tr-3
+    bucket: transcript
+    question: What launch date did the team agree on?
+    answer: October 21.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "We agreed to launch on October 21" }]
+  - id: tr-4
+    bucket: transcript
+    question: What did Dana say about churn on the free tier?
+    answer: Monthly churn on the free tier was 4.2 percent versus 1.1 percent on paid plans.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "Our monthly churn on the free tier was 4.2 percent" }]
+  - id: tr-5
+    bucket: transcript
+    question: Who is booking the offsite venue and where?
+    answer: Sam is booking a venue in Lisbon for the second week of November.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "I will book the venue in Lisbon for the second week of November" }]
+  - id: tr-6
+    bucket: transcript
+    question: What is the budget cap for the offsite?
+    answer: 12,000 euros.
+    gold: [{ file: team-sync-2026-09-14.transcript.txt, quote: "Budget for the offsite is capped at 12,000 euros" }]
+
+  # --- Notion / GitHub decisions and owners ---
+  - id: ng-1
+    bucket: notion_github
+    question: Who owns the data migration in Project Atlas?
+    answer: Lena.
+    gold: [{ file: notion-project-atlas.md, quote: "Lena owns the data migration from the legacy reporting service" }]
+  - id: ng-2
+    bucket: notion_github
+    question: Which database did we choose for Project Atlas, and why?
+    answer: PostgreSQL over MongoDB, because reporting needs relational joins across accounts, invoices and usage events.
+    gold: [{ file: notion-project-atlas.md, quote: "We chose PostgreSQL over MongoDB because our reporting needs relational joins" }]
+  - id: ng-3
+    bucket: notion_github
+    question: What is the rollout plan for the new reporting backend?
+    answer: 10 percent of accounts first, then 50 percent after one week without errors, then 100 percent.
+    gold: [{ file: notion-project-atlas.md, quote: "rolls out to 10 percent of accounts first" }]
+  - id: ng-4
+    bucket: notion_github
+    question: What is the root cause of issue 142?
+    answer: A race condition in token refresh when two tabs refresh at the same moment.
+    gold: [{ file: github-issue-142.md, quote: "Root cause found: a race condition in token refresh" }]
+  - id: ng-5
+    bucket: notion_github
+    question: How does the fix plan for issue 142 prevent the problem?
+    answer: Serialize refreshes with a cross-tab lock using BroadcastChannel and retry once with the newest token on a 401.
+    gold: [{ file: github-issue-142.md, quote: "serialize refreshes with a cross-tab lock using the BroadcastChannel API" }]
+
+  # --- Email facts ---
+  - id: em-1
+    bucket: email
+    question: When does the CloudHost contract renew and how much does the price go up?
+    answer: November 30, 2026; the annual price rises 8 percent, from 24,000 to 25,920 USD.
+    gold: [{ file: email-vendor-renewal.md, quote: "the annual price increases by 8 percent, from 24,000 USD to 25,920 USD" }]
+  - id: em-2
+    bucket: email
+    question: How much notice do we need to give to cancel CloudHost?
+    answer: At least 30 days written notice before the renewal date.
+    gold: [{ file: email-vendor-renewal.md, quote: "please give us at least 30 days written notice before the renewal date" }]
+  - id: em-3
+    bucket: email
+    question: Until when did Prof. Lee extend Problem Set 3?
+    answer: October 10 at midnight.
+    gold: [{ file: email-prof-extension.md, quote: "I can give you an extension for Problem Set 3 until October 10 at midnight" }]
+
+  # --- Cross-source ---
+  - id: x-1
+    bucket: cross
+    question: What is Omar working on?
+    answer: Fixing the login bug (issue 142, a token refresh race condition) with a PR by Tuesday; he also owns authentication and session handling in Atlas.
+    gold:
+      - { file: team-sync-2026-09-14.transcript.txt, quote: "I will open a pull request with the fix by Tuesday" }
+      - { file: github-issue-142.md, quote: "Assigned to omar-dev" }
+  - id: x-2
+    bucket: cross
+    question: What deadlines do I have in October?
+    answer: Problem Set 3 extension until October 10, the ECON midterm on October 15, and the product launch on October 21.
+    gold:
+      - { file: email-prof-extension.md, quote: "until October 10 at midnight" }
+      - { file: econ-lecture-notes.pdf, quote: "takes place on October 15 in Hall B" }
+      - { file: team-sync-2026-09-14.transcript.txt, quote: "We agreed to launch on October 21" }
+  - id: x-3
+    bucket: cross
+    question: What does Priya own or owe?
+    answer: She owes the board the revised pricing deck by September 19 and owns customer onboarding and the pricing page in Project Atlas.
+    gold:
+      - { file: team-sync-2026-09-14.transcript.txt, quote: "I'll send the revised pricing deck to the board" }
+      - { file: notion-project-atlas.md, quote: "Priya owns customer onboarding and the pricing page" }
+  - id: x-4
+    bucket: cross
+    question: Why are users being logged out, and when will the fix PR be ready?
+    answer: Two tabs refreshing the token at once invalidate each other (a race condition); Omar will open the fix PR by Tuesday.
+    gold:
+      - { file: github-issue-142.md, quote: "a race condition in token refresh" }
+      - { file: team-sync-2026-09-14.transcript.txt, quote: "I will open a pull request with the fix by Tuesday" }
+
+  # --- Unanswerable: must say "Not found in your sources" ---
+  - id: na-1
+    bucket: unanswerable
+    question: What is the office Wi-Fi password?
+    answerable: false
+  - id: na-2
+    bucket: unanswerable
+    question: What was our revenue in Q2 2025?
+    answerable: false
+  - id: na-3
+    bucket: unanswerable
+    question: What grade did I get on the ECON midterm?
+    answerable: false
+  - id: na-4
+    bucket: unanswerable
+    question: Who is our lawyer for the CloudHost contract?
+    answerable: false

@@ -1,0 +1,13 @@
+[00:00:04] Priya: Okay, let's start. Agenda today is pricing, the launch date, the login bug and the offsite.
+[00:00:15] Priya: On pricing, I'll send the revised pricing deck to the board by Friday, September 19.
+[00:00:31] Sam: Good. Do we still keep the free tier?
+[00:00:38] Priya: No. We decided to drop the free tier and keep a 14-day trial instead.
+[00:00:52] Dana: That makes sense given the numbers. Our monthly churn on the free tier was 4.2 percent, versus 1.1 percent on paid plans.
+[00:01:20] Priya: Launch date. Engineering, are we still good?
+[00:01:27] Omar: Yes, if the login bug is fixed. We agreed to launch on October 21.
+[00:01:45] Omar: The login bug is mine. Users get logged out when two tabs refresh the token at the same time. I will open a pull request with the fix by Tuesday.
+[00:02:10] Dana: Can we add a regression test for that?
+[00:02:16] Omar: Yes, the PR will include a test that refreshes from two tabs in parallel.
+[00:02:40] Sam: Last item, the offsite. I will book the venue in Lisbon for the second week of November.
+[00:02:58] Priya: Great. Budget for the offsite is capped at 12,000 euros.
+[00:03:12] Priya: Thanks everyone, that's it for today.
