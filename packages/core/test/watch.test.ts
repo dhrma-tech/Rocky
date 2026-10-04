@@ -79,11 +79,10 @@ describe("watched folders", () => {
 
     fs.rmSync(path.join(notes, "sub", "b.md"));
     await eventually(() => expect(docs()).toEqual(["Alpha v2"]));
+    // Alpha was embedded twice (created, edited); Beta's job went with Beta on delete.
     expect(
       db.prepare("select count(*) as n from jobs where type = 'embed_document'").get(),
-    ).toEqual({
-      n: 3,
-    });
+    ).toEqual({ n: 2 });
   });
 
   it("does not descend into subfolders when not recursive", async () => {

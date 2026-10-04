@@ -97,10 +97,17 @@ describe("no write without approval", () => {
     const src = path.resolve(import.meta.dirname, "../../src");
     const roots = [src, path.resolve(import.meta.dirname, "../../../../apps")];
     const offenders: string[] = [];
+    // Prune dependency and build folders while walking; enumerating them is far too slow.
+    function* walk(dir: string): Generator<string> {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === "node_modules" || e.name === "dist" || e.name.startsWith(".")) continue;
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) yield* walk(full);
+        else if (/\.tsx?$/.test(e.name)) yield full;
+      }
+    }
     for (const root of roots)
-      for (const f of fs.readdirSync(root, { recursive: true, encoding: "utf8" })) {
-        if (!/\.tsx?$/.test(f) || f.includes("node_modules")) continue;
-        const full = path.join(root, f);
+      for (const full of walk(root)) {
         const text = fs.readFileSync(full, "utf8");
         if (!/actions\/internal(\.ts)?["']|["']\.\/internal(\.ts)?["']/.test(text)) continue;
         const rel = path.relative(src, full).replace(/\\/g, "/");
