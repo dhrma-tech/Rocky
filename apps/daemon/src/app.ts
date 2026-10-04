@@ -1,15 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  ActionStatusSchema,
   AnchorSchema,
+  ApproveRequestSchema,
   type AskEvent,
   AskRequestSchema,
+  type AuditRow,
+  EditRequestSchema,
   SettingsUpdateSchema,
 } from "@rocky/contracts";
 import {
   addWatchedFolder,
   ask,
   blobPath,
+  deleteData,
   deleteDocument,
   ingestPath,
   listWatchedFolders,
@@ -19,6 +24,7 @@ import {
   SECRET_NAMES,
   type SecretName,
   saveAppConfig,
+  verifyAuditChain,
 } from "@rocky/core";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
@@ -37,6 +43,19 @@ export function errorBody(err: unknown): { error: string; code: string } {
   return { error: redact(err instanceof Error ? err.message : String(err)), code };
 }
 
+/** HTTP status per error code; router policy errors are 409 (a decision, not a fault). */
+const STATUS: Record<string, 400 | 403 | 404 | 409> = {
+  BAD_REQUEST: 400,
+  INVALID_PAYLOAD: 400,
+  UNKNOWN_TYPE: 400,
+  NO_CITATION: 400,
+  ORIGIN_FORBIDDEN: 403,
+  TYPE_NOT_ALLOWED: 403,
+  NOT_FOUND: 404,
+  ILLEGAL_TRANSITION: 409,
+  HASH_MISMATCH: 409,
+};
+
 const POLICY_CODES = new Set([
   "EGRESS_BLOCKED",
   "BUDGET_EXCEEDED",
@@ -48,6 +67,18 @@ const POLICY_CODES = new Set([
 const IngestBody = z.object({ path: z.string().min(1) }).strict();
 const WatchBody = z.object({ path: z.string().min(1), recursive: z.boolean().optional() }).strict();
 const SecretBody = z.object({ value: z.string().min(1).max(4096) }).strict();
+const DeletionBody = z
+  .object({
+    target: z.union([
+      z.object({ documentIds: z.array(z.string()).min(1).max(10_000) }).strict(),
+      z.object({ connectorId: z.string().min(1) }).strict(),
+      z.object({ notebookId: z.string().min(1), withSources: z.boolean().optional() }).strict(),
+      z.object({ everything: z.literal(true) }).strict(),
+    ]),
+    /** Typed by the user in the confirm dialog; required for every deletion. */
+    confirm: z.literal("DELETE"),
+  })
+  .strict();
 /** The daemon token is internal; the API can only write provider keys. */
 const WRITABLE_SECRETS: readonly SecretName[] = SECRET_NAMES.filter((n) => n !== "daemon-token");
 
@@ -72,9 +103,11 @@ export interface AppDeps {
   webDir?: string;
   /** Restarts folder watching after the folder list changes. */
   rewatch?: () => Promise<void>;
+  /** "Delete everything": the daemon stops, removes all data, and exits (index.ts). */
+  deleteEverything?: () => Promise<void>;
 }
 
-export function createApp({ rt, auth, poke, webDir, rewatch }: AppDeps): Hono {
+export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }: AppDeps): Hono {
   const app = new Hono();
   app.use("*", auth.hostGuard());
 
@@ -98,7 +131,90 @@ export function createApp({ rt, auth, poke, webDir, rewatch }: AppDeps): Hono {
 
   api.onError((err, c) => {
     const body = errorBody(err);
-    return c.json(body, POLICY_CODES.has(body.code) ? 409 : 500);
+    return c.json(body, STATUS[body.code] ?? (POLICY_CODES.has(body.code) ? 409 : 500));
+  });
+
+  const body = async <T>(c: { req: { json(): Promise<unknown> } }, schema: z.ZodType<T>) => {
+    const r = schema.safeParse(await c.req.json().catch(() => null));
+    if (!r.success)
+      throw Object.assign(new Error(z.prettifyError(r.error)), { code: "BAD_REQUEST" });
+    return r.data;
+  };
+
+  // --- Actions (approval queue) ---
+  api.get("/actions", (c) => {
+    const status = c.req.query("status");
+    const parsed = status ? ActionStatusSchema.safeParse(status) : null;
+    if (parsed && !parsed.success)
+      return c.json({ error: "unknown status", code: "BAD_REQUEST" }, 400);
+    return c.json({ actions: rt.actions.list(parsed?.data) });
+  });
+  api.get("/actions/:id", (c) => c.json(rt.actions.get(c.req.param("id"))));
+  api.patch("/actions/:id", async (c) => {
+    const { payload } = await body(c, EditRequestSchema);
+    return c.json(rt.actions.edit(c.req.param("id"), payload));
+  });
+  // The UI sends the hash of the payload it displayed; approval binds to exactly that payload.
+  api.post("/actions/:id/approve", async (c) => {
+    const { payloadHash } = await body(c, ApproveRequestSchema);
+    return c.json(rt.actions.approve(c.req.param("id"), payloadHash));
+  });
+  api.post("/actions/:id/reject", (c) => c.json(rt.actions.reject(c.req.param("id"))));
+  api.post("/actions/:id/revoke", (c) => c.json(rt.actions.revoke(c.req.param("id"))));
+  api.post("/actions/:id/clone", (c) => c.json(rt.actions.clone(c.req.param("id"))));
+  api.post("/actions/:id/execute", async (c) =>
+    c.json(await rt.actions.execute(c.req.param("id"))),
+  );
+
+  // --- Audit log (read-only; there is no write or delete route) ---
+  api.get("/audit", (c) => {
+    const cursor = Number(c.req.query("cursor") ?? Number.MAX_SAFE_INTEGER);
+    const type = c.req.query("type");
+    const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 200);
+    const rows = rt.db
+      .prepare(
+        `select a.seq, a.at, a.event_type, a.actor, a.subject_type, a.subject_id, a.payload_hash, a.meta, p.body
+         from audit_log a left join audit_payloads p on p.payload_hash = a.payload_hash
+         where a.seq < ? ${type ? "and a.event_type = ?" : ""} order by a.seq desc limit ?`,
+      )
+      .all(...(type ? [cursor, type, limit] : [cursor, limit])) as {
+      seq: number;
+      at: number;
+      event_type: string;
+      actor: AuditRow["actor"];
+      subject_type: string | null;
+      subject_id: string | null;
+      payload_hash: string | null;
+      meta: string;
+      body: string | null;
+    }[];
+    const entries: AuditRow[] = rows.map((r) => ({
+      seq: r.seq,
+      at: r.at,
+      eventType: r.event_type,
+      actor: r.actor,
+      subjectType: r.subject_type,
+      subjectId: r.subject_id,
+      payloadHash: r.payload_hash,
+      payload: r.body === null ? null : (JSON.parse(r.body) as unknown),
+      meta: JSON.parse(r.meta) as Record<string, unknown>,
+    }));
+    const last = entries[entries.length - 1];
+    return c.json({ entries, nextCursor: entries.length === limit && last ? last.seq : null });
+  });
+  api.post("/audit/verify", (c) => c.json(verifyAuditChain(rt.db)));
+
+  // --- Deletion (typed confirmation required) ---
+  api.post("/deletion", async (c) => {
+    const { target } = await body(c, DeletionBody);
+    if ("everything" in target) {
+      if (!deleteEverything)
+        return c.json({ error: "not available in this process", code: "BAD_REQUEST" }, 400);
+      // Respond first; the daemon then shuts down, deletes everything and exits.
+      setTimeout(() => void deleteEverything(), 50);
+      return c.json({ deleting: "everything" }, 202);
+    }
+    return c.json(deleteData(rt.db, rt.paths.blobs, target));
   });
 
   api.post("/auth/codes", (c) => {

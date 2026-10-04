@@ -1,4 +1,6 @@
 import type { AppConfig, Hardware } from "@rocky/contracts";
+import { ActionRegistry } from "./actions/registry.ts";
+import { ActionService } from "./actions/service.ts";
 import { loadAppConfig } from "./config/load.ts";
 import { type DataPaths, dataPaths } from "./config/paths.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
@@ -23,6 +25,10 @@ export interface Runtime {
   embedder: Embedder;
   hardware: Hardware;
   secrets: SecretStore;
+  /** Action definitions; connectors register theirs here (Phase 4). */
+  registry: ActionRegistry;
+  /** The approval queue; the only path to an executor. */
+  actions: ActionService;
   /** Handlers for every job type; the daemon runs them in a JobRunner. */
   jobHandlers: Record<string, JobHandler>;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
@@ -76,6 +82,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
 
+  const registry = new ActionRegistry();
+  const actions = new ActionService(db, registry);
   const jobHandlers: Record<string, JobHandler> = {
     [EMBED_JOB]: async (job) => {
       const { documentId } = job.payload as { documentId: string };
@@ -93,6 +101,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     embedder,
     hardware,
     secrets,
+    registry,
+    actions,
     jobHandlers,
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => db.close(),

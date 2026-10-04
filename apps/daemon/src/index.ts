@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
+  deleteEverything,
   FolderWatcher,
   JobRunner,
   type OpenRuntimeOptions,
@@ -69,6 +70,16 @@ export async function startDaemon(opts: {
     auth,
     poke: () => runner.poke(),
     rewatch: () => watcher.start(),
+    deleteEverything: async () => {
+      log("deleting everything at the user's request");
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await watcher.stop();
+      await runner.stop();
+      rt.close();
+      const { removed } = deleteEverything(opts.dataDir, rt.secrets);
+      log(`removed ${removed.length} items; the daemon is exiting`);
+      process.exit(0);
+    },
     ...(fs.existsSync(path.join(webDir, "index.html")) ? { webDir } : {}),
   });
   const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" });
