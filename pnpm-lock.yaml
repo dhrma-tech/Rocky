@@ -21,7 +21,17 @@ importers:
         specifier: 5.0.3
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(yaml@2.9.1))
 
-  apps/cli: {}
+  apps/cli:
+    dependencies:
+      '@rocky/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@rocky/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
 
   apps/daemon: {}
 
@@ -41,6 +51,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@napi-rs/keyring':
+        specifier: 2.1.0
+        version: 2.1.0
       '@rocky/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -66,9 +79,6 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: 3.0.62
         version: 3.0.62(zod@4.6.5)
-      '@napi-rs/keyring':
-        specifier: 2.1.0
-        version: 2.1.0
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0
@@ -542,6 +552,10 @@ packages:
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
+
+  commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
@@ -1132,6 +1146,8 @@ snapshots:
       node-addon-api: 8.9.2
 
   chai@6.3.0: {}
+
+  commander@15.0.0: {}
 
   detect-libc@2.1.2: {}
 

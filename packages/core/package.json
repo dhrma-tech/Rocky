@@ -12,13 +12,13 @@
     "better-sqlite3": "13.0.3",
     "sqlite-vec": "0.1.9",
     "yaml": "2.9.1",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@napi-rs/keyring": "2.1.0"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "4.0.71",
     "@ai-sdk/google": "4.0.87",
     "@ai-sdk/openai-compatible": "3.0.62",
-    "@napi-rs/keyring": "2.1.0",
     "@types/better-sqlite3": "^9.6.0",
     "ai": "7.0.127"
   }
