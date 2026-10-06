@@ -567,14 +567,15 @@ export class ConnectorService {
           describe: (p) => a.describe(p),
           execute: async (p, ctx) => {
             const cur = this.d.db
-              .prepare("select enabled, read_only from connectors where id = ?")
-              .get(kind) as { enabled: number; read_only: number } | undefined;
+              .prepare("select enabled, read_only, config from connectors where id = ?")
+              .get(kind) as { enabled: number; read_only: number; config: string } | undefined;
             if (!cur?.enabled)
               throw new Error(`${def?.displayName ?? kind} is disconnected or disabled`);
             if (cur.read_only) throw new Error(`${def?.displayName ?? kind} is read-only`);
             const token = def ? this.accessToken(def) : undefined;
             return a.execute(p, {
               ...ctx,
+              config: JSON.parse(cur.config) as unknown,
               http: this.http(kind),
               secrets: this.scopedSecrets(kind),
               ...(token ? { accessToken: token } : {}),

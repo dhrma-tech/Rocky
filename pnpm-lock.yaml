@@ -108,7 +108,20 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
-  packages/connectors: {}
+  packages/connectors:
+    dependencies:
+      '@rocky/connector-sdk':
+        specifier: workspace:*
+        version: link:../connector-sdk
+      '@rocky/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      node-html-parser:
+        specifier: 9.0.4
+        version: 9.0.4
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
 
   packages/contracts:
     dependencies:

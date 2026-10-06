@@ -70,6 +70,8 @@ export interface SyncContext<Cfg> {
 
 export interface ExecContext {
   idempotencyKey: string;
+  /** The connector's current (validated) config, e.g. the repos a write may target. */
+  config: unknown;
   signal: AbortSignal;
   http: Http;
   secrets: ScopedSecrets;
