@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-482",
+   "object": "chat.completion",
+   "created": 1791276028,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment contains small talk about a sports match and the weather, with no actionable commitments or decisions made.\",\n  \"commitments\": [],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"You\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s2\"]\n    },\n    {\n      \"name\": \"Others\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s1\", \"s3\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 530,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 131,
+    "total_tokens": 661
+   }
+  },
+  {
+   "id": "chatcmpl-674",
+   "object": "chat.completion",
+   "created": 1791276045,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Casual chat about match and weather\",\n\"summary\": \"The group discussed the football match from last night, with one participant noting they only watched the second half but found the final goal unbelievable. The conversation then shifted to the unusual weather conditions this week, characterized by heavy rain that caused significant delays in commutes.\",\n\"topics\": [\"football match\", \"weather conditions\", \"commute delays\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 259,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 95,
+    "total_tokens": 354
+   }
+  }
+ ]
+}

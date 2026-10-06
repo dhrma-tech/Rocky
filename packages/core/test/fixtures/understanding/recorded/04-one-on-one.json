@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-982",
+   "object": "chat.completion",
+   "created": 1791275976,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a brief 1:1 meeting where the user discusses progress on a new project, specifically needing context on billing services and planning design documentation for invoice changes.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll draft the design doc for the invoice changes by the end of the month\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"by the end of the month\",\n      \"evidenceQuote\": \"I'll draft the design doc for the invoice changes by the end of the month\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"Kofi\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"he wrote most of it\"]\n    },\n    {\n      \"name\": \"billing service\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"need more context on the billing service\"]\n    },\n    {\n      \"name\": \"invoice changes\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"design doc for the invoice changes\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 578,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 301,
+    "total_tokens": 879
+   }
+  },
+  {
+   "id": "chatcmpl-939",
+   "object": "chat.completion",
+   "created": 1791276000,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"1:1 Meeting Summary\",\n\"summary\": \"The meeting discussed progress on a new project, which the employee is finding generally good but requires more context regarding the billing service. The manager offered to introduce the employee to Kofi, who authored most of the billing service documentation, and promised to arrange this introduction for the following day. In response, the employee committed to drafting a design document outlining invoice changes by the end of the month. The conversation concluded with an agreement to revisit the employee's promotion goals during the next scheduled one-on-one meeting.\",\n\"topics\": [\"project progress\", \"billing service context\", \"design documentation\", \"promotion goals\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 307,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 145,
+    "total_tokens": 452
+   }
+  }
+ ]
+}

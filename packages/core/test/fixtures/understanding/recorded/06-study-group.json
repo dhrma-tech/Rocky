@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-516",
+   "object": "chat.completion",
+   "created": 1791276132,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"The transcript covers an organic chemistry study group meeting where participants assigned specific reaction mechanisms to write up and agreed on a future meeting time.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll write up the SN1 and SN2 mechanisms and share them on Sunday\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"Sunday\",\n      \"evidenceQuote\": \"I'll write up the SN1 and SN2 mechanisms and share them on Sunday\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll take elimination reactions, E1 and E2\",\n      \"owner\": \"Ana\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"I'll take elimination reactions, E1 and E2\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll book the room\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"I'll book the room\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.9\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"Let's meet again Thursday at six in the library\",\n      \"owner\": null,\n      \"evidenceQuote\": \"Let's meet again Thursday at six in the library\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Ana\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s3\"]\n    },\n    {\n      \"name\": \"SN1\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s2\"]\n    },\n    {\n      \"name\": \"SN2\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s2\"]\n    },\n    {\n      \"name\": \"E1\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s3\"]\n    },\n    {\n      \"name\": \"E2\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s3\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 568,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 576,
+    "total_tokens": 1144
+   }
+  },
+  {
+   "id": "chatcmpl-103",
+   "object": "chat.completion",
+   "created": 1791276158,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Organic Chemistry Study Group Plan\",\n\"summary\": \"The study group discussed dividing reaction mechanism tasks among members. The speaker agreed to write up SN1 and SN2 mechanisms, while Ana will handle elimination reactions (E1 and E2). They scheduled the next meeting for Thursday at six in the library, with the speaker confirming they would book the room.\",\n\"topics\": [\n  \"Reaction mechanisms\",\n  \"SN1 mechanism\",\n  \"SN2 mechanism\",\n  \"Elimination reactions\",\n  \"E1 reaction\",\n  \"E2 reaction\",\n  \"Study schedule\",\n  \"Library meeting\",\n  \"Room booking\"\n],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 297,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 152,
+    "total_tokens": 449
+   }
+  }
+ ]
+}

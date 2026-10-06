@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-686",
+   "object": "chat.completion",
+   "created": 1791277109,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the status of a pending vendor security questionnaire and the agreed decision regarding signing the data processing agreement.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll chase them again today and copy their account manager\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"today\",\n      \"evidenceQuote\": \"I'll chase them again today and copy their account manager\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We decided not to sign before the questionnaire is complete\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We decided not to sign before the questionnaire is complete\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Legal\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"Legal\"]\n    },\n    {\n      \"name\": \"vendor\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"vendor\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 534,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 281,
+    "total_tokens": 815
+   }
+  },
+  {
+   "id": "chatcmpl-459",
+   "object": "chat.completion",
+   "created": 1791277128,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Vendor Security Questionnaire Status\",\n\"summary\": \"The team is awaiting a completed security questionnaire from the vendor. The user plans to follow up with the vendor today, copying their account manager on the communication. Legal has agreed to review the data processing agreement only after receiving the full questionnaire. Consequently, the group has decided not to sign any documents until this information is finalized.\",\n\"topics\": [\"Vendor security questionnaire\", \"Data processing agreement\", \"Signing decision\", \"Account manager notification\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 263,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 112,
+    "total_tokens": 375
+   }
+  }
+ ]
+}

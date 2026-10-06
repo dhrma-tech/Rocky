@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-278",
+   "object": "chat.completion",
+   "created": 1791276960,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a family call regarding travel plans for Diwali.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll book my train tickets this weekend\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"this weekend\",\n      \"evidenceQuote\": \"Yes, I'll book my train tickets this weekend.\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll send her my arrival time once I have the tickets\",\n      \"owner\": \"me\",\n      \"counterparty\": \"your sister\",\n      \"deadline\": \"once I have the tickets\",\n      \"evidenceQuote\": \"I'll send her my arrival time once I have the tickets.\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"Diwali\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s1\"]\n    },\n    {\n      \"name\": \"your sister\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"s3\", \"s4\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 536,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 314,
+    "total_tokens": 850
+   }
+  },
+  {
+   "id": "chatcmpl-29",
+   "object": "chat.completion",
+   "created": 1791276978,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Diwali Homecoming Plans\",\n\"summary\": \"The group discussed returning home for Diwali this year. The speaker confirmed their intention to book train tickets over the weekend and noted that their sister will meet them at the station. They agreed on a follow-up plan where the speaker will share their specific arrival time with their sister once the tickets are purchased.\",\n\"topics\": [\"Diwali celebration\", \"Travel arrangements\", \"Sister's pickup\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 265,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 104,
+    "total_tokens": 369
+   }
+  }
+ ]
+}

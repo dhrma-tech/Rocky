@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-829",
+   "object": "chat.completion",
+   "created": 1791276886,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the definition of recursion, lab logistics for Lab three, and the schedule for next week's topic.\",\n  \"commitments\": [],\n  \"decisions\": [\n    {\n      \"text\": \"Lab three on recursion opens tomorrow and closes Sunday at midnight\",\n      \"owner\": \"unknown\",\n      \"evidenceQuote\": \"Lab three on recursion opens tomorrow and closes Sunday at midnight\",\n      \"segmentRef\": \"s3\"\n    },\n    {\n      \"text\": \"The TAs will hold an extra help session on Saturday morning\",\n      \"owner\": \"unknown\",\n      \"evidenceQuote\": \"The TAs will hold an extra help session on Saturday morning\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Lab three\",\n      \"kind\": \"course\",\"email\": null,\n      \"mentions\": [\"recursion\"]\n    },\n    {\n      \"name\": \"TAs\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"help session\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 548,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 262,
+    "total_tokens": 810
+   }
+  },
+  {
+   "id": "chatcmpl-979",
+   "object": "chat.completion",
+   "created": 1791276909,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Intro to Programming: Recursion and Labs\",\n\"summary\": \"The lecture introduced recursion as a function calling itself with smaller inputs, emphasizing that every recursive function requires a base case to prevent infinite loops. The instructor announced that Lab Three on recursion opens tomorrow and closes Sunday at midnight. Additional support is available through TAs during an extra help session on Saturday morning. Looking ahead, the course will begin covering sorting algorithms next week.\",\n\"topics\": [\n  \"Recursive functions\",\n  \"Base cases\",\n  \"Lab three deadline\",\n  \"TA help sessions\",\n  \"Sorting algorithms\"\n],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 277,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 139,
+    "total_tokens": 416
+   }
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-12",
+   "object": "chat.completion",
+   "created": 1791275892,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a lecture on eigenvalues and eigenvectors, including definitions of characteristic polynomials and deadlines for assignments.\",\n  \"commitments\": [\n    {\n      \"text\": \"I will post the solutions to problem set four on the course page tonight.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"tonight\",\n      \"evidenceQuote\": \"I will post the solutions to problem set four on the course page tonight.\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"Linear algebra week 6\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"s1\"]\n    },\n    {\n      \"name\": \"Problem set five\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s4\"]\n    },\n    {\n      \"name\": \"Problem set four\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s5\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 580,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 281,
+    "total_tokens": 861
+   }
+  },
+  {
+   "id": "chatcmpl-626",
+   "object": "chat.completion",
+   "created": 1791275918,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Linear Algebra Week 6 Lecture\",\n\"summary\": \"The lecture continued the discussion of eigenvalues and eigenvectors, defining an eigenvector as a nonzero vector v where Av equals lambda v. The characteristic polynomial was identified as the determinant of A minus lambda I. Administrative updates included a reminder that Problem Set Five is due next Friday before class, with solutions to Problem Set Four posted on the course page that evening. Additionally, it was noted that the midterm exam covers chapters one through five.\",\n\"topics\": [\n  \"Eigenvalues\",\n  \"Eigenvectors\",\n  \"Characteristic polynomial\",\n  \"Problem set deadlines\",\n  \"Midterm scope\"\n],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 309,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 155,
+    "total_tokens": 464
+   }
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-565",
+   "object": "chat.completion",
+   "created": 1791276580,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the final round of interviews for a backend role, including feedback deadlines, scheduling arrangements, and offer decisions.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll send my interview feedback for Chen by tomorrow noon.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"tomorrow noon\",\n      \"evidenceQuote\": \"I'll send my interview feedback for Chen by tomorrow noon.\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"Grace will schedule the reference calls.\",\n      \"owner\": \"Grace\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"Grace will schedule the reference calls.\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We decided to extend an offer to the second candidate if references check out.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We decided to extend an offer to the second candidate if references check out.\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Chen\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s2\"]\n    },\n    {\n      \"name\": \"Grace\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"s3\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 536,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 371,
+    "total_tokens": 907
+   }
+  },
+  {
+   "id": "chatcmpl-731",
+   "object": "chat.completion",
+   "created": 1791276598,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Final Round Hiring Sync\",\n\"summary\": \"The team discussed three candidates in the final round for a backend role. The speaker will submit interview feedback for Chen by noon tomorrow. Others noted that Grace will schedule reference calls and confirmed an offer extension for the second candidate pending successful reference checks.\",\n\"topics\": [\"backend role\", \"final round candidates\", \"interview feedback\", \"reference checks\", \"offer extension\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 265,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 98,
+    "total_tokens": 363
+   }
+  }
+ ]
+}

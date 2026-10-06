@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-353",
+   "object": "chat.completion",
+   "created": 1791275737,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a team standup where blockers are discussed, tasks are assigned for pairing and fixing bugs, and a feature freeze deadline is announced.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll have a fix up for review by Wednesday\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"by Wednesday\",\n      \"evidenceQuote\": \"I'll have a fix up for review by Wednesday\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll sit with Meera after lunch\",\n      \"owner\": \"Ravi\",\n      \"counterparty\": \"Meera\",\n      \"deadline\": null,\n      \"evidenceQuote\": \"I'll sit with Meera after lunch\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.98\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"freeze features on the 20th\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We decided to freeze features on the 20th\",\n      \"segmentRef\": \"s6\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Ravi\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s3\", \"s4\", \"s5\"]\n    },\n    {\n      \"name\": \"Meera\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"s4\", \"s5\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 598,
+    "prompt_tokens_details": {
+     "cached_tokens": 594
+    },
+    "completion_tokens": 387,
+    "total_tokens": 985
+   }
+  },
+  {
+   "id": "chatcmpl-671",
+   "object": "chat.completion",
+   "created": 1791275756,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Team Standup: Login Bug and Feature Freeze\",\n\"summary\": \"The morning standup began with a quick round of blockers. The speaker confirmed they are still working on a login bug, promising to have a fix ready for review by Wednesday. Ravi reported completing the export feature the previous day. A request was made for Ravi to pair program with Meera regarding flaky tests this afternoon, which he agreed to do after lunch. Finally, the team announced that all features will be frozen on the 20th.\",\n\"topics\": [\n\"Login bug progress\",\n\"Export feature completion\",\n\"Flaky test pairing\",\n\"Feature freeze deadline\"\n],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 327,
+    "prompt_tokens_details": {
+     "cached_tokens": 323
+    },
+    "completion_tokens": 153,
+    "total_tokens": 480
+   }
+  }
+ ]
+}

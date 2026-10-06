@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-671",
+   "object": "chat.completion",
+   "created": 1791276396,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers administrative updates regarding essay deadlines, office hours, and required reading for the Modern History lecture.\",\n  \"commitments\": [\n    {\n      \"text\": \"Your essays on the treaty are due in two weeks.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"in two weeks\",\n      \"evidenceQuote\": \"Your essays on the treaty are due in two weeks.\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"Please read chapter seven of the textbook before Thursday.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"before Thursday\",\n      \"evidenceQuote\": \"Please read chapter seven of the textbook before Thursday.\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"Office hours move to Wednesday afternoons from next week.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"Office hours move to Wednesday afternoons from next week.\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Treaty of Versailles\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"treaty\"]\n    },\n    {\n      \"name\": \"chapter seven\",\n      \"kind\": \"course\",\n      \"email\": null,\n      \"mentions\": [\"chapter seven\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 555,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 378,
+    "total_tokens": 933
+   }
+  },
+  {
+   "id": "chatcmpl-197",
+   "object": "chat.completion",
+   "created": 1791276419,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Treaty of Versailles and Course Updates\",\n\"summary\": \"The lecture focused on the Treaty of Versailles signed in 1919, following a previous discussion on the war's causes. The instructor reminded students that essays regarding the treaty are due in two weeks. Additionally, office hours have been rescheduled to Wednesday afternoons starting next week. Students were instructed to read chapter seven of the textbook before Thursday.\",\n\"topics\": [\"Treaty of Versailles\", \"Essay deadlines\", \"Office hours schedule\", \"Textbook reading\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 284,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 124,
+    "total_tokens": 408
+   }
+  }
+ ]
+}

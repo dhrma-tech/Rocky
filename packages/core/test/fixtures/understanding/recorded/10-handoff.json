@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-682",
+   "object": "chat.completion",
+   "created": 1791276491,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a discussion about two recent incidents, specifically the payments queue backup and an agreement on raising the retry limit.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll write the postmortem for the queue incident by Thursday\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"by Thursday\",\n      \"evidenceQuote\": \"I'll write the postmortem for the queue incident by Thursday\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"Tomás will add an alert on queue depth\",\n      \"owner\": \"Tomás\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"Tomás will add an alert on queue depth\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"I will add the alert today\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"today\",\n      \"evidenceQuote\": \"Yes, I will add the alert today\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We agreed to raise the retry limit to five\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We agreed to raise the retry limit to five\",\n      \"segmentRef\": \"s5\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Tomás\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s3\"]\n    },\n    {\n      \"name\": \"payments queue\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s1\", \"s2\", \"s3\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 557,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 460,
+    "total_tokens": 1017
+   }
+  },
+  {
+   "id": "chatcmpl-705",
+   "object": "chat.completion",
+   "created": 1791276513,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"On-call handoff meeting summary\",\n\"summary\": \"The team discussed two recent incidents, specifically a payments queue backup that occurred on Tuesday. The speaker committed to writing a postmortem for this incident by Thursday. It was also decided that Tomás will implement an alert regarding queue depth, with the action to be taken today. Additionally, the group agreed to increase the retry limit to five.\",\n\"topics\": [\"payments queue incident\", \"postmortem schedule\", \"queue depth alert\", \"retry limit adjustment\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 286,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 118,
+    "total_tokens": 404
+   }
+  }
+ ]
+}

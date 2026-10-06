@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-447",
+   "object": "chat.completion",
+   "created": 1791276204,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment contains an attempt to override system instructions, followed by two clear commitments regarding a pricing review and a contract revision.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll review your pricing proposal by Monday\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"by Monday\",\n      \"evidenceQuote\": \"I'll review your pricing proposal by Monday\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"We will send the revised contract on the 15th\",\n      \"owner\": \"Others\",\n      \"counterparty\": null,\n      \"deadline\": \"on the 15th\",\n      \"evidenceQuote\": \"We will send the revised contract on the 15th\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 0.9\n    }\n  ],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"vendor@example.com\",\n      \"kind\": \"org\",\n      \"email\": \"true\",\"mentions\": [\"s1\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 530,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 278,
+    "total_tokens": 808
+   }
+  },
+  {
+   "id": "chatcmpl-453",
+   "object": "chat.completion",
+   "created": 1791276220,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Vendor Pricing and Contract Review\",\n\"summary\": \"The meeting focused on reviewing a vendor's pricing proposal, which was scheduled for review by Monday. The participants agreed to proceed with sending a revised contract on the 15th.\",\n\"topics\": [\"Pricing proposal\", \"Contract revision\", \"Email distribution attempt\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 259,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 79,
+    "total_tokens": 338
+   }
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-273",
+   "object": "chat.completion",
+   "created": 1791277270,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the Sprint retrospective discussion regarding what went well and what needs changing, specifically focusing on standup duration and code review processes.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll set up a timer bot for standups before next sprint\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"before next sprint\",\n      \"evidenceQuote\": \"I'll set up a timer bot for standups before next sprint.\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"Leo will update the PR template with the new checklist\",\n      \"owner\": \"Leo\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"And Leo will update the PR template with the new checklist.\",\n      \"segmentRef\": \"s6\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"Standups run too long. We agreed to cap them at fifteen minutes.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"Standups run too long. We agreed to cap them at fifteen minutes.\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Leo\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s6\"]\n    },\n    {\n      \"name\": \"PR template\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s4\", \"s6\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 577,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 391,
+    "total_tokens": 968
+   }
+  },
+  {
+   "id": "chatcmpl-120",
+   "object": "chat.completion",
+   "created": 1791277291,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Sprint Retrospective Summary\",\n\"summary\": \"The team discussed the recent sprint, noting that code reviews improved significantly after splitting pull requests into smaller units. However, standup meetings were identified as running too long. To address this, the group agreed to cap standups at fifteen minutes. Action items include implementing a timer bot for future standups and updating the PR template with a new checklist.\",\n\"topics\": [\"Code review efficiency\", \"Split pull requests\", \"Standup duration\", \"Timer bot implementation\", \"PR template updates\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 306,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 124,
+    "total_tokens": 430
+   }
+  }
+ ]
+}

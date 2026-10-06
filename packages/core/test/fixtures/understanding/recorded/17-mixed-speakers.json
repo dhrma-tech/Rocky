@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-976",
+   "object": "chat.completion",
+   "created": 1791277045,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers initial commitments from Sara and Mark regarding slide finalization and revenue numbers, along with a reminder about an agreed hiring plan presentation and a task to book a meeting room.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll finalize the slides by Thursday evening.\",\n      \"owner\": \"Sara\",\n      \"counterparty\": null,\n      \"deadline\": \"Thursday evening\",\n      \"evidenceQuote\": \"I'll finalize the slides by Thursday evening.\",\n      \"segmentRef\": \"s1\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I will pull the revenue numbers tomorrow.\",\n      \"owner\": \"Mark\",\n      \"counterparty\": null,\n      \"deadline\": \"tomorrow\",\n      \"evidenceQuote\": \"This is Mark, I will pull the revenue numbers tomorrow.\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"Someone needs to book the meeting room.\",\n      \"owner\": \"unknown\",\n      \"counterparty\": null,\n      \"deadline\": null,\n      \"evidenceQuote\": \"Someone needs to book the meeting room.\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We agreed to present the hiring plan last.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We agreed to present the hiring plan last.\",\n      \"segmentRef\": \"s3\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Sara\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s1\"]\n    },\n    {\n      \"name\": \"Mark\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"s2\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 526,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 454,
+    "total_tokens": 980
+   }
+  },
+  {
+   "id": "chatcmpl-638",
+   "object": "chat.completion",
+   "created": 1791277063,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Board Meeting Prep Assignments\",\n\"summary\": \"Sara will finalize presentation slides by Thursday evening, while Mark is tasked with retrieving revenue numbers tomorrow. The group confirmed that the hiring plan will be presented at the upcoming meeting. Additionally, it was noted that a meeting room needs to be booked.\",\n\"topics\": [\"Slide preparation\", \"Revenue data retrieval\", \"Hiring plan presentation\", \"Meeting room booking\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 255,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 98,
+    "total_tokens": 353
+   }
+  }
+ ]
+}

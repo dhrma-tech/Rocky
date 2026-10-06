@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-545",
+   "object": "chat.completion",
+   "created": 1791276311,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the Q4 planning meeting where the team agreed on shipping dates for the mobile app and analytics dashboard, decided to drop the desktop client, and assigned tasks for budget forecasting and roadmap distribution.\",\n  \"commitments\": [\n    {\n      \"text\": \"Mobile app redesign ships in November\",\n      \"owner\": \"unknown\",\n      \"counterparty\": null,\n      \"deadline\": \"November\",\n      \"evidenceQuote\": \"Mobile app redesign ships in November\",\n      \"segmentRef\": \"s1\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"Daniel will own the analytics dashboard\",\n      \"owner\": \"Daniel\",\n      \"counterparty\": null,\n      \"deadline\": \"December 12\",\n      \"evidenceQuote\": \"Daniel will own the analytics dashboard, due December 12\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll prepare the budget forecast for the board meeting\",\n      \"owner\": \"me\",\n      \"counterparty\": \"the board\",\n      \"deadline\": \"October 30\",\n      \"evidenceQuote\": \"I'll prepare the budget forecast for the board meeting on October 30\",\n      \"segmentRef\": \"s3\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"Priya, please circulate the final roadmap by Friday\",\n      \"owner\": \"Priya\",\n      \"counterparty\": null,\n      \"deadline\": \"Friday\",\n      \"evidenceQuote\": \"Priya, please circulate the final roadmap by Friday\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We decided to drop the desktop client for this quarter\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We decided to drop the desktop client for this quarter\",\n      \"segmentRef\": \"s4\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Daniel\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"analytics dashboard\"]\n    },\n    {\n      \"name\": \"Priya\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"final roadmap\"]\n    },\n    {\n      \"name\": \"Q4 planning\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": []\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 588,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 602,
+    "total_tokens": 1190
+   }
+  },
+  {
+   "id": "chatcmpl-14",
+   "object": "chat.completion",
+   "created": 1791276335,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Q4 Product and Budget Roadmap\",\n\"summary\": \"The team finalized the Q4 product roadmap, confirming that the mobile app redesign will ship in November while the desktop client is being dropped for this quarter. Daniel has been assigned ownership of the analytics dashboard with a delivery date of December 12. Additionally, the speaker committed to preparing a budget forecast for the board meeting scheduled for October 30. Priya agreed to circulate the final roadmap by Friday morning.\",\n\"topics\": [\"Mobile app redesign\", \"Desktop client removal\", \"Analytics dashboard\", \"Budget forecast\", \"Q4 roadmap\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 317,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 137,
+    "total_tokens": 454
+   }
+  }
+ ]
+}

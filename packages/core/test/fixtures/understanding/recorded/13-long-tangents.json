@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-639",
+   "object": "chat.completion",
+   "created": 1791276734,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a design review discussion regarding mobile spacing issues and navigation strategy.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll fix the mobile spacing on the settings page before the release.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"before the release\",\n      \"evidenceQuote\": \"I'll fix the mobile spacing on the settings page before the release.\",\n      \"segmentRef\": \"s6\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We agreed to keep the current navigation for this release.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We agreed to keep the current navigation for this release.\",\n      \"segmentRef\": \"s7\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"settings page\",\n      \"kind\": \"project\",\"email\": null,\n      \"mentions\": [\"s1\", \"s3\", \"s6\"]\n    },\n    {\n      \"name\": \"navigation\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s4\", \"s7\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 604,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 294,
+    "total_tokens": 898
+   }
+  },
+  {
+   "id": "chatcmpl-910",
+   "object": "chat.completion",
+   "created": 1791276754,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Design Review: Mobile Spacing & Navigation\",\n\"summary\": \"The team reviewed the new settings page, noting that mobile spacing is incorrect, particularly regarding toggles which collapse below 360 pixels wide. The speaker confirmed they will fix this mobile issue before release. While others suggested revisiting the entire navigation structure, it was decided to maintain the current design for this specific release cycle.\",\n\"topics\": [\"mobile spacing\", \"settings page\", \"navigation redesign\", \"release timeline\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 333,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 113,
+    "total_tokens": 446
+   }
+  }
+ ]
+}

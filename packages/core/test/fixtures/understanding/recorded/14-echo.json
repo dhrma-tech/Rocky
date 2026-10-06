@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-944",
+   "object": "chat.completion",
+   "created": 1791276817,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the status of two potential clients (Northwind and Fabrikam) and a decision regarding pricing for annual plans.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll call Northwind's procurement lead on Monday to confirm terms.\",\n      \"owner\": \"me\",\n      \"counterparty\": \"Northwind's procurement lead\",\n      \"deadline\": \"Monday\",\n      \"evidenceQuote\": \"I'll call Northwind's procurement lead on Monday to confirm terms.\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I'll follow up with Fabrikam, this is Jun.\",\n      \"owner\": \"Jun\",\n      \"counterparty\": \"Fabrikam\",\n      \"deadline\": null,\n      \"evidenceQuote\": \"I'll follow up with Fabrikam, this is Jun.\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"We decided to discount annual plans by ten percent.\",\n      \"owner\": null,\n      \"evidenceQuote\": \"We decided to discount annual plans by ten percent.\",\n      \"segmentRef\": \"s5\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Northwind\",\n      \"kind\": \"project\",\"email\": null,\n      \"mentions\": [\"s1\", \"s2\"]\n    },\n    {\n      \"name\": \"Fabrikam\",\n      \"kind\": \"project\",\n      \"email\": null,\n      \"mentions\": [\"s3\", \"s4\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 562,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 397,
+    "total_tokens": 959
+   }
+  },
+  {
+   "id": "chatcmpl-888",
+   "object": "chat.completion",
+   "created": 1791276840,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Sales Pipeline Review Summary\",\n\"summary\": \"The team discussed the status of two key accounts, Northwind and Fabrikam. Northwind is nearing a contract signing, potentially this month, prompting a plan to call their procurement lead on Monday to finalize terms. Meanwhile, Fabrikam has gone silent, requiring immediate follow-up; Jun volunteered to handle this task. Additionally, the group confirmed that annual plans will be offered with a ten percent discount.\",\n\"topics\": [\"Northwind contract\", \"Fabrikam follow-up\", \"Annual plan discount\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 291,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 126,
+    "total_tokens": 417
+   }
+  }
+ ]
+}

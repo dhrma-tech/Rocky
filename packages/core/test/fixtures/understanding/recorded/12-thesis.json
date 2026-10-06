@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-224",
+   "object": "chat.completion",
+   "created": 1791276660,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a discussion on restructuring Chapter Two of a thesis and applying for a conference travel grant.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll restructure chapter two and send it to you within ten days\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"within ten days\",\n      \"evidenceQuote\": \"I'll restructure chapter two and send it to you within ten days\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"I'll apply for the travel grant this week\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"this week\",\n      \"evidenceQuote\": \"I'll apply for the travel grant this week\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"Others will read the restructured chapter two the week after and give comments\",\n      \"owner\": null,\n      \"evidenceQuote\": \"I'll read it the week after and give comments\",\n      \"segmentRef\": \"s3\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Others\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s1\", \"s3\", \"s4\"]\n    },\n    {\n      \"name\": \"me\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"s2\", \"s5\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 567,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 388,
+    "total_tokens": 955
+   }
+  },
+  {
+   "id": "chatcmpl-318",
+   "object": "chat.completion",
+   "created": 1791276683,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Thesis Supervision Meeting Summary\",\n\"summary\": \"The meeting focused on reviewing the thesis draft and planning next steps. While the literature review was praised as solid, Chapter Two requires better structural organization. The student agreed to restructure this chapter and submit it within ten days. A peer will read the revised version the following week to provide feedback. Additionally, the group discussed applying for a conference travel grant with a November 1st deadline. The student committed to submitting the application during the current week.\",\n\"topics\": [\"Thesis structure\", \"Chapter Two revision\", \"Conference travel grant\", \"Submission deadlines\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 296,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 138,
+    "total_tokens": 434
+   }
+  }
+ ]
+}

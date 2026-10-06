@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-381",
+   "object": "chat.completion",
+   "created": 1791277190,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers a budget check-in meeting where the user commits to auditing cloud instances and reporting savings, while others coordinate on sending a forecast template.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll audit unused instances and report the savings by the 25th.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"by the 25th\",\n      \"evidenceQuote\": \"I'll audit unused instances and report the savings by the 25th.\",\n      \"segmentRef\": \"s2\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"Helen will send the forecast template today.\",\n      \"owner\": \"Helen\",\n      \"counterparty\": null,\n      \"deadline\": \"today\",\n      \"evidenceQuote\": \"Helen will send the forecast template today.\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 1.0\n    },\n    {\n      \"text\": \"Yes, I'll send it this afternoon.\",\n      \"owner\": \"me\",\n      \"counterparty\": null,\n      \"deadline\": \"this afternoon\",\n      \"evidenceQuote\": \"Yes, I'll send it this afternoon.\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"decisions\": [],\n  \"entities\": [\n    {\n      \"name\": \"Helen\",\n      \"kind\": \"person\",\"email\": null,\n      \"mentions\": [\"s4\", \"s5\"]\n    },\n    {\n      \"name\": \"Finance\",\n      \"kind\": \"org\",\n      \"email\": null,\n      \"mentions\": [\"s3\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 556,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 409,
+    "total_tokens": 965
+   }
+  },
+  {
+   "id": "chatcmpl-194",
+   "object": "chat.completion",
+   "created": 1791277209,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Cloud Budget Audit and Forecast\",\n\"summary\": \"The team noted that cloud spending has reached 82% of the quarterly budget. To address this, the speaker agreed to audit unused instances and report savings by October 25th. Finance requires an updated forecast within two weeks, which Helen will provide using a template sent later that afternoon.\",\n\"topics\": [\"Cloud budget utilization\", \"Unused instance audit\", \"Financial forecasting\", \"Savings reporting\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 285,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 107,
+    "total_tokens": 392
+   }
+  }
+ ]
+}

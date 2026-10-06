@@ -1,0 +1,56 @@
+{
+ "model": "rocky-qwen3.5-4b-16k",
+ "recordedAt": "2026-10-06",
+ "responses": [
+  {
+   "id": "chatcmpl-97",
+   "object": "chat.completion",
+   "created": 1791275822,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n  \"notes\": \"This segment covers the initial introduction and agreement on key dates for the Acme onboarding project, including the start date of the pilot and deadlines for data export and environment access.\",\n  \"commitments\": [\n    {\n      \"text\": \"I'll confirm the export format with our engineers by next Tuesday\",\n      \"owner\": \"You\",\n      \"counterparty\": \"Laura\",\n      \"deadline\": \"next Tuesday\",\n      \"evidenceQuote\": \"I'll confirm the export format with our engineers by next Tuesday\",\n      \"segmentRef\": \"s4\",\n      \"confidence\": 0.95\n    },\n    {\n      \"text\": \"I will get you access to our staging environment by end of week\",\n      \"owner\": \"Laura\",\n      \"counterparty\": \"You\",\n      \"deadline\": \"end of week\",\n      \"evidenceQuote\": \"And I will get you access to our staging environment by end of week\",\n      \"segmentRef\": \"s5\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"decisions\": [\n    {\n      \"text\": \"the pilot starts on the first of December\",\n      \"owner\": \"Unknown\",\n      \"evidenceQuote\": \"We agreed the pilot starts on the first of December\",\n      \"segmentRef\": \"s6\"\n    }\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Acme\",\n      \"kind\": \"org\",\"email\": null,\n      \"mentions\": [\"Laura from Acme\"]\n    },\n    {\n      \"name\": \"Laura\",\n      \"kind\": \"person\",\n      \"email\": null,\n      \"mentions\": [\"Laura from Acme\"]\n    }\n  ]\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 604,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 400,
+    "total_tokens": 1004
+   }
+  },
+  {
+   "id": "chatcmpl-996",
+   "object": "chat.completion",
+   "created": 1791275843,
+   "model": "rocky-qwen3.5-4b-16k",
+   "system_fingerprint": "fp_ollama",
+   "choices": [
+    {
+     "index": 0,
+     "message": {
+      "role": "assistant",
+      "content": "{\n\"title\": \"Acme Onboarding Progress Update\",\n\"summary\": \"Laura from Acme's operations team confirmed that the data export must be functional before their November audit. The user agreed to confirm the export format with engineers by next Tuesday, while Laura will provide staging environment access by the end of the week. Both parties noted that the pilot program is scheduled to begin on December 1st.\",\n\"topics\": [\"data export\", \"November audit\", \"staging environment access\", \"pilot start date\"],\n\"openQuestions\": []\n}"
+     },
+     "finish_reason": "stop"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 333,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "completion_tokens": 115,
+    "total_tokens": 448
+   }
+  }
+ ]
+}
