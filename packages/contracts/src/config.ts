@@ -15,6 +15,8 @@ export const AppConfigSchema = z.object({
     })
     .prefault({}),
   daemon: z.object({ port: z.number().int().min(1024).max(65535).default(7337) }).prefault({}),
+  /** Connector plugins: npm package names or file: URLs (connectors.md "Plugins"). */
+  plugins: z.array(z.string().min(1)).default([]),
 });
 export type AppConfig = z.infer<typeof AppConfigSchema>;
 

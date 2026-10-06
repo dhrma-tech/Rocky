@@ -2,6 +2,7 @@ export * from "./actions.ts";
 export * from "./assistant.ts";
 export * from "./capture.ts";
 export * from "./config.ts";
+export * from "./connectors.ts";
 export * from "./doctor.ts";
 export * from "./memory.ts";
 export * from "./router.ts";
