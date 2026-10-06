@@ -2,7 +2,7 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 2 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, the approval queue and the audit log work from the CLI and a local web UI.
+> Status: early development (Phase 3 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, meeting and lecture capture with extracted commitments, the approval queue and the audit log work from the CLI and a local web UI.
 
 ## Quickstart (developers)
 
@@ -11,8 +11,9 @@ Requires Node 22.18+, pnpm 10, and [Ollama](https://ollama.com) with `nomic-embe
 ```sh
 pnpm i
 pnpm test
-pnpm rocky doctor        # checks RAM, GPU, Ollama, sqlite-vec, disk, keychain
-pnpm rocky doctor --fix  # downloads the pinned whisper-cli build and model (Windows x64)
+pnpm rocky doctor          # checks RAM, GPU, Ollama, whisper, ffmpeg, sqlite-vec, disk, keychain
+pnpm rocky doctor --fix    # pinned whisper-cli + model and ffmpeg (Windows x64); creates the 16k-context local model
+pnpm rocky doctor --bench  # measures transcription speed on this CPU
 ```
 
 Ask over your own files:
@@ -25,6 +26,15 @@ pnpm rocky ask --local-only "…"            # never leaves this machine
 pnpm rocky secrets set anthropic           # API key into the OS keychain (input hidden)
 pnpm rocky audit verify                    # check the append-only audit log's hash chain
 ```
+
+Meetings and lectures (web UI → Meetings, or the CLI):
+
+```sh
+pnpm rocky import lecture.mp4             # transcribe locally, then extract summary, commitments, decisions
+pnpm rocky import call.m4a --kind meeting --no-wait   # leave the work to the running daemon
+```
+
+The browser recorder (Chrome or Edge) captures your microphone and a shared tab or the whole screen as two channels, labelled "You" and "Others". Known limitations: no diarization beyond You/Others; system audio needs "Share system audio" (entire screen) or "Share tab audio"; on macOS and Linux system audio support varies (tab audio works); no live captions. Recording laws differ by place; the consent prompt is a reminder, not legal compliance.
 
 Actions that write to your apps wait in an approval queue (web UI → Actions). Nothing runs until you approve the exact payload shown, and every step is in the audit log.
 
