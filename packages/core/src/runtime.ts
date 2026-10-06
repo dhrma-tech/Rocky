@@ -1,6 +1,9 @@
 import type { AppConfig, Hardware } from "@rocky/contracts";
 import { ActionRegistry } from "./actions/registry.ts";
 import { ActionService } from "./actions/service.ts";
+import { resolveFfmpeg } from "./capture/ffmpeg.ts";
+import { TRANSCRIBE_JOB } from "./capture/recordings.ts";
+import { transcribeMeeting, UNDERSTAND_JOB } from "./capture/transcribe-job.ts";
 import { loadAppConfig } from "./config/load.ts";
 import { type DataPaths, dataPaths } from "./config/paths.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
@@ -13,7 +16,10 @@ import { Router } from "./router/router.ts";
 import { keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
 import { type Db, openDb } from "./store/db.ts";
 import { migrate } from "./store/migrate.ts";
+import type { ProcessRunner } from "./system/exec.ts";
 import { detectHardware } from "./system/hardware.ts";
+import { whisperStatus } from "./system/whisper.ts";
+import { understandMeeting } from "./understanding/understand-job.ts";
 
 export interface Runtime {
   dataDir: string;
@@ -45,6 +51,10 @@ export interface OpenRuntimeOptions {
   secrets?: SecretStore;
   fetch?: typeof fetch;
   hardware?: Hardware;
+  /** Test seam for whisper-cli and ffmpeg. */
+  run?: ProcessRunner;
+  /** Test seam: where the tools are, instead of probing the data dir and PATH. */
+  tools?: { whisper?: { binary: string; model: string }; ffmpeg?: string | null };
 }
 
 /** Wires store, config, router and embedder for one data dir (CLI, evals, daemon). */
@@ -88,6 +98,27 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     [EMBED_JOB]: async (job) => {
       const { documentId } = job.payload as { documentId: string };
       await embedDocument(db, embedder, documentId);
+    },
+    [TRANSCRIBE_JOB]: (job) =>
+      transcribeMeeting(
+        {
+          db,
+          blobsDir: paths.blobs,
+          recDir: paths.rec,
+          whisper: () => {
+            const w = opts.tools?.whisper ?? whisperStatus(opts.dataDir, config.whisper.model);
+            return { ...w, threads: config.whisper.threads, language: config.whisper.language };
+          },
+          ffmpeg: async () =>
+            opts.tools && "ffmpeg" in opts.tools
+              ? (opts.tools.ffmpeg ?? null)
+              : resolveFfmpeg(opts.dataDir),
+          ...(opts.run ? { run: opts.run } : {}),
+        },
+        job,
+      ),
+    [UNDERSTAND_JOB]: async (job) => {
+      await understandMeeting({ db, router }, job);
     },
   };
 

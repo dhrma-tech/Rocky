@@ -42,6 +42,8 @@ export const ExtractedEntitySchema = z.object({
 export type ExtractedEntity = z.infer<typeof ExtractedEntitySchema>;
 
 export const ExtractionSchema = z.object({
+  /** Two to four sentences on what this part of the transcript covers; feeds the meeting summary. */
+  notes: z.string(),
   commitments: z.array(ExtractedCommitmentSchema),
   decisions: z.array(ExtractedDecisionSchema),
   entities: z.array(ExtractedEntitySchema),

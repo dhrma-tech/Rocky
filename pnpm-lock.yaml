@@ -123,6 +123,9 @@ importers:
       chokidar:
         specifier: 5.0.0
         version: 5.0.0
+      chrono-node:
+        specifier: 2.10.2
+        version: 2.10.2
       mammoth:
         specifier: 1.13.0
         version: 1.13.0
@@ -881,6 +884,10 @@ packages:
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
     engines: {node: '>= 20.19.0'}
+
+  chrono-node@2.10.2:
+    resolution: {integrity: sha512-xBCwGGmodF2YVtzE7/8ewNDajbCg72jgZHyOXvhkuQiYhIQ1KbqyXJJJw2fLaQ603LL4oMVhOyjckEBve45S4w==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   commander@15.0.0:
     resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
@@ -1923,6 +1930,8 @@ snapshots:
   chokidar@5.0.0:
     dependencies:
       readdirp: 5.1.1
+
+  chrono-node@2.10.2: {}
 
   commander@15.0.0: {}
 
