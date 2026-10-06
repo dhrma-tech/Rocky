@@ -98,4 +98,22 @@ describe("runDoctor", () => {
     });
     expect(await bench(0.3)).toMatchObject({ status: "warn", hint: expect.stringMatching(/base/) });
   });
+
+  it("checks derived Ollama models", async () => {
+    const derived = { derivedModels: { "rocky-q-16k": { from: "q:4b", num_ctx: 16384 } } };
+    const check = (models: string[]) =>
+      runDoctor(
+        { dataDir: "E:RockyData", dataDirSource: "env", config, ...derived },
+        probes({ ollama: async () => ({ ok: true, version: "1", models }) }),
+      ).then((r) => r.checks.find((c) => c.id === "ollama-rocky-q-16k"));
+    expect(await check(["q:4b", "rocky-q-16k:latest"])).toMatchObject({ status: "pass" });
+    expect(await check(["q:4b"])).toMatchObject({
+      status: "warn",
+      hint: expect.stringMatching(/--fix/),
+    });
+    expect(await check([])).toMatchObject({
+      status: "warn",
+      hint: expect.stringMatching(/ollama pull q:4b/),
+    });
+  });
 });

@@ -17,6 +17,10 @@ export const PolicyFileSchema = z.object({
   tasks: z.record(z.string(), TaskPolicySchema),
   models: z.record(z.string(), z.string().regex(/^[a-z_]+\/.+$/, "models must be provider/model")),
   model_options: z.record(z.string(), z.record(z.string(), z.unknown())).default({}),
+  /** Ollama models derived from a pulled base with a larger context (doctor --fix creates them). */
+  ollama_models: z
+    .record(z.string(), z.object({ from: z.string(), num_ctx: z.number().int().min(2048) }))
+    .default({}),
 });
 export type PolicyFile = z.infer<typeof PolicyFileSchema>;
 

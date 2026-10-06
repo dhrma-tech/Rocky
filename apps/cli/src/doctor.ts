@@ -1,8 +1,12 @@
 import type { DoctorReport } from "@rocky/contracts";
 import {
+  createDerivedModel,
+  hasModel,
   installFfmpeg,
   installWhisper,
   loadAppConfig,
+  loadPolicy,
+  ollamaStatus,
   resolveDataDir,
   runDoctor,
 } from "@rocky/core";
@@ -28,6 +32,7 @@ export async function doctorCommand(opts: {
 }): Promise<number> {
   const { dir, source } = resolveDataDir({ flag: opts.dataDir });
   const config = loadAppConfig(dir);
+  const derivedModels = loadPolicy(dir).ollama_models;
   if (opts.fix) {
     const res = await installWhisper(dir, config.whisper.model, (m) => console.error(m));
     console.error(`whisper-cli: ${res.binary}\nmodel: ${res.model}`);
@@ -37,11 +42,19 @@ export async function doctorCommand(opts: {
       // ffmpeg is only needed for media import; keep going so the report still prints.
       console.error(`ffmpeg: ${err instanceof Error ? err.message : String(err)}`);
     }
+    const ollama = await ollamaStatus(config.ollama.baseUrl);
+    for (const [name, spec] of Object.entries(derivedModels)) {
+      if (!ollama.ok || hasModel(ollama.models, name) || !hasModel(ollama.models, spec.from))
+        continue;
+      await createDerivedModel(config.ollama.baseUrl, name, spec);
+      console.error(`ollama: created ${name} (${spec.from}, num_ctx ${spec.num_ctx})`);
+    }
   }
   const report = await runDoctor({
     dataDir: dir,
     dataDirSource: source,
     config,
+    derivedModels,
     bench: Boolean(opts.bench || opts.fix),
   });
   console.log(opts.json ? JSON.stringify(report, null, 2) : formatReport(report));

@@ -30,3 +30,33 @@ export function hasModel(models: string[], wanted: string): boolean {
   const norm = (n: string) => (n.includes(":") ? n : `${n}:latest`);
   return models.some((m) => norm(m) === norm(wanted));
 }
+
+export interface DerivedModel {
+  from: string;
+  num_ctx: number;
+}
+
+/**
+ * Creates `name` from a pulled base model with a fixed context size (POST /api/create). The base
+ * must already be pulled; this never downloads weights.
+ */
+export async function createDerivedModel(
+  baseUrl: string,
+  name: string,
+  spec: DerivedModel,
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
+  const res = await fetchFn(new URL("/api/create", baseUrl), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      model: name,
+      from: spec.from,
+      parameters: { num_ctx: spec.num_ctx },
+      stream: false,
+    }),
+  });
+  const body = await res.text();
+  if (!res.ok)
+    throw new Error(`ollama create ${name} failed (${res.status}): ${body.slice(0, 300)}`);
+}

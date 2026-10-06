@@ -28,11 +28,19 @@ models:
   api:strong: anthropic/claude-sonnet-5-5
   api:cheap: anthropic/claude-haiku-4-5
   # Phase 0 spike: 5/5 valid JSON, ~9 s/call on CPU with reasoning_effort none.
-  local:small: ollama/qwen3.5:4b
+  # The derived model (see ollama_models) is qwen3.5:4b with a 16k context.
+  local:small: ollama/rocky-qwen3.5-4b-16k
   # Same model until a GPU or a stronger local model is available (user decision 2026-10-04).
-  local:medium: ollama/qwen3.5:4b
+  local:medium: ollama/rocky-qwen3.5-4b-16k
   embed: ollama/nomic-embed-text
   transcribe: whisper/ggml-small
 # Extra request fields per model. qwen3.5 is a thinking model: ~40 s/call on CPU unless reasoning is off.
 model_options:
+  ollama/rocky-qwen3.5-4b-16k: { reasoning_effort: none }
   ollama/qwen3.5:4b: { reasoning_effort: none }
+# Derived Ollama models, created by `rocky doctor --fix`. Ollama loads models with a 4096-token
+# context and silently drops the start of longer prompts (measured: prompts are cut to about
+# num_ctx / 2). Its OpenAI-compatible endpoint ignores a per-request num_ctx, so the context is
+# baked into a derived model instead. Measured 2026-10-06: ~43 prompt tokens/s on this CPU.
+ollama_models:
+  rocky-qwen3.5-4b-16k: { from: "qwen3.5:4b", num_ctx: 16384 }

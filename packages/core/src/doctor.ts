@@ -13,7 +13,7 @@ import { openDb, vecStatus } from "./store/db.ts";
 import { freeBytes } from "./system/disk.ts";
 import { detectHardware } from "./system/hardware.ts";
 import { keychainStatus } from "./system/keychain.ts";
-import { hasModel, type OllamaStatus, ollamaStatus } from "./system/ollama.ts";
+import { type DerivedModel, hasModel, type OllamaStatus, ollamaStatus } from "./system/ollama.ts";
 import { whisperStatus } from "./system/whisper.ts";
 
 const MIN_FREE_GB = 10;
@@ -79,6 +79,8 @@ export interface DoctorInput {
   dataDir: string;
   dataDirSource: DataDirSource;
   config: AppConfig;
+  /** Derived Ollama models from policies.yaml (`ollama_models`). */
+  derivedModels?: Record<string, DerivedModel>;
   /** Measures whisper speed (about 5-20 s). */
   bench?: boolean;
 }
@@ -178,6 +180,24 @@ export async function runDoctor(
       detail: embed ? EMBED_MODEL : `${EMBED_MODEL} not pulled`,
       ...hintIf(!embed, `ollama pull ${EMBED_MODEL}`),
     });
+    for (const [name, spec] of Object.entries(input.derivedModels ?? {})) {
+      const present = hasModel(models, name);
+      const base = hasModel(models, spec.from);
+      add({
+        id: `ollama-${name}`,
+        label: "Local LLM",
+        status: present ? "pass" : "warn",
+        detail: present
+          ? `${name} (${spec.from}, ${spec.num_ctx}-token context)`
+          : `${name} not created${base ? "" : `; base ${spec.from} not pulled`}`,
+        ...hintIf(
+          !present,
+          base
+            ? "Run `rocky doctor --fix` to create it (no download)."
+            : `ollama pull ${spec.from}, then rocky doctor --fix`,
+        ),
+      });
+    }
   }
 
   const w = probes.whisper(dataDir, config.whisper.model);

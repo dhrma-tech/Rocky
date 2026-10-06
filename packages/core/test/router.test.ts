@@ -94,9 +94,14 @@ describe("policy resolution matrix", () => {
     ).toEqual({ maxLocalInputTokens: 12000, timeoutMs: 60_000 });
   });
 
-  it("passes qwen3.5 model options (reasoning off)", () => {
+  it("uses the 16k-context derived qwen3.5 with reasoning off", () => {
     const [t] = resolveChain(realPolicy(), "tag", { hardware: HW_HIGH, localOnly: false });
+    expect(t?.model).toBe("rocky-qwen3.5-4b-16k");
     expect(t?.options).toEqual({ reasoning_effort: "none" });
+    expect(realPolicy().ollama_models[t?.model ?? ""]).toEqual({
+      from: "qwen3.5:4b",
+      num_ctx: 16384,
+    });
   });
 });
 
