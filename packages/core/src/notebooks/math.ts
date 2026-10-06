@@ -112,7 +112,7 @@ export async function evaluateComputations(list: Computation[]): Promise<Compute
 /** Replaces {{calc:id}} with the computed value, or a visible "not computed" marker. */
 export function substitute(text: string, results: ComputedValue[]): string {
   const byId = new Map(results.map((r) => [r.id, r]));
-  return text.replace(/\{\{\s*calc:([a-z0-9_]+)\s*\}\}/gi, (m, id: string) => {
+  return text.replace(/\{\{\s*calc:([a-z0-9_]+)\s*\}\}/gi, (_m, id: string) => {
     const r = byId.get(id);
     if (!r) return "[not computed]";
     return r.value ?? "[not computed: needs a computer algebra system or failed]";
