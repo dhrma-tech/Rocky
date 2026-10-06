@@ -2,7 +2,7 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 3 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, meeting and lecture capture with extracted commitments, the approval queue and the audit log work from the CLI and a local web UI.
+> Status: early development (Phase 4 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files and connected apps (GitHub, Notion, Gmail, Google Calendar, Google Drive), meeting and lecture capture with extracted commitments, the approval queue and the audit log work from the CLI and a local web UI.
 
 ## Quickstart (developers)
 
@@ -35,6 +35,18 @@ pnpm rocky import call.m4a --kind meeting --no-wait   # leave the work to the ru
 ```
 
 The browser recorder (Chrome or Edge) captures your microphone and a shared tab or the whole screen as two channels, labelled "You" and "Others". Known limitations: no diarization beyond You/Others; system audio needs "Share system audio" (entire screen) or "Share tab audio"; on macOS and Linux system audio support varies (tab audio works); no live captions. Recording laws differ by place; the consent prompt is a reminder, not legal compliance.
+
+Connectors (web UI → Connectors, or the CLI; setup steps in [docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md)):
+
+```sh
+pnpm rocky connectors add github --repos owner/name
+pnpm rocky connectors secret github token        # fine-grained PAT, input hidden, kept in the keychain
+pnpm rocky connectors add notion && pnpm rocky connectors secret notion token
+pnpm rocky connectors google-client client_secret.json && pnpm rocky connectors add gmail
+pnpm rocky connectors connect gmail              # Google sign-in in the browser (shared by Calendar and Drive)
+pnpm rocky connectors sync                       # or let the daemon sync every few minutes
+pnpm rocky daemon install                        # start the daemon at Windows sign-in (no admin needed)
+```
 
 Actions that write to your apps wait in an approval queue (web UI → Actions). Nothing runs until you approve the exact payload shown, and every step is in the audit log.
 

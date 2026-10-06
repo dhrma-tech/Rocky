@@ -1,6 +1,6 @@
 # Connectors — verified findings
 
-Checked 2026-10-02. **Re-verify each connector's docs at the start of the phase that implements it** and update this file. Items marked (re-verify) are ones where sources disagreed or I could not confirm them.
+Checked 2026-10-02; GitHub, Notion, Gmail, Calendar and Drive re-verified 2026-10-06 for Phase 4 (see "Phase 4 re-verification" below). **Re-verify each connector's docs at the start of the phase that implements it** and update this file. Items marked (re-verify) are ones where sources disagreed or I could not confirm them.
 
 General rules:
 - Read-sync first.
@@ -23,6 +23,16 @@ General rules:
 | 10 | Asana | PAT | `GET /tasks?project=…&modified_since=cursor` per project (works on free plans; the events API needs per-resource sync tokens, capped at 100 events) | Create/update task | 150 req/min on free, 1,500 on paid, per token; 429 + `Retry-After`. |
 | 11 | PostHog | Personal API key (scopes `query:read`, `insight:read`), project id, region host (us/eu) | Daily: list saved insights, run each via `POST /api/projects/:id/query/` (HogQL), store a snapshot document per insight per day | None | Query endpoint rate limit is team-wide; docs disagree between 120/h and 2,400/h (re-verify). Keep the default daily schedule and ≤ 50 insights. |
 | 12 | Notion Calendar | Virtual: no credentials of its own | Merges Google Calendar events + Notion data-source rows with a date property | None | **Confirmed: no public data API.** Notion Calendar only has a local deep-link API for opening events, which Rocky uses to add "open in Notion Calendar" links. |
+
+## Phase 4 re-verification (2026-10-06)
+
+- **GitHub:** API version header `X-GitHub-Api-Version: 2026-03-10` (2022-11-28 is the default if omitted). 2026-03-10 removed the singular `assignee` on issue endpoints (use `assignees[]`) and `merge_commit_sha` from PRs. Secondary limits return 403/429 with `retry-after`, or wait ≥ 1 min. The `github-authentication-token-expiration` header is not in the current docs: health uses it only when present.
+- **Notion:** `2026-03-11` is still the latest version. Search returns `request_status: {type: "complete"|"incomplete"}`; data-source rows are pages (`parent.type = data_source_id`), so one search covers pages and rows. 429 carries `Retry-After` and, since 2026-09-24, `additional_data.retry_after` in the body. Store the page `url` the API returns (app links moved to `app.notion.com` in some surfaces). (re-verify) The data-source query reference still lists `is_archived`.
+- **Google OAuth:** loopback `127.0.0.1:<port>`, PKCE S256 recommended; Desktop clients send `client_secret` in the token exchange. Testing-mode apps still get 7-day refresh tokens.
+- **Gmail:** quota per call changed 2026-05-01: `messages.list` 5, `messages.get` 20, `threads.get` 40, `history.list` 2 units; 6,000 units/min per user. A history id is valid for at least about a week; 404 → full resync.
+- **Calendar:** `syncToken` can't be combined with `timeMin`/`timeMax`/`q`/`orderBy`; `nextSyncToken` only on the last page; 410 → clear and full sync.
+- **Drive:** Docs export to `text/markdown` is supported; exports are capped at 10 MB; `startPageToken` doesn't expire.
+- **Not in Phase 4:** Google write executors (drafts, events, source pack) arrive in Phase 6 with their write scopes; GitHub commits and PR review comments, Gmail attachments and Drive shared drives are follow-ups.
 
 ## Archive importers (no live APIs)
 

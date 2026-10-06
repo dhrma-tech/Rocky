@@ -25,7 +25,8 @@ Times are rough. Items are ordered by when the phase needs them.
   - Add yourself as a test user.
   - Add scopes: `gmail.readonly`, `gmail.compose`, `calendar.readonly`, `calendar.events`, `drive.readonly`, `drive.file`.
   - **Publish the app ("In production")** without submitting for verification. That avoids 7-day refresh-token expiry. You'll see an "unverified app" warning on consent; continue via Advanced. This is allowed for personal use.
-- [ ] Credentials → Create OAuth client ID → **Desktop app**. Download the JSON; Rocky imports it into the keychain and you then delete the file.
+- [ ] Credentials → Create OAuth client ID → **Desktop app**. Download the JSON; Rocky imports it into the keychain and you then delete the file (`rocky connectors google-client <file>`, or Connectors → Gmail → Import client file).
+- [ ] In Phase 4 Rocky asks only for the read scopes (`gmail.readonly`, `calendar.readonly`, `drive.readonly`); the write scopes are requested in Phase 6.
 
 **GitHub (≈5 min)**
 - [ ] Fine-grained PAT: Settings → Developer settings → Fine-grained tokens. Choose the repos. Permissions: Metadata R, Contents R, Issues RW, Pull requests R. Expiry ≤ 366 days.
