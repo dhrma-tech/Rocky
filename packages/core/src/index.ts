@@ -36,6 +36,7 @@ export * from "./notebooks/export.ts";
 export * from "./notebooks/flashcards.ts";
 export * from "./notebooks/guide.ts";
 export * from "./notebooks/insights.ts";
+export * from "./notebooks/jobs.ts";
 export * from "./notebooks/math.ts";
 export * from "./notebooks/quiz.ts";
 export * from "./notebooks/scope.ts";

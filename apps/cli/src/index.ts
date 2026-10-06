@@ -14,6 +14,7 @@ import {
 } from "./commands.ts";
 import { connectorsCommand } from "./connectors.ts";
 import { doctorCommand } from "./doctor.ts";
+import { notebooksCommand } from "./notebooks.ts";
 
 const program = new Command()
   .name("rocky")
@@ -116,6 +117,35 @@ program
       process.exitCode = await daemonBackground({ ...opts, dataDir: dataDir() });
     else process.exitCode = await daemonCommand({ ...opts, dataDir: dataDir() });
   });
+
+program
+  .command("notebooks")
+  .description("course notebooks: list, create, add-source, export (Anki or Markdown)")
+  .argument("<action>", "list | create | add-source | export")
+  .argument("[args...]", "name, or notebook id (and document id)")
+  .option(
+    "--title-match <codes>",
+    "with create: titles containing these course codes, comma-separated",
+  )
+  .option("--drive-folder <ids>", "with create: Google Drive folder ids (recursive)")
+  .option("--notion-page <ids>", "with create: Notion page ids (with sub-pages)")
+  .option("--format <anki|md>", "with export", "anki")
+  .option("--out <file>", "with export: write to a file instead of stdout")
+  .action(
+    async (
+      action: string,
+      args: string[],
+      opts: {
+        titleMatch?: string;
+        driveFolder?: string;
+        notionPage?: string;
+        format?: string;
+        out?: string;
+      },
+    ) => {
+      process.exitCode = await notebooksCommand(action, args, { ...opts, dataDir: dataDir() });
+    },
+  );
 
 program
   .command("connectors")

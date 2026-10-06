@@ -171,8 +171,13 @@ export function deleteData(
         .run().changes;
     }
 
-    if ("notebookId" in target)
+    if ("notebookId" in target) {
+      // Queued study work for this notebook (cards, guide, mind map) goes too.
+      report.jobs += db
+        .prepare("delete from jobs where json_extract(payload, '$.notebookId') = ?")
+        .run(target.notebookId).changes;
       db.prepare("delete from notebooks where id = ?").run(target.notebookId);
+    }
     if ("connectorId" in target)
       db.prepare("delete from connectors where id = ?").run(target.connectorId);
 

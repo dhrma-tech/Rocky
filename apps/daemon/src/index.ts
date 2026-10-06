@@ -73,6 +73,9 @@ export async function startDaemon(opts: {
   // Connector syncs run on their own lane; one tick now (catch-up after downtime), then every minute.
   const scheduler = new ConnectorScheduler(rt.connectors);
   scheduler.start();
+  // Notebook rules also pick up documents from imports and watched folders (notebooks.md).
+  const notebookTimer = setInterval(() => rt.refreshNotebooks(), 10 * 60_000);
+  notebookTimer.unref();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -83,6 +86,7 @@ export async function startDaemon(opts: {
     deleteEverything: async () => {
       log("deleting everything at the user's request");
       await new Promise<void>((resolve) => server.close(() => resolve()));
+      clearInterval(notebookTimer);
       await scheduler.stop();
       await watcher.stop();
       await runner.stop();
@@ -108,6 +112,7 @@ export async function startDaemon(opts: {
     url,
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
+      clearInterval(notebookTimer);
       await scheduler.stop();
       await watcher.stop();
       await runner.stop();

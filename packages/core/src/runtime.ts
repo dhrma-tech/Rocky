@@ -9,6 +9,7 @@ import { type DataPaths, dataPaths } from "./config/paths.ts";
 import { ConnectorRegistry, ConnectorService } from "./connectors/service.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
+import { STUDY_JOB, studyJobHandler } from "./notebooks/jobs.ts";
 import { materializeAll } from "./notebooks/scope.ts";
 import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
 import { ProviderGate } from "./router/gate.ts";
@@ -148,6 +149,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
         },
         job,
       ),
+    [STUDY_JOB]: studyJobHandler({ db, router, embedder }),
     [UNDERSTAND_JOB]: async (job) => {
       await understandMeeting({ db, router }, job);
     },
