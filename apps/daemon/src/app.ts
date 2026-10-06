@@ -510,7 +510,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
 
 /** Deep link for a connector anchor: a GitHub comment, a Notion block, a mail thread, an event. */
 export function externalUrl(anchor: Anchor, uri: string | null, meta: string): string | null {
-  if (!uri || !uri.startsWith("https://")) return null;
+  if (!uri?.startsWith("https://")) return null;
   switch (anchor.kind) {
     case "github": {
       if (!anchor.commentId) return uri;
