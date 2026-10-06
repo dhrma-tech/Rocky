@@ -32,6 +32,8 @@ export type * from "./ingest/types.ts";
 export * from "./ingest/upsert.ts";
 export * from "./jobs/queue.ts";
 export * from "./jobs/runner.ts";
+export * from "./notebooks/scope.ts";
+export * from "./notebooks/service.ts";
 export * from "./retrieval/retrieve.ts";
 export * from "./retrieval/scope.ts";
 export * from "./router/embed.ts";

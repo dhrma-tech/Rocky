@@ -105,6 +105,8 @@ export interface ConnectorServiceDeps {
   now?: () => number;
   /** Concurrent syncs across connectors. */
   maxConcurrent?: number;
+  /** Called after a sync that changed something (notebook rules are re-applied). */
+  onSynced?: (connectorId: string) => void;
 }
 
 export class ConnectorService {
@@ -741,6 +743,7 @@ export class ConnectorService {
           )
           .run(end, end, end + interval, id);
       })();
+      if (counts.added + counts.updated + counts.deleted > 0) this.d.onSynced?.(id);
       this.log(
         `[${id}] synced: +${counts.added} ~${counts.updated} -${counts.deleted} (${http.requests} requests)`,
       );

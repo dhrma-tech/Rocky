@@ -244,6 +244,8 @@ export async function pageToDocument(http: Http, tok: string, p: NPage): Promise
     },
     meta: {
       kind: isRow ? "row" : "page",
+      // Notebook rules match a page "with descendants" through this parent chain.
+      ...(p.parent.page_id ? { parentId: p.parent.page_id } : {}),
       ...(p.parent.data_source_id ? { dataSourceId: p.parent.data_source_id } : {}),
     },
   };

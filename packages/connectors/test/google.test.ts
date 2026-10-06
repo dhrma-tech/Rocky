@@ -246,7 +246,7 @@ describe("Google Calendar", () => {
 
 const DR = "https://www.googleapis.com/drive/v3";
 const FIELDS =
-  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,owners(displayName,emailAddress)";
+  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,parents,owners(displayName,emailAddress)";
 const file = (id: string, mimeType: string, extra: Record<string, unknown> = {}) => ({
   id,
   name: `File ${id}`,
@@ -308,5 +308,37 @@ describe("Google Drive", () => {
     ]);
     expect(res.cursor).toEqual({ pageToken: "T101" });
     expect(res.requests).toBe(1);
+  });
+});
+
+describe("Drive folder ancestors (notebook rules)", () => {
+  it("records every folder above a file, looking each folder up once", async () => {
+    const r = replay([
+      {
+        url: `${DR}/changes?pageToken=T1&pageSize=100&includeRemoved=true&fields=${encodeURIComponent(`nextPageToken,newStartPageToken,changes(fileId,removed,file(${FIELDS}))`)}`,
+        body: {
+          newStartPageToken: "T2",
+          changes: [
+            { fileId: "a", file: file("a", "application/pdf", { size: "10", parents: ["week1"] }) },
+            { fileId: "b", file: file("b", "application/pdf", { size: "10", parents: ["week1"] }) },
+          ],
+        },
+      },
+      { url: `${DR}/files/week1?fields=parents`, body: { parents: ["cs201"] } },
+      { url: `${DR}/files/cs201?fields=parents`, body: { parents: ["root"] } },
+      { url: `${DR}/files/root?fields=parents`, body: {} },
+    ]);
+    const res = await runSync(gdrive, {
+      fetch: r.fetch,
+      config: driveCfg,
+      accessToken,
+      cursor: { pageToken: "T1" },
+    });
+    expect(res.documents.map((d) => d.meta?.ancestors)).toEqual([
+      ["week1", "cs201", "root"],
+      ["week1", "cs201", "root"],
+    ]);
+    expect(r.unused()).toEqual([]);
+    expect(res.requests).toBe(4);
   });
 });

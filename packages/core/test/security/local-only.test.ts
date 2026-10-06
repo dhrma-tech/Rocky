@@ -93,3 +93,54 @@ describe("local-only egress", () => {
     db.close();
   });
 });
+
+describe("local-only notebooks (Phase 5 acceptance #4)", () => {
+  it("a question touching a local-only notebook opens no outbound socket, even in a union", async () => {
+    const { ask } = await import("../../src/assistant/ask.ts");
+    const { createNotebook } = await import("../../src/notebooks/service.ts");
+    const { upsertDocument } = await import("../../src/ingest/upsert.ts");
+    const db = memoryDb();
+    for (const [id, title] of [
+      ["a", "Linear algebra notes"],
+      ["b", "History notes"],
+    ] as const)
+      upsertDocument(db, {
+        parsed: {
+          title,
+          sourceType: "markdown",
+          text: `${title}: eigenvalues and treaties.`,
+          units: [
+            {
+              anchor: { kind: "text" },
+              start: 0,
+              end: title.length + 25,
+              blocks: [{ type: "para", start: 0, end: title.length + 25 }],
+            },
+          ],
+        },
+        externalId: id,
+      });
+    const la = createNotebook(db, { name: "LA", scope: { rules: { titleMatches: ["Linear"] } } });
+    const hist = createNotebook(db, {
+      name: "History",
+      localOnly: true,
+      scope: { rules: { titleMatches: ["History"] } },
+    });
+    const local = fakeProviders(() => ({ sentences: [], notFound: true }));
+    const fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input instanceof Request ? input.url : input));
+      return LOOPBACK.test(url.hostname) ? local.fetch(input, init) : globalThis.fetch(input, init);
+    }) as typeof globalThis.fetch;
+    // Global local-only is OFF: only the notebook flag keeps this question on the machine.
+    const h = harness(db, fetch, { hw: HW_HIGH });
+    outbound.length = 0;
+    const r = await ask(
+      { db, router: h.router },
+      { question: "eigenvalues?", scope: { notebookIds: [la.id, hist.id] } },
+    );
+    expect(r.path?.local ?? true).toBe(true);
+    expect(outbound).toEqual([]);
+    expect(local.calls.length).toBeGreaterThan(0);
+    db.close();
+  });
+});

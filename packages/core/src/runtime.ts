@@ -9,6 +9,7 @@ import { type DataPaths, dataPaths } from "./config/paths.ts";
 import { ConnectorRegistry, ConnectorService } from "./connectors/service.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
+import { materializeAll } from "./notebooks/scope.ts";
 import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
 import { ProviderGate } from "./router/gate.ts";
 import { loadPolicy } from "./router/policy.ts";
@@ -41,6 +42,8 @@ export interface Runtime {
   connectors: ConnectorService;
   /** Handlers for every job type; the daemon runs them in a JobRunner. */
   jobHandlers: Record<string, JobHandler>;
+  /** Re-applies notebook rules soon (debounced): after syncs, ingests, and on a timer in the daemon. */
+  refreshNotebooks(): void;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
   drainJobs(log?: (msg: string) => void): Promise<number>;
   close(): void;
@@ -98,6 +101,19 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
 
   const registry = new ActionRegistry();
   const actions = new ActionService(db, registry);
+  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  const refreshNotebooks = () => {
+    if (refreshTimer) return;
+    refreshTimer = setTimeout(() => {
+      refreshTimer = undefined;
+      try {
+        materializeAll(db);
+      } catch {
+        // The DB may be closing; the next refresh catches up.
+      }
+    }, 2000);
+    refreshTimer.unref?.();
+  };
   const connectorRegistry = new ConnectorRegistry();
   const connectors = new ConnectorService({
     db,
@@ -105,12 +121,14 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     registry: connectorRegistry,
     actions: registry,
     blobsDir: paths.blobs,
+    onSynced: refreshNotebooks,
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
   const jobHandlers: Record<string, JobHandler> = {
     [EMBED_JOB]: async (job) => {
       const { documentId } = job.payload as { documentId: string };
       await embedDocument(db, embedder, documentId);
+      refreshNotebooks();
     },
     [TRANSCRIBE_JOB]: (job) =>
       transcribeMeeting(
@@ -150,7 +168,11 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     connectorRegistry,
     connectors,
     jobHandlers,
+    refreshNotebooks,
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
-    close: () => db.close(),
+    close: () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      db.close();
+    },
   };
 }

@@ -11,6 +11,7 @@ import {
   type Usage,
   VerifierOutputSchema,
 } from "@rocky/contracts";
+import { anyLocalOnly } from "../notebooks/scope.ts";
 import { type Reranker, type RetrievedChunk, retrieve } from "../retrieval/retrieve.ts";
 import type { Embedder } from "../router/embed.ts";
 import type { Router } from "../router/router.ts";
@@ -144,8 +145,12 @@ export async function ask(
 ): Promise<AskResult> {
   const scope = req.scope;
   let usage: Usage = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  // A local-only notebook keeps the whole question local, even in a cross-notebook union.
+  const notebookLocal = anyLocalOnly(deps.db, scope?.notebookIds);
 
-  const firstTarget = deps.router.chain("chat", { localOnly: scope?.localOnly })[0];
+  const firstTarget = deps.router.chain("chat", {
+    localOnly: Boolean(scope?.localOnly) || notebookLocal,
+  })[0];
   const chunks = await retrieve(deps.db, req.question, {
     ...(scope ? { scope } : {}),
     ...(deps.embedder ? { embedder: deps.embedder } : {}),
@@ -176,7 +181,7 @@ export async function ask(
   if (chunks.length === 0) return notFound(null);
 
   // A local-only document anywhere in the context keeps every model call local (SECURITY.md).
-  const localOnly = Boolean(scope?.localOnly) || chunks.some((c) => c.localOnly);
+  const localOnly = Boolean(scope?.localOnly) || notebookLocal || chunks.some((c) => c.localOnly);
   const routeScope = { localOnly };
 
   const answerRun = await deps.router.run<ModelAnswer>({
