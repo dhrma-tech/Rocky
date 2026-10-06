@@ -111,12 +111,9 @@ export async function startRecording(opts: { kind: MeetingKind; title?: string }
   set({ ...initial, phase: "starting" });
   const streams: MediaStream[] = [];
   try {
-    const mic = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
-    });
-    streams.push(mic);
-    // Chrome needs video in the request; the track is stopped at once. The user picks a tab
-    // ("Share tab audio") or the entire screen ("Share system audio").
+    // The share picker first: getDisplayMedia needs the click's user activation, which the mic
+    // permission prompt could use up. Chrome needs video in the request; the track is stopped at
+    // once. The user picks a tab ("Share tab audio") or the entire screen ("Share system audio").
     let display: MediaStream | null = null;
     try {
       display = await navigator.mediaDevices.getDisplayMedia({
@@ -129,6 +126,10 @@ export async function startRecording(opts: { kind: MeetingKind; title?: string }
     } catch {
       // Cancelled the share dialog: record the mic only.
     }
+    const mic = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+    });
+    streams.push(mic);
     const micOnly = !display || display.getAudioTracks().length === 0;
 
     const { id } = await api.startRecording({
