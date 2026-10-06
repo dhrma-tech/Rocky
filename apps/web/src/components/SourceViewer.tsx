@@ -1,6 +1,6 @@
 import type { Citation } from "@rocky/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { type AnchorView, api } from "../api.ts";
 import { AudioPlayer, type PlayerHandle, TranscriptView } from "./capture.tsx";
@@ -62,6 +62,7 @@ export function SourceViewer({ citation, onClose }: { citation: Citation; onClos
           </p>
         )}
         {q.data?.viewer === "text" && <TextSource view={q.data} />}
+        {q.data?.viewer === "external" && <ExternalSource view={q.data} />}
         {q.data?.viewer === "pdf" && <PdfSource view={q.data} quote={citation.quote} />}
         {q.data?.viewer === "transcript" && (
           <TranscriptSource
@@ -102,6 +103,32 @@ function TranscriptSource({
         focusMs={focusMs}
         onSeek={view.audioUrl ? (ms) => player.current?.seek(ms) : undefined}
       />
+    </div>
+  );
+}
+
+const APP: Record<string, string> = {
+  github: "GitHub",
+  notion_block: "Notion",
+  row: "Notion",
+  message: "Gmail",
+  event: "Calendar",
+};
+
+/** Connector items: the synced text with the cited span, and an explicit button to the original. */
+function ExternalSource({ view }: { view: Extract<AnchorView, { viewer: "external" }> }) {
+  const app = APP[view.anchor.kind] ?? "the app";
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => window.open(view.url, "_blank", "noopener,noreferrer")}
+        className="inline-flex min-h-11 items-center gap-2 rounded-md bg-raised px-4 text-sm font-semibold shadow-raised-sm"
+      >
+        <ExternalLink size={14} aria-hidden /> Open in {app}
+      </button>
+      <p className="break-all font-mono text-xs text-tertiary">{view.url}</p>
+      <TextSource view={{ ...view, viewer: "text" }} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { ActionsPage } from "./routes/ActionsPage.tsx";
 import { AskPage } from "./routes/AskPage.tsx";
 import { CommitmentsPage } from "./routes/CommitmentsPage.tsx";
+import { ConnectorsPage } from "./routes/ConnectorsPage.tsx";
 import { MeetingDetailPage } from "./routes/MeetingDetailPage.tsx";
 import { MeetingsPage } from "./routes/MeetingsPage.tsx";
 import { SettingsPage } from "./routes/SettingsPage.tsx";
@@ -29,6 +30,7 @@ const routeTree = rootRoute.addChildren([
     component: CommitmentsPage,
   }),
   createRoute({ getParentRoute: () => rootRoute, path: "/actions", component: ActionsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/connectors", component: ConnectorsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: SettingsPage }),
 ]);
 const router = createRouter({ routeTree });

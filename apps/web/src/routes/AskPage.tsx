@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowUp, CircleCheck, CircleSlash, Square } from "lucide-react";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ApiError, api, askStream } from "../api.ts";
+import { CreateIssueButton } from "../components/CreateIssue.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
 import { CitationChip } from "../components/trust.tsx";
@@ -198,7 +199,10 @@ export function AskPage() {
                     <div className="space-y-2">
                       <VerificationLine result={t.result} />
                       <Answer result={t.result} onOpen={setOpen} />
-                      <PathChip result={t.result} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <PathChip result={t.result} />
+                        <CreateIssueButton question={t.question} result={t.result} />
+                      </div>
                     </div>
                   ) : t.error ? (
                     <div role="alert" className="rounded-lg bg-raised p-4 shadow-raised-sm">

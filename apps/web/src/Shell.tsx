@@ -7,6 +7,7 @@ import {
   Mic,
   PanelLeftClose,
   PanelLeftOpen,
+  Plug,
   Settings,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ const NAV = [
   { to: "/meetings", label: "Meetings", icon: Mic },
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/actions", label: "Actions", icon: ListChecks },
+  { to: "/connectors", label: "Connectors", icon: Plug },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

@@ -6,9 +6,15 @@ import type {
   AskResult,
   AuditRow,
   AuditVerify,
+  Citation,
   Commitment,
   CommitmentPatch,
   CommitmentStatus,
+  Connector,
+  ConnectorCatalogEntry,
+  ConnectorHealth,
+  ConnectorRun,
+  ConnectorUpdate,
   Decision,
   Entity,
   Hardware,
@@ -148,6 +154,16 @@ export type AnchorView =
       segments: TranscriptSegment[];
     }
   | {
+      viewer: "external";
+      title: string;
+      /** Deep link to the item in its app (GitHub, Notion, Gmail, Calendar). */
+      url: string;
+      text: string;
+      charStart: number;
+      charEnd: number;
+      anchor: { kind: string };
+    }
+  | {
       viewer: "text";
       title: string;
       text: string;
@@ -219,6 +235,37 @@ export const api = {
     call<{ decisions: Decision[] }>(`/decisions${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   entities: (q = "") =>
     call<{ entities: Entity[] }>(`/entities${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  // --- Connectors (Phase 4) ---
+  connectors: () => call<{ connectors: Connector[] }>("/connectors"),
+  catalog: () => call<{ catalog: ConnectorCatalogEntry[] }>("/connectors/catalog"),
+  addConnector: (kind: string, config: Record<string, unknown>) =>
+    call<Connector>("/connectors", { method: "POST", body: JSON.stringify({ kind, config }) }),
+  updateConnector: (id: string, patch: ConnectorUpdate) =>
+    call<Connector>(`/connectors/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  removeConnector: (id: string, purge: boolean) =>
+    call<{ purged: number }>(`/connectors/${id}${purge ? "?purge=1" : ""}`, { method: "DELETE" }),
+  setConnectorSecret: (id: string, name: string, value: string) =>
+    call<{ stored: boolean }>(`/connectors/${id}/secrets/${encodeURIComponent(name)}`, {
+      method: "POST",
+      body: JSON.stringify({ value }),
+    }),
+  setOAuthClient: (group: string, json: string) =>
+    call<{ stored: boolean }>(`/connectors/oauth/${encodeURIComponent(group)}/client`, {
+      method: "POST",
+      body: JSON.stringify({ json }),
+    }),
+  startAuth: (id: string) =>
+    call<{ authUrl: string }>(`/connectors/${id}/auth`, { method: "POST" }),
+  testConnector: (id: string) =>
+    call<ConnectorHealth>(`/connectors/${id}/test`, { method: "POST" }),
+  syncConnector: (id: string) =>
+    call<{ started: boolean }>(`/connectors/${id}/sync`, { method: "POST" }),
+  connectorRuns: (id: string) => call<{ runs: ConnectorRun[] }>(`/connectors/${id}/runs`),
+  proposeAction: (type: string, payload: unknown, citations: Citation[]) =>
+    call<ActionRecord>("/actions", {
+      method: "POST",
+      body: JSON.stringify({ type, payload, citations }),
+    }),
   ingest: (path: string) =>
     call<{ results: { status: string; path: string; reason?: string }[] }>("/ingest", {
       method: "POST",
