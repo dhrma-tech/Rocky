@@ -1,4 +1,4 @@
-# Pinned external tools fetched by `rocky doctor --fix`. Verified 2026-10-04.
+# Pinned external tools fetched by `rocky doctor --fix`. Verified 2026-10-04 (whisper), 2026-10-06 (ffmpeg).
 # Update URL and sha256 together; downloads failing the hash are deleted.
 whisper:
   version: v1.9.2
@@ -13,3 +13,12 @@ whisper:
     base:
       url: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin
       sha256: 60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe
+# LGPL build (no GPL components). Used only to convert imported audio/video to 16 kHz PCM.
+# Resolved from PATH first (e.g. `winget install Gyan.FFmpeg`); this pin is the fallback.
+# BtbN autobuilds rotate; if the URL 404s, update to a newer autobuild tag and its sha256.
+ffmpeg:
+  version: n8.1.3-14-g330caae0c1
+  binaries:
+    win32-x64:
+      url: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-05-13-07/ffmpeg-n8.1.3-14-g330caae0c1-win64-lgpl-8.1.zip
+      sha256: c7b6c64484393593e372e297f629f1434ed7aaf8e635ecbf0c971d1e25f4308b

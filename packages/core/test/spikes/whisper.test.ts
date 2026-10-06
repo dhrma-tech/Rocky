@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { loadAppConfig, resolveDataDir, whisperStatus } from "../../src/index.ts";
+import { loadAppConfig, resolveDataDir, transcribeWav, whisperStatus } from "../../src/index.ts";
 
 const run = promisify(execFile);
 const wav = path.join(import.meta.dirname, "..", "fixtures", "jfk.wav");
@@ -62,5 +62,27 @@ describe.skipIf(!status.binary || !status.model)("spike: whisper-cli", () => {
       `whisper ggml-${model}: ${audio.toFixed(1)} s audio in ${seconds.toFixed(1)} s ` +
         `(speed factor ${(audio / seconds).toFixed(2)}x, ${threads} threads)`,
     );
+  });
+
+  it("runs through transcribeWav with progress and log-probs", async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rocky-whisper-"));
+    const copy = path.join(tmp, "jfk.wav");
+    fs.copyFileSync(wav, copy);
+    const progress: number[] = [];
+    const segs = await transcribeWav(copy, {
+      binary: status.binary as string,
+      model: status.model as string,
+      language: "en",
+      onProgress: (p) => progress.push(p),
+    });
+    fs.rmSync(tmp, { recursive: true, force: true });
+    expect(
+      segs
+        .map((s) => s.text)
+        .join(" ")
+        .toLowerCase(),
+    ).toContain("ask not what your country");
+    expect(segs[0]?.avgLogprob).toBeLessThan(0);
+    expect(progress.at(-1)).toBe(1);
   });
 });

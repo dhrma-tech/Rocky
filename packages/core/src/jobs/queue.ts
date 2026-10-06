@@ -116,3 +116,13 @@ export function getJob(db: Db, id: string): Job | undefined {
   const row = db.prepare("select * from jobs where id = ?").get(id) as JobRow | undefined;
   return row && toJob(row);
 }
+
+/** Records progress (0..1) and a short note for GET /jobs/:id/events. */
+export function setJobProgress(db: Db, id: string, progress: number, note?: string): void {
+  db.prepare("update jobs set progress = ?, progress_note = ?, updated_at = ? where id = ?").run(
+    Math.max(0, Math.min(1, progress)),
+    note ?? null,
+    Date.now(),
+    id,
+  );
+}

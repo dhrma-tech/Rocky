@@ -20,7 +20,7 @@ export type WhisperModel = "base" | "small";
 
 const exe = process.platform === "win32" ? "whisper-cli.exe" : "whisper-cli";
 
-function findFile(dir: string, name: string): string | null {
+export function findFile(dir: string, name: string): string | null {
   if (!fs.existsSync(dir)) return null;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);

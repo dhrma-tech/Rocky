@@ -23,6 +23,8 @@ export function dataPaths(dataDir: string) {
     bin: path.join(dataDir, "bin"),
     models: path.join(dataDir, "models"),
     logs: path.join(dataDir, "logs"),
+    /** In-progress recordings: rec/<meetingId>/<channel>/<n>.pcm, removed after transcription. */
+    rec: path.join(dataDir, "rec"),
   };
 }
 export type DataPaths = ReturnType<typeof dataPaths>;
