@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { type AnchorView, api } from "../api.ts";
+import { AudioPlayer, type PlayerHandle, TranscriptView } from "./capture.tsx";
 import { citationLocation } from "./trust.tsx";
 import { IconButton } from "./ui.tsx";
 
@@ -62,11 +63,46 @@ export function SourceViewer({ citation, onClose }: { citation: Citation; onClos
         )}
         {q.data?.viewer === "text" && <TextSource view={q.data} />}
         {q.data?.viewer === "pdf" && <PdfSource view={q.data} quote={citation.quote} />}
+        {q.data?.viewer === "transcript" && (
+          <TranscriptSource
+            view={q.data}
+            focusMs={
+              citation.anchor.kind === "transcript" ? citation.anchor.startMs : q.data.startMs
+            }
+          />
+        )}
       </div>
       <footer className="border-t border-border-base p-4">
         <p className="text-xs text-tertiary">Quoted: “{citation.quote}”</p>
       </footer>
     </aside>
+  );
+}
+
+/** Transcripts show a window around the timestamp with a player (DESIGN §5.7 source viewer). */
+function TranscriptSource({
+  view,
+  focusMs,
+}: {
+  view: Extract<AnchorView, { viewer: "transcript" }>;
+  focusMs: number;
+}) {
+  const player = useRef<PlayerHandle>(null);
+  const [t, setT] = useState<number | undefined>(undefined);
+  return (
+    <div className="space-y-3">
+      {view.audioUrl && (
+        <div className="overflow-hidden rounded-md">
+          <AudioPlayer ref={player} src={view.audioUrl} onTime={setT} />
+        </div>
+      )}
+      <TranscriptView
+        segments={view.segments}
+        currentMs={t}
+        focusMs={focusMs}
+        onSeek={view.audioUrl ? (ms) => player.current?.seek(ms) : undefined}
+      />
+    </div>
   );
 }
 

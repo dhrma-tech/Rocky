@@ -1,26 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
 import {
+  CalendarCheck,
   ListChecks,
   MessageSquareText,
+  Mic,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, api } from "./api.ts";
+import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
 import { cls, IconButton } from "./components/ui.tsx";
 
 const NAV = [
   { to: "/", label: "Ask", icon: MessageSquareText },
+  { to: "/meetings", label: "Meetings", icon: Mic },
+  { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/actions", label: "Actions", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 /** App shell (DESIGN.md §5.1–5.2): 240 / 56 sidebar, fluid main, top-right local-only badge. */
 export function Shell() {
-  const [collapsed, setCollapsed] = useState(false);
+  // Phones start with the icon rail so the page keeps its width (DESIGN §5.10).
+  const [collapsed, setCollapsed] = useState(() => window.matchMedia("(max-width: 767px)").matches);
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings, retry: false });
   const pending = useQuery({
     queryKey: ["actions", "draft"],
@@ -86,7 +92,7 @@ export function Shell() {
               className:
                 "bg-accent-soft before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-accent-strong",
             }}
-            activeOptions={{ exact: true }}
+            activeOptions={{ exact: to === "/" }}
           >
             <Icon size={20} aria-hidden className="shrink-0 text-accent-strong" />
             {!collapsed && label}
@@ -104,6 +110,7 @@ export function Shell() {
           </Link>
         ))}
       </nav>
+      <RecordingPill />
       <main id="main" className="relative min-w-0 flex-1">
         <div className="absolute right-4 top-3 z-10">
           <LocalBadge localOnly={settings.data?.localOnly} />

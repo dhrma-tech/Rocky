@@ -293,7 +293,7 @@ export function AskPage() {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-30 lg:static lg:z-auto">
+        <div className="fixed inset-0 z-30 lg:relative lg:z-20">
           <SourceViewer citation={open} onClose={() => setOpen(null)} />
         </div>
       )}

@@ -76,6 +76,8 @@ export const CommitmentSchema = z.object({
   documentId: z.string(),
   documentTitle: z.string(),
   meetingId: z.string().nullable(),
+  /** The chunk covering the anchor, for the source viewer; null for manual entries. */
+  chunkId: z.string().nullable(),
   anchor: AnchorSchema,
   evidenceQuote: z.string(),
   confidence: z.number().nullable(),
@@ -93,6 +95,8 @@ export const DecisionSchema = z.object({
   documentId: z.string(),
   documentTitle: z.string(),
   meetingId: z.string().nullable(),
+  /** The chunk covering the anchor, for the source viewer; null for manual entries. */
+  chunkId: z.string().nullable(),
   anchor: AnchorSchema,
   evidenceQuote: z.string(),
 });

@@ -4,6 +4,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ActionsPage } from "./routes/ActionsPage.tsx";
 import { AskPage } from "./routes/AskPage.tsx";
+import { CommitmentsPage } from "./routes/CommitmentsPage.tsx";
+import { MeetingDetailPage } from "./routes/MeetingDetailPage.tsx";
+import { MeetingsPage } from "./routes/MeetingsPage.tsx";
 import { SettingsPage } from "./routes/SettingsPage.tsx";
 import { Shell } from "./Shell.tsx";
 import "./styles/app.css";
@@ -14,6 +17,17 @@ applyTheme();
 const rootRoute = createRootRoute({ component: Shell });
 const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: "/", component: AskPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/meetings", component: MeetingsPage }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/meetings/$id",
+    component: MeetingDetailPage,
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/commitments",
+    component: CommitmentsPage,
+  }),
   createRoute({ getParentRoute: () => rootRoute, path: "/actions", component: ActionsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: SettingsPage }),
 ]);

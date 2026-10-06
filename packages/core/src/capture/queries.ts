@@ -103,6 +103,7 @@ interface CommitmentRow {
   source_document_id: string;
   document_title: string;
   meeting_id: string | null;
+  chunk_id: string | null;
   anchor: string;
   evidence_quote: string;
   confidence: number | null;
@@ -138,6 +139,7 @@ const toCommitment = (r: CommitmentRow): Commitment => ({
   documentId: r.source_document_id,
   documentTitle: r.document_title,
   meetingId: r.meeting_id,
+  chunkId: r.chunk_id,
   anchor: parseAnchor(r.anchor),
   evidenceQuote: r.evidence_quote,
   confidence: r.confidence,
@@ -146,7 +148,10 @@ const toCommitment = (r: CommitmentRow): Commitment => ({
 });
 
 const COMMITMENT_SELECT = `select c.*, o.display_name as owner_name, cp.display_name as counterparty_name,
-    d.title as document_title, m.id as meeting_id
+    d.title as document_title, m.id as meeting_id,
+    (select k.id from chunks k where k.document_id = c.source_document_id
+      and coalesce(json_extract(k.anchor, '$.startMs'), 0) <= coalesce(json_extract(c.anchor, '$.startMs'), 0)
+      order by json_extract(k.anchor, '$.startMs') desc, k.ord limit 1) as chunk_id
   from commitments c
   join documents d on d.id = c.source_document_id
   left join entities o on o.id = c.owner_entity_id
@@ -252,7 +257,10 @@ export function listDecisions(
   if (f.documentId) add("x.source_document_id = ?", f.documentId);
   const rows = db
     .prepare(
-      `select x.*, o.display_name as owner_name, d.title as document_title, m.id as meeting_id
+      `select x.*, o.display_name as owner_name, d.title as document_title, m.id as meeting_id,
+       (select k.id from chunks k where k.document_id = x.source_document_id
+      and coalesce(json_extract(k.anchor, '$.startMs'), 0) <= coalesce(json_extract(x.anchor, '$.startMs'), 0)
+      order by json_extract(k.anchor, '$.startMs') desc, k.ord limit 1) as chunk_id
        from decisions x join documents d on d.id = x.source_document_id
        left join entities o on o.id = x.owner_entity_id
        left join meetings m on m.document_id = x.source_document_id
@@ -268,6 +276,7 @@ export function listDecisions(
     source_document_id: string;
     document_title: string;
     meeting_id: string | null;
+    chunk_id: string | null;
     anchor: string;
     evidence_quote: string;
   }[];
@@ -280,6 +289,7 @@ export function listDecisions(
     documentId: r.source_document_id,
     documentTitle: r.document_title,
     meetingId: r.meeting_id,
+    chunkId: r.chunk_id,
     anchor: parseAnchor(r.anchor),
     evidenceQuote: r.evidence_quote,
   }));
