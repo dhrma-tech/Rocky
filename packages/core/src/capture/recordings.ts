@@ -170,17 +170,18 @@ export async function finishRecording(
   try {
     fs.mkdirSync(dir, { recursive: true });
     ({ channels, bytes } = assembleChannels(dir));
-    for (const c of channels) {
-      pcmFileToWav(path.join(dir, `${c}.pcm`), path.join(dir, `${c}.wav`));
-      fs.rmSync(path.join(dir, `${c}.pcm`), { force: true });
-    }
+    // Mix from the raw PCM: the channel WAVs start with a header that isn't audio.
     if (channels.length) {
       const playback = path.join(dir, "playback.wav");
       mixPcmFilesToWav(
-        channels.map((c) => path.join(dir, `${c}.wav`)),
+        channels.map((c) => path.join(dir, `${c}.pcm`)),
         playback,
       );
       audioBlob = await putBlobFile(dirs.blobs, playback, { move: true });
+    }
+    for (const c of channels) {
+      pcmFileToWav(path.join(dir, `${c}.pcm`), path.join(dir, `${c}.wav`));
+      fs.rmSync(path.join(dir, `${c}.pcm`), { force: true });
     }
   } catch (err) {
     setMeetingStatus(db, id, "failed", {

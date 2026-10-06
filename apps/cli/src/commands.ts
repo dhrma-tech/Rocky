@@ -6,7 +6,10 @@ import {
   ask,
   dataPaths,
   type EvalReport,
+  getMeetingDetail,
+  importMedia,
   ingestPath,
+  isMediaFile,
   keychainSecrets,
   listWatchedFolders,
   loadEvalSet,
@@ -38,6 +41,49 @@ export async function ingestCommand(target: string, opts: { dataDir?: string | u
     const n = await rt.drainJobs((m) => console.error(m));
     if (n) console.log(`embedded ${n} document(s)`);
     return 0;
+  } finally {
+    rt.close();
+  }
+}
+
+/**
+ * Imports an audio or video file as a lecture or meeting. By default it transcribes and extracts
+ * right here (a 60-minute lecture takes a while on CPU); --no-wait leaves the work to the daemon.
+ */
+export async function importCommand(
+  file: string,
+  opts: { dataDir?: string | undefined; kind?: string; title?: string; wait?: boolean },
+) {
+  const abs = path.resolve(file);
+  if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
+    console.error(`No such file: ${abs}`);
+    return 1;
+  }
+  if (!isMediaFile(abs)) {
+    console.error("Not an audio or video file. For documents use `rocky ingest`.");
+    return 1;
+  }
+  const { dir } = resolveDataDir({ flag: opts.dataDir });
+  const rt = await openRuntime({ dataDir: dir });
+  try {
+    const { meetingId } = await importMedia(rt.db, rt.paths.blobs, {
+      file: abs,
+      kind: opts.kind === "meeting" ? "meeting" : "lecture",
+      title: opts.title,
+    });
+    if (opts.wait === false) {
+      console.log(`queued ${meetingId}; the daemon will transcribe it`);
+      return 0;
+    }
+    const t0 = Date.now();
+    await rt.drainJobs((m) => console.error(m));
+    const d = getMeetingDetail(rt.db, meetingId);
+    const mins = ((Date.now() - t0) / 60_000).toFixed(1);
+    console.log(
+      `${d.meeting.title}: ${d.meeting.status}${d.meeting.error ? ` (${d.meeting.error})` : ""} in ${mins} min; ` +
+        `${d.segments.length} segments, ${d.commitments.length} commitments, ${d.decisions.length} decisions`,
+    );
+    return d.meeting.status === "done" ? 0 : 1;
   } finally {
     rt.close();
   }

@@ -5,6 +5,7 @@ import {
   auditVerifyCommand,
   daemonCommand,
   evalCommand,
+  importCommand,
   ingestCommand,
   openCommand,
   secretsCommand,
@@ -38,6 +39,17 @@ program
   .argument("<path>", "file or folder")
   .action(async (target: string) => {
     process.exitCode = await ingestCommand(target, { dataDir: dataDir() });
+  });
+
+program
+  .command("import")
+  .description("import an audio or video recording (lecture or meeting): transcribe and extract")
+  .argument("<file>", "mp3, m4a, wav, mp4, … (anything ffmpeg reads)")
+  .option("--kind <kind>", "lecture or meeting", "lecture")
+  .option("--title <title>", "title (default: the file name)")
+  .option("--no-wait", "only queue it; the running daemon does the work")
+  .action(async (file: string, opts: { kind: string; title?: string; wait: boolean }) => {
+    process.exitCode = await importCommand(file, { ...opts, dataDir: dataDir() });
   });
 
 program

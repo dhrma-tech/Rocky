@@ -353,3 +353,16 @@ describe("transcribe job", () => {
     });
   });
 });
+
+describe("playback mix", () => {
+  it("contains only audio samples (no channel WAV headers)", async () => {
+    const { meetingId } = startRecording(db, { kind: "meeting", consent });
+    writeChunk(db, dirs, meetingId, "mic", 0, pcm([100, 200]));
+    writeChunk(db, dirs, meetingId, "system", 0, pcm([1, 2]));
+    await finishRecording(db, dirs, meetingId);
+    const blob = getMeetingRow(db, meetingId)?.audio_blob as string;
+    const wav = fs.readFileSync(path.join(dirs.blobs, blob.slice(0, 2), blob));
+    expect(wav.length).toBe(44 + 4);
+    expect([wav.readInt16LE(44), wav.readInt16LE(46)]).toEqual([101, 202]);
+  });
+});

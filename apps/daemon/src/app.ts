@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { Readable } from "node:stream";
 import {
   ActionStatusSchema,
   AnchorSchema,
@@ -18,6 +19,7 @@ import {
   deleteDocument,
   ingestPath,
   listWatchedFolders,
+  meetingSegments,
   type Runtime,
   redact,
   removeWatchedFolder,
@@ -31,6 +33,7 @@ import { setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
+import { registerCaptureRoutes } from "./capture-routes.ts";
 
 export const VERSION = "0.0.0";
 
@@ -73,6 +76,7 @@ const DeletionBody = z
       z.object({ documentIds: z.array(z.string()).min(1).max(10_000) }).strict(),
       z.object({ connectorId: z.string().min(1) }).strict(),
       z.object({ notebookId: z.string().min(1), withSources: z.boolean().optional() }).strict(),
+      z.object({ meetingId: z.string().min(1) }).strict(),
       z.object({ everything: z.literal(true) }).strict(),
     ]),
     /** Typed by the user in the confirm dialog; required for every deletion. */
@@ -214,7 +218,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
       setTimeout(() => void deleteEverything(), 50);
       return c.json({ deleting: "everything" }, 202);
     }
-    return c.json(deleteData(rt.db, rt.paths.blobs, target));
+    return c.json(deleteData(rt.db, rt.paths.blobs, target, { recDir: rt.paths.rec }));
   });
 
   api.post("/auth/codes", (c) => {
@@ -327,6 +331,27 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     if (!row) return c.json({ error: "chunk not found in document", code: "NOT_FOUND" }, 404);
     const anchor = AnchorSchema.parse(JSON.parse(row.anchor));
     const span = { charStart: row.char_start, charEnd: row.char_end };
+    if (anchor.kind === "transcript") {
+      // Meetings: the audio plus the segments around the cited window (DESIGN source viewer).
+      const meeting = rt.db
+        .prepare("select id from meetings where document_id = ?")
+        .get(c.req.param("id")) as { id: string } | undefined;
+      if (meeting)
+        return c.json({
+          viewer: "transcript",
+          title: row.title,
+          meetingId: meeting.id,
+          audioUrl: row.blob_hash ? `/api/v1/blobs/${row.blob_hash}` : null,
+          startMs: anchor.startMs,
+          endMs: anchor.endMs,
+          segments: meetingSegments(rt.db, meeting.id, {
+            fromMs: Math.max(0, anchor.startMs - 30_000),
+            toMs: anchor.endMs + 30_000,
+          }),
+          anchor,
+          ...span,
+        });
+    }
     if (anchor.kind === "pdf_page" && row.blob_hash && row.mime === "application/pdf")
       return c.json({
         viewer: "pdf",
@@ -340,7 +365,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   api.delete("/documents/:id", (c) => {
-    const ok = deleteDocument(rt.db, rt.paths.blobs, c.req.param("id"));
+    const ok = deleteDocument(rt.db, rt.paths.blobs, c.req.param("id"), rt.paths.rec);
     return ok
       ? c.json({ deleted: true })
       : c.json({ error: "document not found", code: "NOT_FOUND" }, 404);
@@ -369,20 +394,14 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
       const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
       if (start > end || start >= size)
         return c.body(null, 416, { "content-range": `bytes */${size}` });
-      const buf = Buffer.alloc(end - start + 1);
-      const fd = fs.openSync(file, "r");
-      try {
-        fs.readSync(fd, buf, 0, buf.length, start);
-      } finally {
-        fs.closeSync(fd);
-      }
-      return c.body(buf, 206, {
+      // Streamed: an audio player seeking in a 1 GB lecture must not buffer the whole range.
+      return c.body(stream(file, start, end), 206, {
         ...headers,
         "content-range": `bytes ${start}-${end}/${size}`,
-        "content-length": String(buf.length),
+        "content-length": String(end - start + 1),
       });
     }
-    return c.body(fs.readFileSync(file), 200, { ...headers, "content-length": String(size) });
+    return c.body(stream(file, 0, size - 1), 200, { ...headers, "content-length": String(size) });
   });
 
   // --- Settings ---
@@ -447,11 +466,16 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     return c.json({ month, spentUsd: spent, capUsd: rt.config.budget.monthlyCapUsd, rows });
   });
 
+  registerCaptureRoutes(api, { rt, poke, body });
+
   app.route("/api/v1", api);
 
   if (webDir) mountWeb(app, webDir);
   return app;
 }
+
+const stream = (file: string, start: number, end: number) =>
+  Readable.toWeb(fs.createReadStream(file, { start, end })) as ReadableStream<Uint8Array>;
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -483,7 +507,7 @@ function mountWeb(app: Hono, webDir: string) {
       "content-type": MIME[ext] ?? "application/octet-stream",
       "x-content-type-options": "nosniff",
       "content-security-policy":
-        "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'",
+        "default-src 'self'; img-src 'self' data: blob:; media-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'",
     });
   });
 }

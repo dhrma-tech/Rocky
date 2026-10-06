@@ -10,6 +10,7 @@ export * from "./capture/dedup.ts";
 export * from "./capture/ffmpeg.ts";
 export * from "./capture/import.ts";
 export * from "./capture/meetings.ts";
+export * from "./capture/queries.ts";
 export * from "./capture/recordings.ts";
 export * from "./capture/transcribe-job.ts";
 export * from "./capture/watch.ts";
