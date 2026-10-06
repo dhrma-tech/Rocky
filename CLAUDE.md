@@ -45,6 +45,7 @@ pnpm i                      # install (better-sqlite3 uses bundled prebuilds; no
 pnpm test                   # vitest: unit + security + spikes projects
 pnpm test:security          # security suite (must stay green)
 pnpm test:spikes            # Phase 0 spikes (Ollama/whisper ones skip if not installed)
+ROCKY_SPIKE_UNDERSTANDING=1 pnpm test:spikes   # + 20-transcript local extraction (~40 min; ROCKY_RECORD=1 refreshes fixtures)
 pnpm lint                   # biome check (pnpm format to fix)
 pnpm typecheck              # tsc --noEmit
 pnpm rocky doctor [--fix]   # machine checks; --fix fetches pinned whisper-cli + model

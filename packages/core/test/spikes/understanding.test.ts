@@ -1,6 +1,8 @@
 // Phase 3 acceptance #3, live: the 20 sample transcripts through the real local model.
 // Records the raw Ollama replies to fixtures/understanding/recorded/ when ROCKY_RECORD=1, so CI can
-// replay them (test/understanding-replay.test.ts). Skipped when Ollama or the derived model is absent.
+// replay them (test/understanding-replay.test.ts). About 40 minutes on CPU, so it is opt-in:
+//   ROCKY_SPIKE_UNDERSTANDING=1 pnpm test:spikes   (add ROCKY_RECORD=1 to refresh the recordings)
+// Also skipped when Ollama or the derived model is absent.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -23,7 +25,8 @@ const BASE = "http://127.0.0.1:11434";
 const policy = loadPolicy(path.join(import.meta.dirname, "no-such-data-dir"));
 const model = Object.keys(policy.ollama_models)[0] ?? "";
 const status = await ollamaStatus(BASE);
-const ready = status.ok && hasModel(status.models, model);
+const optedIn = process.env.ROCKY_SPIKE_UNDERSTANDING === "1" || process.env.ROCKY_RECORD === "1";
+const ready = optedIn && status.ok && hasModel(status.models, model);
 const only = process.env.ROCKY_SAMPLES?.split(",");
 
 describe.skipIf(!ready)("spike: understanding on 20 sample transcripts (local)", () => {
