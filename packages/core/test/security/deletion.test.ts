@@ -288,3 +288,36 @@ describe("deletion leaves nothing behind", () => {
     expect(() => writeChunk(db, dirs, live.meetingId, "mic", 1, pcm)).toThrow(/not found/);
   });
 });
+
+describe("notebook study data", () => {
+  it("deleting a notebook removes its cards, reviews, quizzes, questions, attempts and guide", async () => {
+    const d = await seedDoc(
+      "lecture",
+      "# Lecture\n\nEigenvalues are roots of the characteristic polynomial.",
+    );
+    db.prepare(
+      "insert into notebooks (id, name, kind, created_at) values ('nbs', 'Study', 'course', 1)",
+    ).run();
+    db.prepare(
+      "insert into cards (id, notebook_id, front, back, source_chunk_id) values ('c1', 'nbs', 'Q', 'A', ?)",
+    ).run(d.chunkIds[0]);
+    db.prepare(
+      "insert into card_reviews (id, card_id, reviewed_at, rating, prev_interval, new_interval, prev_ef, new_ef) values ('r1', 'c1', 1, 4, 0, 1, 2.5, 2.5)",
+    ).run();
+    db.prepare("insert into quizzes (id, notebook_id, created_at) values ('q1', 'nbs', 1)").run();
+    db.prepare(
+      "insert into quiz_questions (id, quiz_id, question, reference, topic, created_at) values ('qq1', 'q1', 'secret question', '{}', 't', 1)",
+    ).run();
+    db.prepare(
+      "insert into quiz_attempts (id, quiz_id, question_id, notebook_id, question, user_answer, grade, feedback, attempted_at) values ('a1', 'q1', 'qq1', 'nbs', 'secret question', 'my answer', 1, 'f', 1)",
+    ).run();
+    db.prepare(
+      "insert into summaries (id, level, scope_key, notebook_id, text, created_at) values ('g1', 'notebook', 'guide', 'nbs', 'guide text', 1)",
+    ).run();
+    deleteData(db, blobs, { notebookId: "nbs" });
+    expect(remnants(["nbs", "secret question", "my answer", "guide text"], [])).toEqual([]);
+    expect(db.prepare("select count(*) as n from documents where id = ?").get(d.id)).toEqual({
+      n: 1,
+    });
+  });
+});

@@ -6,6 +6,8 @@ alter table notebooks add column capture_default integer not null default 0;
 -- Cards: when created and when first shown (the new-cards-per-day limit counts introductions).
 alter table cards add column created_at integer;
 alter table cards add column introduced_at integer;
+-- The exact words from the source chunk that support the answer (shown with the citation).
+alter table cards add column quote text;
 
 -- Document summaries carry their topics (topic weakness and study guides group by them).
 alter table summaries add column topics text not null default '[]';
