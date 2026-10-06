@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
+  ConnectorScheduler,
   deleteEverything,
   FolderWatcher,
   JobRunner,
@@ -14,9 +15,11 @@ import {
 } from "@rocky/core";
 import { createApp } from "./app.ts";
 import { Auth, newToken } from "./auth.ts";
+import { registerConnectors } from "./connectors.ts";
 
 export { createApp } from "./app.ts";
 export { Auth, newToken } from "./auth.ts";
+export { registerConnectors } from "./connectors.ts";
 
 /** Built UI from apps/web (Phase 1 web shell); absent until `pnpm --filter @rocky/web build`. */
 const defaultWebDir = fileURLToPath(new URL("../../web/dist/", import.meta.url));
@@ -54,6 +57,7 @@ export async function startDaemon(opts: {
   const log = redactingLogger(opts.log ?? ((m) => console.error(m)));
   const rt = await openRuntime({ ...opts.runtime, dataDir: opts.dataDir });
   opts.setup?.(rt);
+  await registerConnectors(rt, log);
   const port = opts.port ?? rt.config.daemon.port;
   const auth = new Auth({ token: installToken(rt), port });
   const runner = new JobRunner(rt.db, rt.jobHandlers, { log });
@@ -66,6 +70,9 @@ export async function startDaemon(opts: {
   });
   // The initial scan can take a while on big folders; the API comes up without waiting for it.
   void watcher.start().catch((e: unknown) => log(`watch start failed: ${String(e)}`));
+  // Connector syncs run on their own lane; one tick now (catch-up after downtime), then every minute.
+  const scheduler = new ConnectorScheduler(rt.connectors);
+  scheduler.start();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -76,6 +83,7 @@ export async function startDaemon(opts: {
     deleteEverything: async () => {
       log("deleting everything at the user's request");
       await new Promise<void>((resolve) => server.close(() => resolve()));
+      await scheduler.stop();
       await watcher.stop();
       await runner.stop();
       rt.close();
@@ -100,6 +108,7 @@ export async function startDaemon(opts: {
     url,
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
+      await scheduler.stop();
       await watcher.stop();
       await runner.stop();
       fs.rmSync(daemonInfoFile(opts.dataDir), { force: true });

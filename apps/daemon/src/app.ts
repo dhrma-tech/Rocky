@@ -3,12 +3,15 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import {
   ActionStatusSchema,
+  type Anchor,
   AnchorSchema,
   ApproveRequestSchema,
   type AskEvent,
   AskRequestSchema,
   type AuditRow,
+  type Citation,
   EditRequestSchema,
+  ProposeRequestSchema,
   SettingsUpdateSchema,
 } from "@rocky/contracts";
 import {
@@ -34,6 +37,7 @@ import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
+import { registerConnectorRoutes } from "./connectors.ts";
 
 export const VERSION = "0.0.0";
 
@@ -155,6 +159,21 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     return c.json({ actions: rt.actions.list(parsed?.data) });
   });
   api.get("/actions/:id", (c) => c.json(rt.actions.get(c.req.param("id"))));
+  // The user proposes an action (e.g. "Create GitHub issue" on an answer). It still needs citations
+  // and lands as a draft; only approval with the payload hash lets it run.
+  api.post("/actions", async (c) => {
+    const { type, payload, citations } = await body(c, ProposeRequestSchema);
+    return c.json(
+      rt.actions.propose({
+        type,
+        payload,
+        origin: "user_turn",
+        citations: citations as Citation[],
+        allowedTypes: [type],
+      }),
+      201,
+    );
+  });
   api.patch("/actions/:id", async (c) => {
     const { payload } = await body(c, EditRequestSchema);
     return c.json(rt.actions.edit(c.req.param("id"), payload));
@@ -314,7 +333,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   api.get("/documents/:id/anchor", (c) => {
     const row = rt.db
       .prepare(
-        `select c.anchor, c.char_start, c.char_end, d.raw_text, d.blob_hash, d.mime, d.title
+        `select c.anchor, c.char_start, c.char_end, d.raw_text, d.blob_hash, d.mime, d.title, d.uri, d.meta
          from chunks c join documents d on d.id = c.document_id
          where c.id = ? and d.id = ?`,
       )
@@ -327,6 +346,8 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
           blob_hash: string | null;
           mime: string | null;
           title: string;
+          uri: string | null;
+          meta: string;
         }
       | undefined;
     if (!row) return c.json({ error: "chunk not found in document", code: "NOT_FOUND" }, 404);
@@ -353,6 +374,17 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
           ...span,
         });
     }
+    // Connector items: the synced text, plus a deep link that opens the exact item in its app.
+    const url = externalUrl(anchor, row.uri, row.meta);
+    if (url)
+      return c.json({
+        viewer: "external",
+        title: row.title,
+        url,
+        text: row.raw_text,
+        anchor,
+        ...span,
+      });
     if (anchor.kind === "pdf_page" && row.blob_hash && row.mime === "application/pdf")
       return c.json({
         viewer: "pdf",
@@ -468,11 +500,33 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   registerCaptureRoutes(api, { rt, poke, body });
+  registerConnectorRoutes(api, { rt, body });
 
   app.route("/api/v1", api);
 
   if (webDir) mountWeb(app, webDir);
   return app;
+}
+
+/** Deep link for a connector anchor: a GitHub comment, a Notion block, a mail thread, an event. */
+export function externalUrl(anchor: Anchor, uri: string | null, meta: string): string | null {
+  if (!uri || !uri.startsWith("https://")) return null;
+  switch (anchor.kind) {
+    case "github": {
+      if (!anchor.commentId) return uri;
+      const urls = (JSON.parse(meta || "{}") as { commentUrls?: Record<string, string> })
+        .commentUrls;
+      return urls?.[anchor.commentId] ?? `${uri}#issuecomment-${anchor.commentId}`;
+    }
+    case "notion_block":
+      return `${uri.split("#")[0]}#${anchor.blockId.replace(/-/g, "")}`;
+    case "message":
+    case "event":
+    case "row":
+      return uri;
+    default:
+      return null;
+  }
 }
 
 const stream = (file: string, start: number, end: number) =>

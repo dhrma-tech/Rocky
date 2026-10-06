@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.3",
+    "@rocky/connector-sdk": "workspace:*",
+    "@rocky/connectors": "workspace:*",
     "@rocky/contracts": "workspace:*",
     "@rocky/core": "workspace:*",
     "hono": "4.13.13",
