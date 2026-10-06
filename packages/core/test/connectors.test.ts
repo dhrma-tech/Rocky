@@ -329,3 +329,18 @@ describe("connector actions", () => {
     });
   });
 });
+
+describe("full sweep", () => {
+  it("deletes documents missing from a sweep's presence list", async () => {
+    ready();
+    script = () => [{ documents: [doc(1), doc(2), doc(3)], cursor: 1 }];
+    await svc.sync("fakehub");
+    script = () => [{ documents: [], presentExternalIds: ["issue-1", "issue-3"], cursor: 2 }];
+    await svc.sync("fakehub");
+    expect(db.prepare("select external_id from documents order by external_id").all()).toEqual([
+      { external_id: "issue-1" },
+      { external_id: "issue-3" },
+    ]);
+    expect(svc.runs("fakehub")[0]).toMatchObject({ deleted: 1 });
+  });
+});

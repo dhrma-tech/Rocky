@@ -695,7 +695,15 @@ export class ConnectorService {
           }
         })();
         // Tombstones go through the DeletionService (its own transaction, then blob files).
-        const ids = (batch.deletedExternalIds ?? []).flatMap((ext) => {
+        const gone = [...(batch.deletedExternalIds ?? [])];
+        if (batch.presentExternalIds) {
+          const present = new Set(batch.presentExternalIds);
+          const known = this.d.db
+            .prepare("select external_id from documents where connector_id = ?")
+            .all(id) as { external_id: string }[];
+          for (const k of known) if (!present.has(k.external_id)) gone.push(k.external_id);
+        }
+        const ids = gone.flatMap((ext) => {
           const row = this.d.db
             .prepare("select id from documents where connector_id = ? and external_id = ?")
             .get(id, ext) as { id: string } | undefined;

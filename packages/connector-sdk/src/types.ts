@@ -54,6 +54,11 @@ export interface DocumentBatch<Cur> {
   cursor: Cur;
   /** True when the connector restarted from scratch (e.g. an expired history id). */
   fullResync?: boolean;
+  /**
+   * A full sweep's complete list of items that still exist. The core deletes this connector's
+   * documents that are not in it (pages unshared or trashed since the last sweep).
+   */
+  presentExternalIds?: string[];
 }
 
 export interface SyncContext<Cfg> {
