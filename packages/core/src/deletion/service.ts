@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import { appendAudit } from "../audit/append.ts";
 import { dataPaths } from "../config/paths.ts";
 import { deleteChunkIndexes } from "../ingest/upsert.ts";
@@ -9,7 +10,8 @@ import type { Db } from "../store/db.ts";
 export type DeletionTarget =
   | { documentIds: string[] }
   | { connectorId: string }
-  | { notebookId: string; withSources?: boolean };
+  | { notebookId: string; withSources?: boolean }
+  | { meetingId: string };
 
 export interface DeletionReport {
   documents: number;
@@ -19,6 +21,9 @@ export interface DeletionReport {
   auditPayloads: number;
   blobs: number;
   jobs: number;
+  meetings: number;
+  /** Auto-created (unconfirmed) people and orgs no longer mentioned anywhere. */
+  entities: number;
   /** Sources kept because another notebook still uses them (notebook deletes only). */
   keptShared: number;
 }
@@ -33,6 +38,12 @@ function documentsFor(db: Db, target: DeletionTarget): { ids: string[]; keptShar
       .prepare(`select id from documents where id in (${marks(ids.length)})`)
       .all(...ids) as { id: string }[];
     return { ids: found.map((r) => r.id), keptShared: 0 };
+  }
+  if ("meetingId" in target) {
+    const row = db.prepare("select document_id from meetings where id = ?").get(target.meetingId) as
+      | { document_id: string }
+      | undefined;
+    return { ids: row ? [row.document_id] : [], keptShared: 0 };
   }
   if ("connectorId" in target) {
     const rows = db
@@ -61,7 +72,12 @@ function documentsFor(db: Db, target: DeletionTarget): { ids: string[]; keptShar
  * summaries, entity links, commitments, decisions, notebook links, pending jobs, audit payloads),
  * then unreferenced blobs. Logs one `deleted` event holding only IDs and counts.
  */
-export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): DeletionReport {
+export function deleteData(
+  db: Db,
+  blobsDir: string,
+  target: DeletionTarget,
+  opts: { recDir?: string } = {},
+): DeletionReport {
   const { ids, keptShared } = documentsFor(db, target);
   const report: DeletionReport = {
     documents: ids.length,
@@ -71,9 +87,12 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
     auditPayloads: 0,
     blobs: 0,
     jobs: 0,
+    meetings: 0,
+    entities: 0,
     keptShared,
   };
   let blobHashes: string[] = [];
+  let meetingIds: string[] = [];
 
   db.transaction(() => {
     if (ids.length > 0) {
@@ -90,6 +109,14 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
           )
           .all(...ids) as { blob_hash: string }[]
       ).map((r) => r.blob_hash);
+
+      const meetings = db
+        .prepare(`select id, audio_blob from meetings where document_id in (${marks(ids.length)})`)
+        .all(...ids) as { id: string; audio_blob: string | null }[];
+      meetingIds = meetings.map((m) => m.id);
+      report.meetings = meetings.length;
+      for (const m of meetings)
+        if (m.audio_blob && !blobHashes.includes(m.audio_blob)) blobHashes.push(m.audio_blob);
 
       for (const id of ids) deleteChunkIndexes(db, id);
       if (chunkIds.length > 0) {
@@ -109,6 +136,12 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
           `delete from jobs where json_extract(payload, '$.documentId') in (${marks(ids.length)})`,
         )
         .run(...ids).changes;
+      if (meetingIds.length)
+        report.jobs += db
+          .prepare(
+            `delete from jobs where json_extract(payload, '$.meetingId') in (${marks(meetingIds.length)})`,
+          )
+          .run(...meetingIds).changes;
 
       // Payload bodies about these documents go, unless another subject still references them.
       report.auditPayloads = db
@@ -126,6 +159,16 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
       db.prepare(`delete from documents where id in (${marks(ids.length)})`).run(...ids);
       report.summaries +=
         before - (db.prepare("select count(*) as n from summaries").get() as { n: number }).n;
+
+      // Entities Rocky created from this content (never confirmed by the user) and now unused.
+      report.entities = db
+        .prepare(
+          `delete from entities where unconfirmed = 1
+             and not exists (select 1 from document_entities de where de.entity_id = entities.id)
+             and not exists (select 1 from commitments c where c.owner_entity_id = entities.id or c.counterparty_entity_id = entities.id)
+             and not exists (select 1 from decisions d where d.owner_entity_id = entities.id)`,
+        )
+        .run().changes;
     }
 
     if ("notebookId" in target)
@@ -140,11 +183,14 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
         target:
           "documentIds" in target
             ? "documents"
-            : "connectorId" in target
-              ? "connector"
-              : "notebook",
+            : "meetingId" in target
+              ? "meeting"
+              : "connectorId" in target
+                ? "connector"
+                : "notebook",
         ...("connectorId" in target ? { connectorId: target.connectorId } : {}),
         ...("notebookId" in target ? { notebookId: target.notebookId } : {}),
+        ...(meetingIds.length ? { meetingIds } : {}),
         documentIds: ids,
         counts: { ...report },
       },
@@ -152,12 +198,18 @@ export function deleteData(db: Db, blobsDir: string, target: DeletionTarget): De
   })();
 
   // Blobs are files; remove them after the commit, and only if nothing else still uses them.
-  const used = db.prepare("select 1 from documents where blob_hash = ? limit 1");
+  const used = db.prepare(
+    "select 1 from documents where blob_hash = ? union all select 1 from meetings where audio_blob = ? limit 1",
+  );
   for (const h of blobHashes)
-    if (!used.get(h)) {
+    if (!used.get(h, h)) {
       removeBlob(blobsDir, h);
       report.blobs++;
     }
+  // In-progress recording chunks and whisper WAVs.
+  if (opts.recDir)
+    for (const id of meetingIds)
+      fs.rmSync(path.join(opts.recDir, id), { recursive: true, force: true });
   return report;
 }
 
@@ -173,6 +225,7 @@ export function deleteEverything(dataDir: string, secrets: SecretStore): { remov
     `${p.db}-shm`,
     p.backups,
     p.blobs,
+    p.rec,
     `${p.root}/evals`,
     `${p.root}/daemon.json`,
   ];

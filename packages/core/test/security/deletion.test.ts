@@ -3,13 +3,17 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appendAudit } from "../../src/audit/append.ts";
 import { verifyAuditChain } from "../../src/audit/verify.ts";
+import { finishRecording, startRecording, writeChunk } from "../../src/capture/recordings.ts";
+import { transcribeMeeting } from "../../src/capture/transcribe-job.ts";
 import { deleteData, deleteEverything } from "../../src/deletion/service.ts";
 import type { Db } from "../../src/index.ts";
 import { migrate, openDb } from "../../src/index.ts";
 import { embedDocument } from "../../src/ingest/embed-job.ts";
 import { ingestFile } from "../../src/ingest/ingest-file.ts";
+import { getJob } from "../../src/jobs/queue.ts";
 import { memorySecrets } from "../../src/secrets/keychain.ts";
 import { blobPath } from "../../src/store/blobs.ts";
+import type { ProcessRunner } from "../../src/system/exec.ts";
 import { fakeEmbedder, memoryDb, tempDir } from "../helpers.ts";
 
 // Acceptance (d) and SECURITY.md "Deletion is complete".
@@ -191,7 +195,7 @@ describe("deletion leaves nothing behind", () => {
     const fileDb = openDb(file);
     migrate(fileDb);
     fileDb.close();
-    for (const d of ["backups", "blobs/ab", "evals"])
+    for (const d of ["backups", "blobs/ab", "evals", "rec/01ABC/mic"])
       fs.mkdirSync(path.join(data, d), { recursive: true });
     fs.writeFileSync(path.join(data, "rocky.yaml"), "localOnly: true\n");
     const secrets = memorySecrets({ anthropic: "sk-ant-x", "daemon-token": "t" });
@@ -201,5 +205,81 @@ describe("deletion leaves nothing behind", () => {
     expect(secrets.has("anthropic")).toBe(false);
     expect(secrets.has("daemon-token")).toBe(false);
     fs.rmSync(data, { recursive: true, force: true });
+  });
+
+  it("meeting: segments, transcript chunks, audio blob, recording files, jobs and auto-created people", async () => {
+    const dirs = { rec: path.join(dir, "rec"), blobs };
+    const consent = { participantsInformed: true, lawsAck: true } as const;
+    const { meetingId, documentId } = startRecording(db, { kind: "meeting", consent });
+    const pcm = Buffer.alloc(32_000, 1);
+    writeChunk(db, dirs, meetingId, "mic", 0, pcm);
+    writeChunk(db, dirs, meetingId, "system", 0, pcm);
+    const { jobId } = await finishRecording(db, dirs, meetingId);
+    // Fake whisper: one line per channel.
+    const run: ProcessRunner = async (_cmd, args) => {
+      const wav = args[args.indexOf("-f") + 1] as string;
+      const text = wav.endsWith("mic.wav")
+        ? "I will mail Dana the secret pricing"
+        : "Thanks, Dana here";
+      fs.writeFileSync(
+        `${args[args.indexOf("-of") + 1]}.json`,
+        JSON.stringify({ transcription: [{ offsets: { from: 0, to: 1500 }, text }] }),
+      );
+      return { code: 0, stderrTail: "" };
+    };
+    await transcribeMeeting(
+      {
+        db,
+        blobsDir: blobs,
+        recDir: dirs.rec,
+        whisper: () => ({ binary: "w", model: "m", threads: 1, language: "en" }),
+        ffmpeg: async () => null,
+        run,
+      },
+      { ...(getJob(db, jobId) as NonNullable<ReturnType<typeof getJob>>), attempts: 1 },
+    );
+    await embedDocument(db, embedder, documentId);
+    db.prepare(
+      "insert into entities (id, kind, display_name, unconfirmed) values ('dana', 'person', 'Dana', 1)",
+    ).run();
+    db.prepare(
+      "insert into entities (id, kind, display_name, unconfirmed) values ('kept', 'person', 'Confirmed Person', 0)",
+    ).run();
+    db.prepare(
+      "insert into document_entities (document_id, entity_id, role) values (?, 'dana', 'mentioned')",
+    ).run(documentId);
+    db.prepare(
+      `insert into commitments (id, text, owner_entity_id, status, source_document_id, anchor, evidence_quote, created_at, updated_at)
+       values ('cm', 'Mail Dana the pricing', 'dana', 'open', ?, '{}', 'mail Dana', 1, 1)`,
+    ).run(documentId);
+    // A second, still-recording meeting has chunks on disk.
+    const live = startRecording(db, { kind: "meeting", consent });
+    writeChunk(db, dirs, live.meetingId, "mic", 0, pcm);
+
+    const audio = (
+      db.prepare("select audio_blob from meetings where id = ?").get(meetingId) as {
+        audio_blob: string;
+      }
+    ).audio_blob;
+    const seqs = (
+      db.prepare("select seq from chunks where document_id = ?").all(documentId) as {
+        seq: number;
+      }[]
+    ).map((r) => r.seq);
+    expect(remnants(["secret pricing"], seqs).length).toBeGreaterThan(0);
+
+    const report = deleteData(db, blobs, { meetingId }, { recDir: dirs.rec });
+    expect(report).toMatchObject({ documents: 1, meetings: 1, blobs: 1, entities: 1 });
+    expect(remnants([meetingId, documentId, "secret pricing", "Dana", audio], seqs)).toEqual([]);
+    expect(fs.existsSync(blobPath(blobs, audio))).toBe(false);
+    expect(db.prepare("select id from entities").all()).toEqual(
+      expect.arrayContaining([{ id: "kept" }]),
+    );
+    expect(verifyAuditChain(db).ok).toBe(true);
+    expect(auditMentions(meetingId)).toEqual(["recording_consent", "deleted"]);
+
+    deleteData(db, blobs, { meetingId: live.meetingId }, { recDir: dirs.rec });
+    expect(fs.existsSync(path.join(dirs.rec, live.meetingId))).toBe(false);
+    expect(() => writeChunk(db, dirs, live.meetingId, "mic", 1, pcm)).toThrow(/not found/);
   });
 });
