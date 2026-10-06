@@ -11,8 +11,9 @@ tasks:
   chunk_summary: { primary: local:small, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_120s] }
   doc_summary: { primary: local:medium, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_180s, "input_tokens>12000"] }
   # The local fallback lets extraction run without an API key or in local-only mode (2026-10-06).
-  meeting_summary: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: "tier(api:strong if ram>=15 && gpu else local:medium)", escalate_on: ["input_tokens>12000", json_invalid_x2] }
-  extract: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: "tier(api:strong if ram>=15 && gpu else local:medium)", escalate_on: ["input_tokens>12000", json_invalid_x2] }
+# 600 s: one ~4.5k-token transcript window took over 180 s on qwen3.5:4b on this CPU (2026-10-06).
+  meeting_summary: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: "tier(api:strong if ram>=15 && gpu else local:medium)", escalate_on: ["input_tokens>12000", json_invalid_x2, timeout_600s] }
+  extract: { primary: "tier(local:medium if ram>=15 && gpu else api:strong)", fallback: "tier(api:strong if ram>=15 && gpu else local:medium)", escalate_on: ["input_tokens>12000", json_invalid_x2, timeout_600s] }
   chat: { primary: api:strong, fallback: local:medium, max_tokens: 4000 }
   verify: { primary: api:cheap, fallback: local:small, max_tokens: 2000 }
   judge: { primary: api:strong, fallback: local:medium, max_tokens: 2000 }

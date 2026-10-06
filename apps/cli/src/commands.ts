@@ -76,7 +76,16 @@ export async function importCommand(
       return 0;
     }
     const t0 = Date.now();
-    await rt.drainJobs((m) => console.error(m));
+    // A failed step is retried after a backoff; keep going until this meeting has no pending jobs.
+    const pending = rt.db.prepare(
+      "select min(run_after) as next from jobs where status in ('queued', 'running') and json_extract(payload, '$.meetingId') = ?",
+    );
+    for (;;) {
+      await rt.drainJobs((m) => console.error(m));
+      const { next } = pending.get(meetingId) as { next: number | null };
+      if (next === null) break;
+      await new Promise((r) => setTimeout(r, Math.max(0, next - Date.now()) + 100));
+    }
     const d = getMeetingDetail(rt.db, meetingId);
     const mins = ((Date.now() - t0) / 60_000).toFixed(1);
     console.log(
