@@ -121,6 +121,9 @@ importers:
       '@napi-rs/keyring':
         specifier: 2.1.0
         version: 2.1.0
+      '@rocky/connector-sdk':
+        specifier: workspace:*
+        version: link:../connector-sdk
       '@rocky/contracts':
         specifier: workspace:*
         version: link:../contracts

@@ -6,6 +6,7 @@ import { TRANSCRIBE_JOB } from "./capture/recordings.ts";
 import { transcribeMeeting, UNDERSTAND_JOB } from "./capture/transcribe-job.ts";
 import { loadAppConfig } from "./config/load.ts";
 import { type DataPaths, dataPaths } from "./config/paths.ts";
+import { ConnectorRegistry, ConnectorService } from "./connectors/service.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
 import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
@@ -35,6 +36,9 @@ export interface Runtime {
   registry: ActionRegistry;
   /** The approval queue; the only path to an executor. */
   actions: ActionService;
+  /** Connector definitions (built-ins and plugins, registered by the daemon or CLI). */
+  connectorRegistry: ConnectorRegistry;
+  connectors: ConnectorService;
   /** Handlers for every job type; the daemon runs them in a JobRunner. */
   jobHandlers: Record<string, JobHandler>;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
@@ -94,6 +98,15 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
 
   const registry = new ActionRegistry();
   const actions = new ActionService(db, registry);
+  const connectorRegistry = new ConnectorRegistry();
+  const connectors = new ConnectorService({
+    db,
+    secrets,
+    registry: connectorRegistry,
+    actions: registry,
+    blobsDir: paths.blobs,
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+  });
   const jobHandlers: Record<string, JobHandler> = {
     [EMBED_JOB]: async (job) => {
       const { documentId } = job.payload as { documentId: string };
@@ -134,6 +147,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     secrets,
     registry,
     actions,
+    connectorRegistry,
+    connectors,
     jobHandlers,
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => db.close(),

@@ -198,12 +198,17 @@ describe("deletion leaves nothing behind", () => {
     for (const d of ["backups", "blobs/ab", "evals", "rec/01ABC/mic"])
       fs.mkdirSync(path.join(data, d), { recursive: true });
     fs.writeFileSync(path.join(data, "rocky.yaml"), "localOnly: true\n");
-    const secrets = memorySecrets({ anthropic: "sk-ant-x", "daemon-token": "t" });
+    const secrets = memorySecrets({
+      anthropic: "sk-ant-x",
+      "daemon-token": "t",
+      "github.token": "ghp_x",
+    });
     const { removed } = deleteEverything(data, secrets);
     expect(removed.some((r) => r.endsWith("rocky.db"))).toBe(true);
     expect(fs.readdirSync(data)).toEqual(["rocky.yaml"]);
     expect(secrets.has("anthropic")).toBe(false);
     expect(secrets.has("daemon-token")).toBe(false);
+    expect(secrets.list()).toEqual([]);
     fs.rmSync(data, { recursive: true, force: true });
   });
 

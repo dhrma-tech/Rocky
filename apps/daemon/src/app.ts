@@ -84,6 +84,7 @@ const DeletionBody = z
   })
   .strict();
 /** The daemon token is internal; the API can only write provider keys. */
+/** Provider keys only; connector secrets go through /connectors/:id/secrets (scoped). */
 const WRITABLE_SECRETS: readonly SecretName[] = SECRET_NAMES.filter((n) => n !== "daemon-token");
 
 interface DocRow {

@@ -3,7 +3,7 @@ import path from "node:path";
 import { appendAudit } from "../audit/append.ts";
 import { dataPaths } from "../config/paths.ts";
 import { deleteChunkIndexes } from "../ingest/upsert.ts";
-import { SECRET_NAMES, type SecretStore } from "../secrets/keychain.ts";
+import { SECRET_NAMES, type SecretName, type SecretStore } from "../secrets/keychain.ts";
 import { removeBlob } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
 
@@ -235,7 +235,8 @@ export function deleteEverything(dataDir: string, secrets: SecretStore): { remov
       fs.rmSync(t, { recursive: true, force: true });
       removed.push(t);
     }
-  for (const name of SECRET_NAMES)
+  // Connector secrets ("github.token", …) are listed from the keychain itself.
+  for (const name of new Set<SecretName>([...SECRET_NAMES, ...(secrets.list() as SecretName[])]))
     if (secrets.has(name)) {
       secrets.delete(name);
       removed.push(`keychain:rocky/${name}`);

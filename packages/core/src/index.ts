@@ -17,6 +17,8 @@ export * from "./capture/watch.ts";
 export * from "./capture/whisper-run.ts";
 export * from "./config/load.ts";
 export * from "./config/paths.ts";
+export * from "./connectors/service.ts";
+export * from "./connectors/to-parsed.ts";
 export * from "./deletion/service.ts";
 export * from "./doctor.ts";
 export * from "./entities/entities.ts";

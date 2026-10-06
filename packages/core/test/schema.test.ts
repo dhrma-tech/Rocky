@@ -27,7 +27,7 @@ describe("migration 001", () => {
     ]) {
       expect(names).toContain(t);
     }
-    expect(db.pragma("user_version", { simple: true })).toBe(2);
+    expect(db.pragma("user_version", { simple: true })).toBe(3);
   });
 
   it("makes audit_log append-only", () => {

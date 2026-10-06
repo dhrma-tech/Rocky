@@ -95,7 +95,12 @@ describe("no write without approval", () => {
 
   it("only ActionService (and the registry) can import the executor store", () => {
     const src = path.resolve(import.meta.dirname, "../../src");
-    const roots = [src, path.resolve(import.meta.dirname, "../../../../apps")];
+    const roots = [
+      src,
+      path.resolve(import.meta.dirname, "../../../../apps"),
+      path.resolve(import.meta.dirname, "../../../connectors/src"),
+      path.resolve(import.meta.dirname, "../../../connector-sdk/src"),
+    ];
     const offenders: string[] = [];
     // Prune dependency and build folders while walking; enumerating them is far too slow.
     function* walk(dir: string): Generator<string> {
