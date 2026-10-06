@@ -32,6 +32,7 @@ export const SourceTypeSchema = z.enum([
   "text",
   "html",
   "transcript",
+  "meeting",
   "email",
   "notion",
   "github",

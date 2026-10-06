@@ -44,9 +44,12 @@ describe("policy resolution matrix", () => {
   });
 
   it("applies the hardware tier and low-RAM API preference", () => {
+    // No GPU: API first, local fallback (runs without a key or under local-only).
     expect(aliases("meeting_summary", { hardware: HW_HIGH, localOnly: false })).toEqual([
       "api:strong",
+      "local:medium",
     ]);
+    expect(aliases("extract", { hardware: HW_HIGH, localOnly: true })).toEqual(["local:medium"]);
     expect(aliases("meeting_summary", { hardware: HW_GPU, localOnly: false })).toEqual([
       "local:medium",
       "api:strong",
