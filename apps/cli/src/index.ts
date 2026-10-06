@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { daemonBackground, daemonInstallCommand } from "./autostart.ts";
 import {
   askCommand,
   auditVerifyCommand,
@@ -11,6 +12,7 @@ import {
   secretsCommand,
   watchCommand,
 } from "./commands.ts";
+import { connectorsCommand } from "./connectors.ts";
 import { doctorCommand } from "./doctor.ts";
 
 const program = new Command()
@@ -90,11 +92,54 @@ program
 
 program
   .command("daemon")
-  .description("run the local daemon (API, background jobs, web UI) on 127.0.0.1")
+  .description(
+    "run the local daemon (API, background jobs, connectors, web UI) on 127.0.0.1; 'install' starts it at sign-in",
+  )
+  .argument("[action]", "install | uninstall (Windows autostart)")
   .option("--port <n>", "port (default from rocky.yaml, 7337)")
-  .action(async (opts: { port?: string }) => {
-    process.exitCode = await daemonCommand({ ...opts, dataDir: dataDir() });
+  .option(
+    "--background",
+    "start detached with no console window, logging to <data>/logs/daemon.log",
+  )
+  .action(async (action: string | undefined, opts: { port?: string; background?: boolean }) => {
+    if (action === "install" || action === "uninstall")
+      process.exitCode = await daemonInstallCommand({
+        dataDir: dataDir(),
+        uninstall: action === "uninstall",
+      });
+    else if (action) {
+      console.error(
+        `Unknown action "${action}". Use: rocky daemon [install|uninstall] [--background]`,
+      );
+      process.exitCode = 1;
+    } else if (opts.background)
+      process.exitCode = await daemonBackground({ ...opts, dataDir: dataDir() });
+    else process.exitCode = await daemonCommand({ ...opts, dataDir: dataDir() });
   });
+
+program
+  .command("connectors")
+  .description(
+    "set up and sync connectors: list, catalog, add, secret, google-client, connect, test, sync, remove",
+  )
+  .argument(
+    "<action>",
+    "list | catalog | add | secret | google-client | connect | test | sync | remove",
+  )
+  .argument("[args...]", "kind or id, then a secret name or file")
+  .option("--repos <list>", "GitHub repositories, comma-separated owner/name")
+  .option("--config <json>", "connector settings as JSON")
+  .option("--purge", "with remove: also delete everything it synced")
+  .option("--json", "with list: print JSON")
+  .action(
+    async (
+      action: string,
+      args: string[],
+      opts: { repos?: string; config?: string; purge?: boolean; json?: boolean },
+    ) => {
+      process.exitCode = await connectorsCommand(action, args, { ...opts, dataDir: dataDir() });
+    },
+  );
 
 program
   .command("open")

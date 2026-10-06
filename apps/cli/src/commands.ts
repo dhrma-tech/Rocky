@@ -410,7 +410,7 @@ export async function auditVerifyCommand(opts: { dataDir?: string | undefined; j
 }
 
 /** Reads a secret without echoing it: raw-mode keystrokes on a terminal, or piped stdin. */
-async function readSecret(prompt: string): Promise<string> {
+export async function readSecret(prompt: string): Promise<string> {
   const stdin = process.stdin;
   if (!stdin.isTTY) {
     let data = "";
