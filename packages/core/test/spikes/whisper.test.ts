@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { loadAppConfig, resolveDataDir, transcribeWav, whisperStatus } from "../../src/index.ts";
 
 const run = promisify(execFile);
-const wav = path.join(import.meta.dirname, "..", "fixtures", "jfk.wav");
+const wav = path.join(import.meta.dirname, "..", "..", "assets", "jfk.wav");
 const { dir } = resolveDataDir();
 const model = loadAppConfig(dir).whisper.model;
 const status = whisperStatus(dir, model);

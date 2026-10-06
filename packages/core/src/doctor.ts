@@ -7,6 +7,8 @@ import {
   DoctorReportSchema,
   type Hardware,
 } from "@rocky/contracts";
+import { resolveFfmpeg } from "./capture/ffmpeg.ts";
+import { measureWhisperSpeed } from "./capture/whisper-run.ts";
 import { openDb, vecStatus } from "./store/db.ts";
 import { freeBytes } from "./system/disk.ts";
 import { detectHardware } from "./system/hardware.ts";
@@ -17,6 +19,7 @@ import { whisperStatus } from "./system/whisper.ts";
 const MIN_FREE_GB = 10;
 const EMBED_MODEL = "nomic-embed-text";
 const GB = 1024 ** 3;
+const MIN_WHISPER_SPEED = 0.5;
 
 /** Probes are injectable so the report logic is testable without the real machine. */
 export interface DoctorProbes {
@@ -26,6 +29,9 @@ export interface DoctorProbes {
   fts5: () => boolean;
   ollama: (baseUrl: string) => Promise<OllamaStatus>;
   whisper: typeof whisperStatus;
+  ffmpeg: (dataDir: string) => Promise<string | null>;
+  /** Audio seconds per second for the configured model; only run with --bench or --fix. */
+  whisperSpeed: (binary: string, model: string, threads: number) => Promise<number>;
   keychain: typeof keychainStatus;
   writable: (dir: string) => boolean;
   nodeVersion: string;
@@ -61,6 +67,8 @@ export const realProbes: DoctorProbes = {
   fts5: fts5Available,
   ollama: (u) => ollamaStatus(u),
   whisper: whisperStatus,
+  ffmpeg: resolveFfmpeg,
+  whisperSpeed: (binary, model, threads) => measureWhisperSpeed({ binary, model, threads }),
   keychain: keychainStatus,
   writable: isWritable,
   nodeVersion: process.versions.node,
@@ -71,6 +79,8 @@ export interface DoctorInput {
   dataDir: string;
   dataDirSource: DataDirSource;
   config: AppConfig;
+  /** Measures whisper speed (about 5-20 s). */
+  bench?: boolean;
 }
 
 /** Adds `hint` only when the check is not passing. */
@@ -178,6 +188,38 @@ export async function runDoctor(
     status: whisperOk ? "pass" : "warn",
     detail: `binary: ${w.binary ?? "missing"}; model ggml-${config.whisper.model}: ${w.model ? "present" : "missing"}`,
     ...hintIf(!whisperOk, "Run `rocky doctor --fix` to download the pinned build and model."),
+  });
+
+  if (whisperOk && input.bench) {
+    const speed = await probes
+      .whisperSpeed(w.binary as string, w.model as string, config.whisper.threads)
+      .catch(() => null);
+    const slow = speed !== null && speed < MIN_WHISPER_SPEED && config.whisper.model !== "base";
+    add({
+      id: "whisper-speed",
+      label: "Transcription speed",
+      status: speed === null ? "fail" : slow ? "warn" : "pass",
+      detail:
+        speed === null
+          ? "whisper-cli failed on the sample"
+          : `${speed.toFixed(2)}x real time (ggml-${config.whisper.model})`,
+      ...hintIf(
+        slow,
+        "Slower than 0.5x: set `whisper: { model: base }` in rocky.yaml and run `rocky doctor --fix`.",
+      ),
+    });
+  }
+
+  const ffmpeg = await probes.ffmpeg(dataDir);
+  add({
+    id: "ffmpeg",
+    label: "ffmpeg",
+    status: ffmpeg ? "pass" : "warn",
+    detail: ffmpeg ?? "missing (needed only to import audio/video files)",
+    ...hintIf(
+      !ffmpeg,
+      "Run `rocky doctor --fix` (pinned LGPL build) or `winget install Gyan.FFmpeg`.",
+    ),
   });
 
   const kc = probes.keychain();

@@ -19,10 +19,13 @@ const program = new Command()
 
 program
   .command("doctor")
-  .description("check this machine: OS, RAM, GPU, Ollama, whisper, sqlite-vec, disk, keychain")
+  .description(
+    "check this machine: OS, RAM, GPU, Ollama, whisper, ffmpeg, sqlite-vec, disk, keychain",
+  )
   .option("--json", "print the report as JSON")
-  .option("--fix", "download the pinned whisper-cli build and model into the data dir")
-  .action(async (opts: { json?: boolean; fix?: boolean }) => {
+  .option("--fix", "download the pinned whisper-cli, model and ffmpeg into the data dir")
+  .option("--bench", "measure transcription speed on this CPU")
+  .action(async (opts: { json?: boolean; fix?: boolean; bench?: boolean }) => {
     const { dataDir } = program.opts<{ dataDir?: string }>();
     process.exitCode = await doctorCommand({ ...opts, dataDir });
   });

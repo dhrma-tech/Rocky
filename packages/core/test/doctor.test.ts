@@ -22,6 +22,8 @@ function probes(over: Partial<DoctorProbes> = {}): DoctorProbes {
     fts5: () => true,
     ollama: async () => ({ ok: true, version: "0.35.1", models: ["nomic-embed-text:latest"] }),
     whisper: () => ({ binary: "w.exe", model: "m.bin" }),
+    ffmpeg: async () => "ffmpeg",
+    whisperSpeed: async () => 2,
     keychain: () => ({ ok: true }),
     writable: () => true,
     nodeVersion: "24.11.1",
@@ -80,5 +82,20 @@ describe("runDoctor", () => {
       "high",
       "high",
     ]);
+  });
+
+  it("warns when ffmpeg is missing and only benchmarks whisper on request", async () => {
+    expect(await status("ffmpeg", { ffmpeg: async () => null })).toBe("warn");
+    expect((await run()).checks.some((c) => c.id === "whisper-speed")).toBe(false);
+    const bench = (speed: number) =>
+      runDoctor(
+        { dataDir: "E:RockyData", dataDirSource: "env", config, bench: true },
+        probes({ whisperSpeed: async () => speed }),
+      ).then((r) => r.checks.find((c) => c.id === "whisper-speed"));
+    expect(await bench(2)).toMatchObject({
+      status: "pass",
+      detail: expect.stringMatching(/2.00x/),
+    });
+    expect(await bench(0.3)).toMatchObject({ status: "warn", hint: expect.stringMatching(/base/) });
   });
 });

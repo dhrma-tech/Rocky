@@ -99,3 +99,26 @@ export async function transcribeWav(
     fs.rmSync(outDir, { recursive: true, force: true });
   }
 }
+
+/** whisper.cpp's public-domain sample (11 s, 16 kHz mono), used to measure transcription speed. */
+export const SPEED_SAMPLE = path.join(import.meta.dirname, "..", "..", "assets", "jfk.wav");
+
+/**
+ * Audio seconds per wall-clock second on this machine. Below 0.5× a 60-minute lecture takes
+ * over two hours, so doctor recommends the `base` model (capture.md).
+ */
+export async function measureWhisperSpeed(
+  opts: Omit<TranscribeOptions, "onProgress">,
+): Promise<number> {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rocky-speed-"));
+  try {
+    const wav = path.join(tmp, "sample.wav");
+    fs.copyFileSync(SPEED_SAMPLE, wav);
+    const audioSec = (fs.statSync(wav).size - 44) / 32_000;
+    const t0 = performance.now();
+    await transcribeWav(wav, { language: "en", ...opts });
+    return audioSec / ((performance.now() - t0) / 1000);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}

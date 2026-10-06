@@ -1,5 +1,11 @@
 import type { DoctorReport } from "@rocky/contracts";
-import { installWhisper, loadAppConfig, resolveDataDir, runDoctor } from "@rocky/core";
+import {
+  installFfmpeg,
+  installWhisper,
+  loadAppConfig,
+  resolveDataDir,
+  runDoctor,
+} from "@rocky/core";
 
 const TAG = { pass: "PASS", warn: "WARN", fail: "FAIL" } as const;
 
@@ -17,6 +23,7 @@ export function formatReport(r: DoctorReport): string {
 export async function doctorCommand(opts: {
   json?: boolean;
   fix?: boolean;
+  bench?: boolean;
   dataDir?: string | undefined;
 }): Promise<number> {
   const { dir, source } = resolveDataDir({ flag: opts.dataDir });
@@ -24,8 +31,19 @@ export async function doctorCommand(opts: {
   if (opts.fix) {
     const res = await installWhisper(dir, config.whisper.model, (m) => console.error(m));
     console.error(`whisper-cli: ${res.binary}\nmodel: ${res.model}`);
+    try {
+      console.error(`ffmpeg: ${await installFfmpeg(dir, (m) => console.error(m))}`);
+    } catch (err) {
+      // ffmpeg is only needed for media import; keep going so the report still prints.
+      console.error(`ffmpeg: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
-  const report = await runDoctor({ dataDir: dir, dataDirSource: source, config });
+  const report = await runDoctor({
+    dataDir: dir,
+    dataDirSource: source,
+    config,
+    bench: Boolean(opts.bench || opts.fix),
+  });
   console.log(opts.json ? JSON.stringify(report, null, 2) : formatReport(report));
   return report.ok ? 0 : 1;
 }
