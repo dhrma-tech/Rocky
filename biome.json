@@ -44,6 +44,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/landing/src/**/*.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
     }
   ],
   "javascript": {

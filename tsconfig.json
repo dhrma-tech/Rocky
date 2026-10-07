@@ -8,5 +8,5 @@
     "scripts/**/*.ts",
     "vitest.config.ts"
   ],
-  "exclude": ["apps/web"]
+  "exclude": ["apps/web", "apps/landing"]
 }

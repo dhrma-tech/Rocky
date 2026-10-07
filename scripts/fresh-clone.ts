@@ -34,8 +34,6 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
-const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
-
 const fake = await startFakeOllama();
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "rocky-fresh-"));
 try {
