@@ -28,11 +28,22 @@ export class NotFound extends Error {
   }
 }
 
-/** GET (or POST) with a fresh bearer token. 404/410 become NotFound so callers can resync. */
-export async function gfetch(ctx: GoogleCtx, url: string): Promise<Response> {
+/**
+ * A request with a fresh bearer token (GET unless `init` says otherwise). 404/410 become
+ * NotFound so callers can resync; other failures are HttpError (409 included, for idempotency).
+ */
+export async function gfetch(
+  ctx: GoogleCtx,
+  url: string,
+  init: RequestInit = {},
+): Promise<Response> {
   if (!ctx.accessToken) throw new AuthExpired("Sign in with Google on the Connectors page.");
   const res = await ctx.http.fetch(url, {
-    headers: { authorization: `Bearer ${await ctx.accessToken()}` },
+    ...init,
+    headers: {
+      ...(init.headers as Record<string, string>),
+      authorization: `Bearer ${await ctx.accessToken()}`,
+    },
   });
   if (res.ok) return res;
   const body = await res.text();
@@ -46,8 +57,24 @@ export async function gfetch(ctx: GoogleCtx, url: string): Promise<Response> {
   throw new HttpError(res.status, url, body);
 }
 
-export async function gjson<T>(ctx: GoogleCtx, url: string): Promise<T> {
-  return (await (await gfetch(ctx, url)).json()) as T;
+export async function gjson<T>(ctx: GoogleCtx, url: string, init?: RequestInit): Promise<T> {
+  return (await (await gfetch(ctx, url, init)).json()) as T;
+}
+
+/** JSON body request (POST, PUT, PATCH). */
+export function gsend<T>(
+  ctx: GoogleCtx,
+  method: "POST" | "PUT" | "PATCH",
+  url: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  return gjson<T>(ctx, url, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
+  });
 }
 
 /** Visible text of an HTML fragment (email bodies, event descriptions). */

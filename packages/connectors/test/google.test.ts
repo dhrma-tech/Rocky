@@ -266,7 +266,7 @@ describe("Google Calendar", () => {
 
 const DR = "https://www.googleapis.com/drive/v3";
 const FIELDS =
-  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,parents,owners(displayName,emailAddress)";
+  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,parents,owners(displayName,emailAddress),appProperties";
 const file = (id: string, mimeType: string, extra: Record<string, unknown> = {}) => ({
   id,
   name: `File ${id}`,

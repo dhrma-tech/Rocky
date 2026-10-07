@@ -1,12 +1,7 @@
-import {
-  type AnchorUnit,
-  AuthExpired,
-  type Connector,
-  type Http,
-  HttpError,
-  type SourceDocument,
-} from "@rocky/connector-sdk";
+import type { AnchorUnit, Connector, Http, SourceDocument } from "@rocky/connector-sdk";
 import { z } from "zod";
+import { notionActions } from "./actions.ts";
+import { API, call, token } from "./http.ts";
 
 /**
  * Notion (CONNECTORS.md #4). Internal integration token; the user shares pages with it.
@@ -17,8 +12,6 @@ import { z } from "zod";
  * Data-source rows are pages too (parent.type = "data_source_id"), so search covers them.
  */
 
-const API = "https://api.notion.com/v1";
-const VERSION = "2026-03-11";
 const MAX_DEPTH = 4;
 
 export const NotionConfigSchema = z.object({
@@ -60,31 +53,6 @@ interface NList<T> {
   next_cursor: string | null;
   has_more: boolean;
   request_status?: { type: string; incomplete_reason?: string };
-}
-
-const headers = (token: string) => ({
-  authorization: `Bearer ${token}`,
-  "notion-version": VERSION,
-  "content-type": "application/json",
-});
-
-function token(secrets: { get(n: string): string | null }): string {
-  const t = secrets.get("token");
-  if (!t) throw new AuthExpired("Add the Notion integration token on the Connectors page.");
-  return t;
-}
-
-async function call<T>(http: Http, tok: string, url: string, body?: unknown): Promise<T> {
-  const res = await http.fetch(url, {
-    method: body === undefined ? "GET" : "POST",
-    headers: headers(tok),
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  const text = await res.text();
-  if (res.status === 401)
-    throw new AuthExpired("Notion rejected the token. Paste a new integration token.");
-  if (!res.ok) throw new HttpError(res.status, url, text);
-  return JSON.parse(text) as T;
 }
 
 const plain = (rt: unknown) =>
@@ -293,14 +261,15 @@ async function* search(
 export const notion: Connector<NotionConfig, NotionCursor> = {
   id: "notion",
   displayName: "Notion",
-  permissions: "Reads pages and database rows shared with the integration",
+  permissions:
+    "Reads pages and database rows shared with the integration; creates or updates them after approval",
   configSchema: NotionConfigSchema,
   secrets: [
     {
       name: "token",
       label: "integration token",
       description:
-        "notion.so/profile/integrations → New internal integration. Then share pages with it (••• → Connections).",
+        "notion.so/profile/integrations → New internal integration (Read content; Insert and Update content for writes). Then share pages with it (••• → Connections).",
     },
   ],
   defaultIntervalMin: 15,
@@ -360,4 +329,5 @@ export const notion: Connector<NotionConfig, NotionCursor> = {
       };
     return { status: "ok", message: `Connected to ${workspace}`, account: workspace };
   },
+  actions: notionActions,
 };

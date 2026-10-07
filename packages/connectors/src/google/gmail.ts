@@ -1,6 +1,7 @@
 import type { AnchorUnit, Connector, SourceDocument } from "@rocky/connector-sdk";
 import { z } from "zod";
 import { type GoogleCtx, gjson, googleOAuth, htmlToText, NotFound } from "./common.ts";
+import { draftCreate, draftUpdate } from "./gmail-drafts.ts";
 
 /**
  * Gmail read-sync (CONNECTORS.md #1). Verified 2026-10-06:
@@ -9,7 +10,7 @@ import { type GoogleCtx, gjson, googleOAuth, htmlToText, NotFound } from "./comm
  *   means the id is too old → full resync. Save historyId from the last page.
  * - Quota (since 2026-05-01): messages.list 5, history.list 2, threads.get 40 units; 6,000/min
  *   per user, so threads are fetched four at a time.
- * Never sends mail: drafts arrive in Phase 6 and the no-send test scans every package.
+ * Never sends mail: Phase 6 adds drafts only (gmail-drafts.ts); the no-send test scans every package.
  */
 
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -192,10 +193,14 @@ async function* fullSync(ctx: GoogleCtx & { config: GmailConfig }, resync: boole
 export const gmail: Connector<GmailConfig, GmailCursor> = {
   id: "gmail",
   displayName: "Gmail",
-  permissions: "Reads mail (last 90 days by default); never sends",
+  permissions: "Reads mail (last 90 days by default); creates drafts after approval; never sends",
   configSchema: GmailConfigSchema,
   secrets: [],
-  oauth: googleOAuth(["https://www.googleapis.com/auth/gmail.readonly"]),
+  // compose: drafts (Phase 6). Code only calls the draft endpoints; see gmail-drafts.ts.
+  oauth: googleOAuth([
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+  ]),
   defaultIntervalMin: 10,
   readOnlyCapable: true,
   async *sync(ctx, cursor) {
@@ -243,4 +248,5 @@ export const gmail: Connector<GmailConfig, GmailCursor> = {
     const p = await gjson<{ emailAddress: string; messagesTotal?: number }>(ctx, `${API}/profile`);
     return { status: "ok", message: `Signed in as ${p.emailAddress}`, account: p.emailAddress };
   },
+  actions: () => [draftCreate, draftUpdate],
 };

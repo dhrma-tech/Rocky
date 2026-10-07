@@ -1,6 +1,7 @@
 import type { Connector, SourceDocument } from "@rocky/connector-sdk";
 import { z } from "zod";
 import { type GoogleCtx, gjson, googleOAuth, htmlToText, NotFound } from "./common.ts";
+import { eventCreate, eventPatch } from "./gcal-events.ts";
 
 /**
  * Google Calendar read-sync (CONNECTORS.md #2). Verified 2026-10-06: events.list with
@@ -119,10 +120,14 @@ async function* listCalendar(
 export const gcal: Connector<GcalConfig, GcalCursor> = {
   id: "gcal",
   displayName: "Google Calendar",
-  permissions: "Reads events",
+  permissions: "Reads events; creates or updates events after approval",
   configSchema: GcalConfigSchema,
   secrets: [],
-  oauth: googleOAuth(["https://www.googleapis.com/auth/calendar.readonly"]),
+  // events: create/patch after approval (Phase 6, gcal-events.ts).
+  oauth: googleOAuth([
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+  ]),
   defaultIntervalMin: 10,
   readOnlyCapable: true,
   async *sync(ctx, cursor) {
@@ -174,4 +179,5 @@ export const gcal: Connector<GcalConfig, GcalCursor> = {
     const cal = await gjson<{ id: string; summary?: string }>(ctx, `${API}/calendars/primary`);
     return { status: "ok", message: `Reading ${cal.summary ?? cal.id}`, account: cal.id };
   },
+  actions: () => [eventCreate, eventPatch],
 };

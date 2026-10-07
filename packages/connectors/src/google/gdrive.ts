@@ -1,6 +1,7 @@
 import type { Connector, SourceDocument } from "@rocky/connector-sdk";
 import { z } from "zod";
 import { type GoogleCtx, gfetch, gjson, googleOAuth } from "./common.ts";
+import { sourcePackWrite } from "./gdrive-pack.ts";
 
 /**
  * Google Drive read-sync (CONNECTORS.md #3), read-only by default. Verified 2026-10-06:
@@ -15,7 +16,7 @@ const DOC = "application/vnd.google-apps.document";
 const SLIDES = "application/vnd.google-apps.presentation";
 const PDF = "application/pdf";
 const FIELDS =
-  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,parents,owners(displayName,emailAddress)";
+  "id,name,mimeType,createdTime,modifiedTime,webViewLink,size,trashed,parents,owners(displayName,emailAddress),appProperties";
 /** Folder depth followed when resolving a file's ancestors (notebook rules match recursively). */
 const MAX_DEPTH = 8;
 
@@ -38,6 +39,7 @@ interface DFile {
   size?: string;
   trashed?: boolean;
   owners?: { displayName?: string; emailAddress?: string }[];
+  appProperties?: Record<string, string>;
   parents?: string[];
 }
 
@@ -83,6 +85,8 @@ export function fileToDocument(
   ancestors: string[] = f.parents ?? [],
 ): SourceDocument | null {
   if (!SUPPORTED.has(f.mimeType)) return null;
+  // Source packs Rocky wrote are exports of memory, not new sources.
+  if (f.appProperties?.rockyPack) return null;
   if (f.mimeType === PDF && Number(f.size ?? 0) > maxBytes) return null;
   const owner = f.owners?.[0];
   const base = {
@@ -132,10 +136,15 @@ export function fileToDocument(
 export const gdrive: Connector<GdriveConfig, GdriveCursor> = {
   id: "gdrive",
   displayName: "Google Drive",
-  permissions: "Reads Docs, Slides and PDFs",
+  permissions:
+    "Reads Docs, Slides and PDFs; writes source packs into its own folder after approval",
   configSchema: GdriveConfigSchema,
   secrets: [],
-  oauth: googleOAuth(["https://www.googleapis.com/auth/drive.readonly"]),
+  // drive.file: only files Rocky creates (the source-pack folder), Phase 6.
+  oauth: googleOAuth([
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file",
+  ]),
   defaultIntervalMin: 30,
   readOnlyCapable: true,
   async *sync(ctx, cursor) {
@@ -201,4 +210,5 @@ export const gdrive: Connector<GdriveConfig, GdriveCursor> = {
     const who = a.user?.emailAddress ?? a.user?.displayName ?? "your account";
     return { status: "ok", message: `Reading Drive for ${who}`, account: who };
   },
+  actions: () => [sourcePackWrite],
 };
