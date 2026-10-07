@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { evaluateComputations, statedResults, substitute } from "../src/notebooks/math.ts";
 import { NEW_CARD, nextEf, review } from "../src/notebooks/sm2.ts";
 
@@ -41,6 +41,10 @@ describe("SM-2 (acceptance #2)", () => {
 });
 
 describe("math routing (acceptance #3)", () => {
+  // Loading mathjs in the worker takes ~1 s idle and far longer when the full suite runs in
+  // parallel; warm it here so the cold start never counts against a test timeout.
+  beforeAll(() => evaluateComputations([{ id: "warm", expr: "1+1", purpose: "" }]), 60_000);
+
   it("evaluates percentages, units and derivatives in the sandbox", async () => {
     const r = await evaluateComputations([
       { id: "pct", expr: "17/100*2340", purpose: "17% of 2,340" },

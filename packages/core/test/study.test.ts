@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   ankiCsv,
   ankiField,
@@ -23,6 +23,7 @@ import {
 import { embedDocument } from "../src/ingest/embed-job.ts";
 import { markdownBlocks } from "../src/ingest/parsers/text-blocks.ts";
 import { upsertDocument } from "../src/ingest/upsert.ts";
+import { evaluateComputations } from "../src/notebooks/math.ts";
 import { fakeEmbedder, memoryDb } from "./helpers.ts";
 import { fakeProviders, harness } from "./router-helpers.ts";
 
@@ -162,6 +163,9 @@ describe("flashcards", () => {
 });
 
 describe("quiz with math routing (acceptance #3)", () => {
+  // Warm the mathjs worker outside the test timeout (slow cold start under a parallel suite).
+  beforeAll(() => evaluateComputations([{ id: "warm", expr: "1+1", purpose: "" }]), 60_000);
+
   it("computes 17% of 2,340 with mathjs, shows the expression, and never lets the model state it", async () => {
     const { fetch } = models({
       "exam-style question": (body) => ({
