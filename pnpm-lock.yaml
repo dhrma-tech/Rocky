@@ -161,6 +161,9 @@ importers:
       chrono-node:
         specifier: 2.10.2
         version: 2.10.2
+      croner:
+        specifier: 10.0.1
+        version: 10.0.1
       mammoth:
         specifier: 1.13.0
         version: 1.13.0
@@ -986,6 +989,10 @@ packages:
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
+
+  croner@10.0.1:
+    resolution: {integrity: sha512-ixNtAJndqh173VQ4KodSdJEI6nuioBWI0V1ITNKhZZsO0pEMoDxz539T4FTTbSZ/xIOSuDnzxLVRqBVSvPNE2g==}
+    engines: {node: '>=18.0'}
 
   css-select@5.2.2:
     resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
@@ -2164,6 +2171,8 @@ snapshots:
   cookie-es@3.1.1: {}
 
   core-util-is@1.0.3: {}
+
+  croner@10.0.1: {}
 
   css-select@5.2.2:
     dependencies:

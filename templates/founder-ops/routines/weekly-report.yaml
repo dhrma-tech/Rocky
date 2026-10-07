@@ -1,0 +1,5 @@
+name: Weekly report
+schedule: "0 16 * * 5"
+inputs: [week_meetings, commitments_due_7d, overdue]
+prompt: prompts/weekly-report.md
+output: { document: true, notify: ui }

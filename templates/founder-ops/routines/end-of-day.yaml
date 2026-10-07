@@ -1,0 +1,5 @@
+name: End of day
+schedule: "0 19 * * 1-5"
+inputs: [meetings_today, commitments_due_7d]
+prompt: prompts/end-of-day.md
+output: { document: true, notify: ui }

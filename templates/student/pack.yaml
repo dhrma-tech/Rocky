@@ -1,0 +1,4 @@
+name: Student
+segment: student
+description: Lectures, deadlines and exams, with a morning brief, an evening review and a weekly deadline digest.
+recommended_connectors: [gcal, gdrive, notion, gmail]

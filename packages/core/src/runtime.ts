@@ -1,6 +1,12 @@
 import type { AppConfig, Hardware } from "@rocky/contracts";
 import { ActionRegistry } from "./actions/registry.ts";
 import { ActionService } from "./actions/service.ts";
+import {
+  queueDueRoutines,
+  ROUTINE_JOB,
+  routineJobHandler,
+  seedRoutines,
+} from "./assistant/routines.ts";
 import { resolveFfmpeg } from "./capture/ffmpeg.ts";
 import { TRANSCRIBE_JOB } from "./capture/recordings.ts";
 import { transcribeMeeting, UNDERSTAND_JOB } from "./capture/transcribe-job.ts";
@@ -43,6 +49,8 @@ export interface Runtime {
   connectors: ConnectorService;
   /** Handlers for every job type; the daemon runs them in a JobRunner. */
   jobHandlers: Record<string, JobHandler>;
+  /** Queues routines whose scheduled time has come (the daemon calls it every minute). */
+  tickRoutines(now?: number): string[];
   /** Re-applies notebook rules soon (debounced): after syncs, ingests, and on a timer in the daemon. */
   refreshNotebooks(): void;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
@@ -100,6 +108,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
 
+  seedRoutines(db, { dataDir: opts.dataDir });
   const registry = new ActionRegistry();
   const actions = new ActionService(db, registry);
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;
@@ -150,6 +159,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
         job,
       ),
     [STUDY_JOB]: studyJobHandler({ db, router, embedder }),
+    [ROUTINE_JOB]: routineJobHandler({ db, router, dataDir: opts.dataDir }),
     [UNDERSTAND_JOB]: async (job) => {
       await understandMeeting({ db, router }, job);
     },
@@ -170,6 +180,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     connectorRegistry,
     connectors,
     jobHandlers,
+    // Routines run as heavy jobs when the model is local (they compete with whisper for the CPU).
+    tickRoutines: (now) => queueDueRoutines(db, now, router.chain("routine", {})[0]?.local ?? true),
     refreshNotebooks,
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => {

@@ -504,7 +504,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerNotebookRoutes(api, { rt, poke, body });
-  registerAssistantRoutes(api, { rt, body, errorBody });
+  registerAssistantRoutes(api, { rt, body, errorBody, poke });
 
   app.route("/api/v1", api);
 

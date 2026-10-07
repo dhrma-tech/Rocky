@@ -1,5 +1,27 @@
-import { type AskEvent, BriefRequestSchema } from "@rocky/contracts";
-import { briefForEvent, briefForNotebook, latestBrief, type Runtime } from "@rocky/core";
+import {
+  type AskEvent,
+  BriefRequestSchema,
+  RoutineCreateSchema,
+  RoutineUpdateSchema,
+} from "@rocky/contracts";
+import {
+  addPackRoutines,
+  briefForEvent,
+  briefForNotebook,
+  createRoutine,
+  deleteRoutine,
+  enqueue,
+  getRoutine,
+  home,
+  latestBrief,
+  listPacks,
+  listRoutines,
+  ROUTINE_JOB,
+  type Runtime,
+  routineRuns,
+  timeline,
+  updateRoutine,
+} from "@rocky/core";
 import type { Context, Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
@@ -37,7 +59,12 @@ export function sse<T>(
 /** Assistant layer routes (ui.md "Home & Brief", "Routines", "Drafts"; Phase 6). */
 export function registerAssistantRoutes(
   api: Hono,
-  { rt, body, errorBody }: { rt: Runtime; body: Body; errorBody: ErrorBody },
+  {
+    rt,
+    body,
+    errorBody,
+    poke,
+  }: { rt: Runtime; body: Body; errorBody: ErrorBody; poke?: (() => void) | undefined },
 ): void {
   const deps = { db: rt.db, router: rt.router, ...(rt.embedder ? { embedder: rt.embedder } : {}) };
 
@@ -58,4 +85,66 @@ export function registerAssistantRoutes(
       return c.json({ error: "kind and subject are required", code: "BAD_REQUEST" }, 400);
     return c.json({ brief: latestBrief(rt.db, q.data.kind, q.data.subject) });
   });
+
+  // --- home and timeline ---
+  api.get("/home", (c) => c.json(home(rt.db)));
+  api.get("/timeline", (c) => {
+    const q = z
+      .object({ from: z.coerce.number().int(), to: z.coerce.number().int() })
+      .refine(
+        (r) => r.to > r.from && r.to - r.from <= 366 * 86_400_000,
+        "from < to, at most a year",
+      )
+      .safeParse(c.req.query());
+    if (!q.success)
+      return c.json({ error: "from and to (ms) are required", code: "BAD_REQUEST" }, 400);
+    return c.json({ items: timeline(rt.db, q.data) });
+  });
+
+  // --- routines ---
+  const opts = () => ({ dataDir: rt.dataDir });
+  api.get("/templates", (c) => c.json({ packs: listPacks(rt.dataDir) }));
+  api.get("/routines", (c) => c.json({ routines: listRoutines(rt.db, opts()) }));
+  api.post("/routines", async (c) => {
+    const id = createRoutine(rt.db, await body(c, RoutineCreateSchema));
+    return c.json(getRoutine(rt.db, id, opts()), 201);
+  });
+  api.post("/routines/from-template", async (c) => {
+    const { pack, template } = await body(
+      c,
+      z.object({ pack: z.string().min(1), template: z.string().min(1).optional() }).strict(),
+    );
+    const added = addPackRoutines(rt.db, pack, {
+      ...opts(),
+      ...(template ? { only: template } : {}),
+    });
+    return c.json({ added, routines: listRoutines(rt.db, opts()) }, 201);
+  });
+  api.get("/routines/:id", (c) => c.json(getRoutine(rt.db, c.req.param("id"), opts())));
+  api.patch("/routines/:id", async (c) => {
+    updateRoutine(rt.db, c.req.param("id"), await body(c, RoutineUpdateSchema));
+    return c.json(getRoutine(rt.db, c.req.param("id"), opts()));
+  });
+  api.delete("/routines/:id", (c) => {
+    deleteRoutine(rt.db, c.req.param("id"));
+    return c.json({ deleted: true });
+  });
+  /** Run now: queued like a scheduled run; the UI follows GET /jobs/:id/events. */
+  api.post("/routines/:id/run", (c) => {
+    const id = c.req.param("id");
+    getRoutine(rt.db, id, opts());
+    const jobId = enqueue(
+      rt.db,
+      ROUTINE_JOB,
+      { routineId: id, at: Date.now() },
+      {
+        heavy: rt.router.chain("routine", {})[0]?.local ?? true,
+        priority: 1,
+        maxAttempts: 1,
+      },
+    );
+    poke?.();
+    return c.json({ jobId }, 202);
+  });
+  api.get("/routines/:id/runs", (c) => c.json({ runs: routineRuns(rt.db, c.req.param("id")) }));
 }

@@ -76,6 +76,17 @@ export async function startDaemon(opts: {
   // Notebook rules also pick up documents from imports and watched folders (notebooks.md).
   const notebookTimer = setInterval(() => rt.refreshNotebooks(), 10 * 60_000);
   notebookTimer.unref();
+  // Routines: catch up once now (a run missed while asleep), then check every minute.
+  const tickRoutines = () => {
+    try {
+      if (rt.tickRoutines().length) runner.poke();
+    } catch (err) {
+      log(`routine tick failed: ${String(err)}`);
+    }
+  };
+  tickRoutines();
+  const routineTimer = setInterval(tickRoutines, 60_000);
+  routineTimer.unref();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -87,6 +98,7 @@ export async function startDaemon(opts: {
       log("deleting everything at the user's request");
       await new Promise<void>((resolve) => server.close(() => resolve()));
       clearInterval(notebookTimer);
+      clearInterval(routineTimer);
       await scheduler.stop();
       await watcher.stop();
       await runner.stop();
@@ -113,6 +125,7 @@ export async function startDaemon(opts: {
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       clearInterval(notebookTimer);
+      clearInterval(routineTimer);
       await scheduler.stop();
       await watcher.stop();
       await runner.stop();

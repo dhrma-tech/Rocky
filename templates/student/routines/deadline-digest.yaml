@@ -1,0 +1,5 @@
+name: Deadline digest
+schedule: "0 18 * * 0"
+inputs: [deadlines_14d, overdue]
+prompt: prompts/deadline-digest.md
+output: { document: true, notify: ui }

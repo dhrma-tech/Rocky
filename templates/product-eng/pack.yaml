@@ -1,0 +1,4 @@
+name: Product and engineering
+segment: product-eng
+description: Standups, issues and milestones, with a morning brief, a deadline digest and a weekly report.
+recommended_connectors: [github, gcal, notion, gmail]

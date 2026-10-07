@@ -1,0 +1,4 @@
+name: Founder and operations
+segment: founder-ops
+description: Meetings, mail that needs you, promises made and a Friday weekly report.
+recommended_connectors: [gmail, gcal, notion, github]

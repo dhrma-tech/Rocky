@@ -1,0 +1,5 @@
+name: Morning brief
+schedule: "30 8 * * 1-5"
+inputs: [calendar_today, deadlines_14d, overdue]
+prompt: prompts/morning-brief.md
+output: { document: true, notify: ui }
