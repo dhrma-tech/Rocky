@@ -9,7 +9,9 @@ import {
 } from "@rocky/contracts";
 import { resolveFfmpeg } from "./capture/ffmpeg.ts";
 import { measureWhisperSpeed } from "./capture/whisper-run.ts";
+import { dataPaths } from "./config/paths.ts";
 import { openDb, vecStatus } from "./store/db.ts";
+import { storageStatus } from "./store/encryption.ts";
 import { freeBytes } from "./system/disk.ts";
 import { detectHardware } from "./system/hardware.ts";
 import { keychainStatus } from "./system/keychain.ts";
@@ -248,6 +250,21 @@ export async function runDoctor(
     label: "OS keychain",
     status: kc.ok ? "pass" : "fail",
     detail: kc.ok ? "read/write ok" : kc.error,
+  });
+
+  const store = storageStatus(dataDir, config);
+  const mismatch = store.configured !== store.encrypted && fs.existsSync(dataPaths(dataDir).db);
+  add({
+    id: "storage",
+    label: "Store encryption",
+    status: mismatch ? "fail" : "pass",
+    detail: store.encrypted
+      ? "SQLCipher (key in the OS keychain)"
+      : "plain SQLite; use OS disk encryption, or `rocky db encrypt`",
+    ...hintIf(
+      mismatch,
+      "rocky.yaml storage.encrypt does not match the store on disk. Set it to match, or run `rocky db encrypt`.",
+    ),
   });
 
   return DoctorReportSchema.parse({

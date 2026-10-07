@@ -26,10 +26,10 @@ describe("Secrets: redaction covers every documented token pattern", () => {
     "xoxb-": "xoxb-1234567890-abcdefghij",
     "xoxp-": "xoxp-1234567890-abcdefghij",
     "xapp-": "xapp-1-A0123456789-abcdef",
-    "ghp_": "ghp_abcdefghijklmnopqrstuvwxyz0123",
-    "github_pat_": "github_pat_11ABCDEFG0123456789_abcdefghijklmnop",
-    "lin_api_": "lin_api_abcdefghijklmnopqrstuvwxyz",
-    "phx_": "phx_abcdefghijklmnopqrstuvwxyz0123",
+    ghp_: "ghp_abcdefghijklmnopqrstuvwxyz0123",
+    github_pat_: "github_pat_11ABCDEFG0123456789_abcdefghijklmnop",
+    lin_api_: "lin_api_abcdefghijklmnopqrstuvwxyz",
+    phx_: "phx_abcdefghijklmnopqrstuvwxyz0123",
     Bearer: "Bearer abc.def.ghi-jkl_mno",
   };
   it.each(Object.entries(samples))("redacts %s", (_label, token) => {

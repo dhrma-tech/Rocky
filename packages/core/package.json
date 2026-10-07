@@ -30,5 +30,8 @@
     "@ai-sdk/openai-compatible": "3.0.62",
     "@types/better-sqlite3": "^9.6.0",
     "ai": "7.0.127"
+  },
+  "optionalDependencies": {
+    "better-sqlite3-multiple-ciphers": "13.0.3"
   }
 }

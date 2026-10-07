@@ -450,7 +450,7 @@ export async function readSecret(prompt: string): Promise<string> {
   });
 }
 
-const PROVIDER_SECRETS = SECRET_NAMES.filter((n) => n !== "daemon-token");
+const PROVIDER_SECRETS = SECRET_NAMES.filter((n) => n !== "daemon-token" && n !== "db-key");
 
 export async function secretsCommand(action: "set" | "list" | "delete", name: string | undefined) {
   const store = keychainSecrets();

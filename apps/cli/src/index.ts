@@ -295,6 +295,16 @@ program
   });
 
 program
+  .command("db")
+  .description("store encryption (SQLCipher, opt-in): status, or encrypt the existing store")
+  .argument("<action>", "status | encrypt")
+  .option("--yes", "with encrypt: skip the confirmation")
+  .action(async (action: string, opts: { yes?: boolean }) => {
+    const { dbCommand } = await import("./db.ts");
+    process.exitCode = await dbCommand(action, { ...opts, dataDir: dataDir() });
+  });
+
+program
   .command("mcp")
   .description(
     "MCP server with read-only memory tools over stdio (claude mcp add rocky -- rocky mcp)",

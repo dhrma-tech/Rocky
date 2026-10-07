@@ -25,6 +25,7 @@ import { loadPrices } from "./router/prices.ts";
 import { Router } from "./router/router.ts";
 import { keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
 import { type Db, openDb } from "./store/db.ts";
+import { storeKey } from "./store/encryption.ts";
 import { migrate } from "./store/migrate.ts";
 import type { ProcessRunner } from "./system/exec.ts";
 import { detectHardware } from "./system/hardware.ts";
@@ -78,14 +79,15 @@ export interface OpenRuntimeOptions {
 export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   const paths = dataPaths(opts.dataDir);
   const config = loadAppConfig(opts.dataDir);
-  const db = openDb(opts.dbFile ?? paths.db);
+  const secrets = opts.secrets ?? keychainSecrets();
+  const dbFile = opts.dbFile ?? paths.db;
+  const db = openDb(dbFile, { key: storeKey(config, secrets, dbFile) });
   migrate(db, { backupDir: paths.backups });
 
   const hardware = opts.hardware ?? (await detectHardware());
   const policy = loadPolicy(opts.dataDir);
   const prices = loadPrices(opts.dataDir);
   const localOnly = () => config.localOnly || Boolean(opts.localOnly);
-  const secrets = opts.secrets ?? keychainSecrets();
   const gate = new ProviderGate(db, {
     settings: () => ({
       localOnly: localOnly(),

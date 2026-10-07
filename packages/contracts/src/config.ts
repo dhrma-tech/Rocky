@@ -16,6 +16,11 @@ export const AppConfigSchema = z.object({
     .prefault({}),
   daemon: z.object({ port: z.number().int().min(1024).max(65535).default(7337) }).prefault({}),
   /**
+   * Encrypt the store with SQLCipher (SECURITY.md "Data at rest"). The key lives in the keychain
+   * as `db-key`. Turn it on for an existing store with `rocky db encrypt`, not by editing this.
+   */
+  storage: z.object({ encrypt: z.boolean().default(false) }).prefault({}),
+  /**
    * MCP server (PLAN §4.10). An MCP client may be cloud-backed, so local-only documents and
    * notebooks are hidden from it, and with global localOnly every tool refuses, unless allowed here.
    */

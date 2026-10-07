@@ -3,7 +3,14 @@ import { Entry, findCredentials } from "@napi-rs/keyring";
 /** Every Rocky secret lives in the OS keychain under this service (SECURITY.md). Never in files, the DB or logs. */
 export const SECRET_SERVICE = "rocky";
 
-export const SECRET_NAMES = ["anthropic", "google", "openai_compatible", "daemon-token"] as const;
+export const SECRET_NAMES = [
+  "anthropic",
+  "google",
+  "openai_compatible",
+  "daemon-token",
+  // SQLCipher key for an encrypted store (opt-in). Losing it loses the data.
+  "db-key",
+] as const;
 export type CoreSecretName = (typeof SECRET_NAMES)[number];
 /** Connector secrets are namespaced: "github.token", "google-oauth.refresh". */
 export type ConnectorSecretName = `${string}.${string}`;

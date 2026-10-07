@@ -67,6 +67,7 @@ export * from "./security/redact.ts";
 export * from "./security/untrusted.ts";
 export * from "./store/blobs.ts";
 export * from "./store/db.ts";
+export * from "./store/encryption.ts";
 export * from "./store/migrate.ts";
 export * from "./system/disk.ts";
 export * from "./system/exec.ts";

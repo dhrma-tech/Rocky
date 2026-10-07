@@ -42,8 +42,11 @@ Each connector requests the minimum scopes listed in [CONNECTORS.md](CONNECTORS.
 
 ## Data at rest
 
-- Local by default. Plain SQLite in V1.
-- SQLCipher evaluation happens in Phase 9 (`better-sqlite3-multiple-ciphers` with sqlite-vec loaded as an extension). If it works, it ships as an opt-in. If not, it's documented as a follow-up, with OS disk encryption (BitLocker / Device Encryption / FileVault) recommended.
+- Local by default. Plain SQLite unless you opt in.
+- **Opt-in encryption (Phase 9):** `rocky db encrypt` encrypts the store and its migration backups with SQLCipher (`better-sqlite3-multiple-ciphers`, an optional dependency) and sets `storage.encrypt: true`. A new data dir with `storage.encrypt: true` starts encrypted. The 256-bit key is random and lives only in the OS keychain as `rocky/db-key`. **Losing that keychain entry loses the data**; there is no recovery.
+- Verified by the Phase 9 spike (`core/test/spikes/sqlcipher.test.ts`): the full schema migrates, sqlite-vec loads and answers KNN, no plaintext is on disk, a wrong key is refused, migration backups (`VACUUM INTO`) stay encrypted, and `PRAGMA rekey` converts a plain store in place.
+- Not covered: blobs (original PDFs, audio) and the `rec/` folder stay plain files. Recordings and imported media are as sensitive as the store, so OS disk encryption (BitLocker / Device Encryption / FileVault) is still recommended, with or without store encryption.
+- `rocky doctor` and `rocky db status` report which mode the store is in.
 
 ## Egress transparency
 
@@ -75,6 +78,7 @@ Plugins run in-process with the same OS privileges as the daemon. They only rece
 | Package boundaries (core, connectors, MCP read-only, importers parse only) | `boundaries.test.ts` |
 | Token redaction for every listed pattern; secrets not in DB or logs | `claims.test.ts` |
 | `.gitignore` covers data, `.env*`, private evals | `claims.test.ts` |
+| Opt-in store encryption (no plaintext, wrong key refused, backups encrypted) | `core/test/encryption.test.ts`, `core/test/spikes/sqlcipher.test.ts` |
 | No invisible or bidi control characters in source | `source-hygiene.test.ts` |
 | No exfiltration through rendering (no images, no live links) | `apps/web/test/safe-text.test.ts` |
 | Daemon binds 127.0.0.1, token, Host and Origin checks | `apps/daemon/test/server.test.ts`, `app.test.ts`, `mcp-http.test.ts` |

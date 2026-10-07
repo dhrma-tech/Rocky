@@ -1,8 +1,9 @@
 packages:
   - apps/*
   - packages/*
-# better-sqlite3 13 bundles N-API prebuilds; its build script would force a source compile.
+# better-sqlite3 13 (and the multiple-ciphers fork) bundle N-API prebuilds; their build scripts would force a source compile.
 onlyBuiltDependencies:
   - "@biomejs/biome"
 ignoredBuiltDependencies:
   - better-sqlite3
+  - better-sqlite3-multiple-ciphers
