@@ -206,6 +206,95 @@ program
   );
 
 program
+  .command("actions")
+  .description(
+    "the approval queue: list, show, approve (binds to the payload shown), reject, revoke, run",
+  )
+  .argument("<action>", "list | show | approve | reject | revoke | run")
+  .argument("[id]", "action id (or its first 6+ characters)")
+  .option(
+    "--status <status>",
+    "with list: draft, approved, rejected, executing, executed or failed",
+  )
+  .option("--yes", "with approve: approve the payload shown without asking (headless)")
+  .option("--json", "print JSON")
+  .action(
+    async (
+      action: string,
+      id: string | undefined,
+      opts: { status?: string; yes?: boolean; json?: boolean },
+    ) => {
+      const { actionsCommand } = await import("./actions.ts");
+      process.exitCode = await actionsCommand(action, id, { ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
+  .command("sync")
+  .description("sync every connector now, or one (same as `rocky connectors sync`)")
+  .argument("[connector]", "connector id")
+  .action(async (connector: string | undefined) => {
+    process.exitCode = await connectorsCommand("sync", connector ? [connector] : [], {
+      dataDir: dataDir(),
+    });
+  });
+
+program
+  .command("study")
+  .description("review due flashcards in the terminal, or take a quiz (--quiz)")
+  .argument("[notebook]", "notebook id or name (default: all notebooks)")
+  .option("--quiz", "a graded quiz from the notebook's sources instead of card review")
+  .option("--questions <n>", "with --quiz: how many questions", "5")
+  .option("--difficulty <level>", "with --quiz: easy, medium or hard", "medium")
+  .action(
+    async (
+      notebook: string | undefined,
+      opts: { quiz?: boolean; questions?: string; difficulty?: string },
+    ) => {
+      const { studyCommand } = await import("./study.ts");
+      process.exitCode = await studyCommand(notebook, { ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
+  .command("record")
+  .description(
+    "record a microphone until Ctrl+C, then transcribe and extract (tab or system audio: use the web UI)",
+  )
+  .option("--consent", "confirm everyone being recorded knows, and recording is lawful here")
+  .option("--kind <kind>", "lecture or meeting", "lecture")
+  .option("--title <title>", "title (default: kind and start time)")
+  .option("--device <name>", "microphone (see --list-devices)")
+  .option("--list-devices", "list microphones and exit")
+  .option("--minutes <n>", "stop after n minutes")
+  .option("--no-wait", "only queue the transcription; the running daemon does the work")
+  .action(
+    async (opts: {
+      consent?: boolean;
+      kind?: string;
+      title?: string;
+      device?: string;
+      listDevices?: boolean;
+      minutes?: string;
+      wait?: boolean;
+    }) => {
+      const { recordCommand } = await import("./record.ts");
+      process.exitCode = await recordCommand({ ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
+  .command("templates")
+  .description("template packs (editable Markdown/YAML): list, or eject one to customize it")
+  .argument("<action>", "list | eject")
+  .argument("[pack]", "with eject: student, founder-ops or product-eng")
+  .option("--force", "with eject: overwrite files you already edited")
+  .action(async (action: string, pack: string | undefined, opts: { force?: boolean }) => {
+    const { templatesCommand } = await import("./templates.ts");
+    process.exitCode = templatesCommand(action, pack, { ...opts, dataDir: dataDir() });
+  });
+
+program
   .command("mcp")
   .description(
     "MCP server with read-only memory tools over stdio (claude mcp add rocky -- rocky mcp)",
