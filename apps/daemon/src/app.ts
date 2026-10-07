@@ -31,6 +31,7 @@ import {
   saveAppConfig,
   verifyAuditChain,
 } from "@rocky/core";
+import { createRockyMcpHttpHandler } from "@rocky/mcp";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
@@ -509,6 +510,16 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerImportRoutes(api, { rt, poke, body });
+
+  // MCP over Streamable HTTP (PLAN §4.10): the same read-only tools as `rocky mcp`, behind the
+  // token, Host and Origin checks above.
+  const mcp = createRockyMcpHttpHandler({
+    db: rt.db,
+    embedder: rt.embedder,
+    config: () => rt.config,
+    version: VERSION,
+  });
+  api.all("/mcp", (c) => mcp.fetch(c.req.raw));
   registerNotebookRoutes(api, { rt, poke, body });
   registerAssistantRoutes(api, { rt, body, errorBody, poke });
 

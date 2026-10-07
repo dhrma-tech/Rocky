@@ -206,6 +206,19 @@ program
   );
 
 program
+  .command("mcp")
+  .description(
+    "MCP server with read-only memory tools over stdio (claude mcp add rocky -- rocky mcp)",
+  )
+  .option("--http", "print the daemon's Streamable HTTP endpoint instead")
+  .option("--show-token", "with --http: also print the install token for the client header")
+  .action(async (opts: { http?: boolean; showToken?: boolean }) => {
+    const { mcpCommand } = await import("./mcp.ts");
+    const code = await mcpCommand({ ...opts, dataDir: dataDir() });
+    process.exit(code);
+  });
+
+program
   .command("open")
   .description("print a one-time sign-in link for the web UI")
   .action(async () => {

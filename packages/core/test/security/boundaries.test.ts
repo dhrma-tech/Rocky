@@ -14,10 +14,12 @@ function* files(dir: string): Generator<string> {
   }
 }
 
+/** Source without comments, so a doc comment naming a forbidden symbol is not a violation. */
+const code = (f: string) =>
+  fs.readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, "");
+
 const offenders = (root: string, re: RegExp) =>
-  [...files(root)]
-    .filter((f) => re.test(fs.readFileSync(f, "utf8")))
-    .map((f) => path.relative(pkgs, f));
+  [...files(root)].filter((f) => re.test(code(f))).map((f) => path.relative(pkgs, f));
 
 describe("package boundaries", () => {
   it("core never imports concrete connectors", () => {
@@ -25,6 +27,37 @@ describe("package boundaries", () => {
       offenders(
         path.join(pkgs, "core/src"),
         /from\s+["']@rocky\/connectors["']|packages\/connectors\//,
+      ),
+    ).toEqual([]);
+  });
+
+  it("core never imports the MCP server or the archive importers", () => {
+    expect(
+      offenders(path.join(pkgs, "core/src"), /from\s+["']@rocky\/(mcp|importers)["']/),
+    ).toEqual([]);
+  });
+
+  it("the MCP server is read-only: no actions, executors, connectors, deletion or writes", () => {
+    const root = path.join(pkgs, "mcp/src");
+    expect(
+      offenders(
+        root,
+        /\b(ActionService|actions\.(propose|approve|execute)|registry|deleteData|upsertDocument|connectors\.|appendAudit)\b|@rocky\/connectors|@rocky\/connector-sdk/,
+      ),
+    ).toEqual([]);
+    // Every SQL statement it runs is a SELECT.
+    for (const f of files(root)) {
+      const sql = fs.readFileSync(f, "utf8").match(/\.prepare\(\s*[`"']([\s\S]*?)[`"']/g) ?? [];
+      for (const s of sql)
+        expect(s, path.relative(pkgs, f)).toMatch(/prepare\(\s*[`"']\s*select\b/i);
+    }
+  });
+
+  it("importers only parse: no store, no network", () => {
+    expect(
+      offenders(
+        path.join(pkgs, "importers/src"),
+        /from\s+["']@rocky\/core["']|packages\/core\/|\bfetch\(|node:https?["']/,
       ),
     ).toEqual([]);
   });

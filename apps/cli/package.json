@@ -9,6 +9,10 @@
     "@rocky/core": "workspace:*",
     "@rocky/daemon": "workspace:*",
     "@rocky/importers": "workspace:*",
+    "@rocky/mcp": "workspace:*",
     "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1"
   }
 }

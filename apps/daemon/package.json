@@ -17,10 +17,12 @@
     "@rocky/contracts": "workspace:*",
     "@rocky/core": "workspace:*",
     "@rocky/importers": "workspace:*",
+    "@rocky/mcp": "workspace:*",
     "hono": "4.13.13",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "fflate": "0.8.3"
+    "fflate": "0.8.3",
+    "@modelcontextprotocol/client": "2.3.1"
   }
 }
