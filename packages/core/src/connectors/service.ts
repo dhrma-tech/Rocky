@@ -8,7 +8,6 @@ import {
   NotConfigured,
   refreshAccessToken,
   type ScopedSecrets,
-  type SourceDocument,
   startLoopbackAuth,
 } from "@rocky/connector-sdk";
 import type {
@@ -23,13 +22,9 @@ import { z } from "zod";
 import type { ActionRegistry } from "../actions/registry.ts";
 import { appendAudit } from "../audit/append.ts";
 import { deleteData } from "../deletion/service.ts";
-import { EMBED_JOB } from "../ingest/embed-job.ts";
-import { upsertDocument } from "../ingest/upsert.ts";
-import { enqueue } from "../jobs/queue.ts";
 import { CONNECTOR_SECRET_RE, type SecretName, type SecretStore } from "../secrets/keychain.ts";
-import { putBlob } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
-import { toParsedDoc } from "./to-parsed.ts";
+import { persistSourceDocuments, prepareSourceDocuments } from "./persist.ts";
 
 /**
  * ConnectorService (connectors.md "Runtime guarantees"): owns connector rows, scoped secrets,
@@ -668,34 +663,12 @@ export class ConnectorService {
       )) {
         if (batch.fullResync) counts.full = 1;
         // Fetch and parse outside the transaction (network, CPU); persist the batch atomically.
-        const prepared: ({ doc: SourceDocument } & Awaited<ReturnType<typeof toParsedDoc>>)[] = [];
-        for (const doc of batch.documents) {
-          try {
-            prepared.push({ doc, ...(await toParsedDoc(doc)) });
-          } catch (err) {
-            this.log(`[${id}] skipped ${doc.externalId}: ${String(err)}`);
-          }
-        }
-        this.d.db.transaction(() => {
-          for (const p of prepared) {
-            const blobHash = p.bytes ? putBlob(this.d.blobsDir, p.bytes) : undefined;
-            const res = upsertDocument(this.d.db, {
-              parsed: p.parsed,
-              connectorId: id,
-              externalId: p.doc.externalId,
-              mime: p.doc.mime,
-              createdAt: p.doc.createdAt,
-              updatedAt: p.doc.updatedAt,
-              ...(p.doc.uri ? { uri: p.doc.uri } : {}),
-              ...(blobHash ? { blobHash } : {}),
-              meta: { ...(p.doc.meta ?? {}), ...(p.doc.author ? { author: p.doc.author } : {}) },
-            });
-            if (res.status === "created") counts.added++;
-            if (res.status === "updated") counts.updated++;
-            if (res.status !== "unchanged")
-              enqueue(this.d.db, EMBED_JOB, { documentId: res.documentId }, { priority: 1 });
-          }
-        })();
+        const prepared = await prepareSourceDocuments(batch.documents, (ext, err) =>
+          this.log(`[${id}] skipped ${ext}: ${String(err)}`),
+        );
+        const persisted = persistSourceDocuments(this.d.db, this.d.blobsDir, id, prepared);
+        counts.added += persisted.added;
+        counts.updated += persisted.updated;
         // Tombstones go through the DeletionService (its own transaction, then blob files).
         const gone = [...(batch.deletedExternalIds ?? [])];
         if (batch.presentExternalIds) {
