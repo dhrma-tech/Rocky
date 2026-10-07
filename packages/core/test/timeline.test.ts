@@ -75,6 +75,16 @@ describe("timeline (acceptance #4)", () => {
       { state: "closed", dueOn: new Date(at(11, 9)).toISOString() },
       "github",
     );
+    // Phase 7 task connectors share the GitHub meta shape (state, dueOn).
+    add("td", "Buy lab goggles", "task", { state: "open", dueOn: "2026-10-14" }, "todoist");
+    add("ln", "Fix flaky test", "task", { state: "closed", dueOn: "2026-10-14" }, "linear");
+    add(
+      "cd",
+      "Design review",
+      "calendar",
+      { start: new Date(at(8, 14, 5)).toISOString() },
+      "caldav",
+    );
     const mail = add("m", "Deck", "email", {});
     db.prepare(
       `insert into commitments (id, text, deadline, status, source_document_id, anchor, evidence_quote, created_at, updated_at)
@@ -91,9 +101,16 @@ describe("timeline (acceptance #4)", () => {
       ["task", "Release 1.2 (Beta)", "github"],
       ["notion", "Ship onboarding", "notion"],
       ["exam", "CS201: Midterm", "notebooks"],
+      ["task", "Buy lab goggles", "todoist"],
     ]);
     expect(items[1]).toMatchObject({ allDay: true, start: at(9) });
-    expect(items[0]).toMatchObject({ end: at(8, 15), deepLink: "https://example.com/ev" });
+    // The iCloud copy of the design review merged into the Google one.
+    expect(items[0]).toMatchObject({
+      end: at(8, 15),
+      deepLink: "https://example.com/ev",
+      mergedFrom: ["caldav"],
+    });
+    expect(items.at(-1)).toMatchObject({ allDay: true, start: at(14) });
   });
 
   it("the same thing in two sources becomes one item that names both", () => {

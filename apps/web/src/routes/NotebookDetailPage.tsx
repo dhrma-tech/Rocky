@@ -200,6 +200,9 @@ const SOURCE_TYPES: SourceType[] = [
   "notion",
   "github",
   "calendar",
+  "task",
+  "chat",
+  "analytics",
 ];
 
 const day = (ms: number | null | undefined) =>

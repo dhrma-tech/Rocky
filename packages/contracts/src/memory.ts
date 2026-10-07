@@ -37,6 +37,10 @@ export const SourceTypeSchema = z.enum([
   "notion",
   "github",
   "calendar",
+  // Phase 7: Linear, Todoist and Asana tasks; Slack channels; PostHog insight snapshots.
+  "task",
+  "chat",
+  "analytics",
 ]);
 export type SourceType = z.infer<typeof SourceTypeSchema>;
 

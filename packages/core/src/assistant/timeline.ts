@@ -13,7 +13,17 @@ const DAY = 86_400_000;
 const SAME_TIME_MS = 60 * 60_000;
 const SAME_TITLE = 0.6;
 /** Which source wins when merging (the most precise first). */
-const PRIORITY = ["gcal", "notion", "github", "notebooks", "commitments"];
+const PRIORITY = [
+  "gcal",
+  "caldav",
+  "notion",
+  "github",
+  "linear",
+  "asana",
+  "todoist",
+  "notebooks",
+  "commitments",
+];
 
 const ymd = (ms: number) => {
   const d = new Date(ms);
@@ -111,7 +121,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
   for (const d of db
     .prepare(
       `select id, title, uri, connector_id, meta from documents
-       where source_type = 'github' and json_extract(meta, '$.state') = 'open'
+       where source_type in ('github', 'task') and json_extract(meta, '$.state') = 'open'
          and substr(json_extract(meta, '$.dueOn'), 1, 10) between ? and ?`,
     )
     .all(lo, hi) as DocRow[]) {
@@ -124,7 +134,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
       start: due.at,
       end: null,
       due: due.at,
-      allDay: false,
+      allDay: due.allDay,
       source: d.connector_id ?? "github",
       deepLink: d.uri,
       documentId: d.id,
