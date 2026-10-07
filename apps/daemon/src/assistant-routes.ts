@@ -2,6 +2,7 @@ import {
   type AskEvent,
   BriefRequestSchema,
   DraftRequestSchema,
+  ProposeRequestFromDocumentSchema,
   RoutineCreateSchema,
   RoutineUpdateSchema,
 } from "@rocky/contracts";
@@ -18,6 +19,7 @@ import {
   latestBrief,
   listPacks,
   listRoutines,
+  proposeFromDocument,
   ROUTINE_JOB,
   type Runtime,
   routineRuns,
@@ -99,6 +101,17 @@ export function registerAssistantRoutes(
       ),
     );
   });
+
+  // --- proposals from content ("turn this meeting into tasks") ---
+  api.post("/proposals", async (c) =>
+    c.json(
+      await proposeFromDocument(
+        { db: rt.db, router: rt.router, actions: rt.actions, registry: rt.registry },
+        await body(c, ProposeRequestFromDocumentSchema),
+      ),
+      201,
+    ),
+  );
 
   // --- home and timeline ---
   api.get("/home", (c) => c.json(home(rt.db)));
