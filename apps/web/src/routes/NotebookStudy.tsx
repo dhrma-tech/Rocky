@@ -1,9 +1,10 @@
 import type { Card, Citation, Notebook } from "@rocky/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Download, Layers, Pause, Play, Printer, Trash2 } from "lucide-react";
+import { Download, Layers, Pause, Play, Printer, Trash2, Upload } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
-import { api } from "../api.ts";
+import { api, assistant } from "../api.ts";
+import { ClassBrief } from "../components/ClassBrief.tsx";
 import {
   Citations,
   CountdownCard,
@@ -27,6 +28,7 @@ export function StudyTab({ notebook: n, onOpen }: { notebook: Notebook; onOpen: 
   const cardsJob = useStudyJob(n.id, "cards");
   return (
     <div className="flex flex-col gap-8">
+      <ClassBrief notebookId={n.id} onOpen={onOpen} />
       {countdown.data && <CountdownCard data={countdown.data} />}
       {countdown.error && (
         <p role="alert" className="text-sm text-danger">
@@ -392,6 +394,8 @@ export function ExportsTab({ notebook: n, onOpen }: { notebook: Notebook; onOpen
         </a>
       </section>
 
+      <SourcePack notebookId={n.id} />
+
       <section aria-labelledby="guide-h" className="flex flex-col gap-4">
         <div className="no-print flex flex-wrap items-start gap-3">
           <div className="mr-auto">
@@ -461,5 +465,43 @@ export function ExportsTab({ notebook: n, onOpen }: { notebook: Notebook; onOpen
         )}
       </section>
     </div>
+  );
+}
+
+/** Drive source pack: this week of the course as one Google Doc, queued for approval. */
+function SourcePack({ notebookId }: { notebookId: string }) {
+  const qc = useQueryClient();
+  const pack = useMutation({
+    mutationFn: () => assistant.sourcePack(notebookId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["actions"] }),
+  });
+  return (
+    <section
+      aria-labelledby="pack-h"
+      className="no-print rounded-lg bg-raised p-6 shadow-raised-sm"
+    >
+      <h2 id="pack-h" className="text-lg font-semibold">
+        Drive source pack
+      </h2>
+      <p className="mt-1 text-sm text-secondary">
+        This week's lectures and sources as one Google Doc in a "Rocky source packs" folder in your
+        Drive. You can add that folder to NotebookLM yourself; Rocky does not use NotebookLM.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Button disabled={pack.isPending} onClick={() => pack.mutate()}>
+          <Upload size={16} aria-hidden /> Prepare this week's pack
+        </Button>
+        {pack.isSuccess && (
+          <span className="text-sm">
+            Waiting for your approval in <Link to="/actions">Actions</Link>.
+          </span>
+        )}
+      </div>
+      {pack.error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {pack.error.message}
+        </p>
+      )}
+    </section>
   );
 }

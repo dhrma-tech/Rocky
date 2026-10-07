@@ -6,6 +6,8 @@ import type {
   AskResult,
   AuditRow,
   AuditVerify,
+  Brief,
+  BriefRequest,
   Card,
   Citation,
   Commitment,
@@ -18,8 +20,10 @@ import type {
   ConnectorUpdate,
   Countdown,
   Decision,
+  DraftRequest,
   Entity,
   Hardware,
+  HomeSummary,
   JobEvent,
   Meeting,
   MeetingDetail,
@@ -35,9 +39,14 @@ import type {
   Rating,
   RecordingStart,
   ReviewQueue,
+  Routine,
+  RoutineCreate,
+  RoutineRun,
+  RoutineUpdate,
   ScopeRules,
   SettingsUpdate,
   StudyGuide,
+  TimelineItem,
   TranscriptSegment,
   WorkloadItem,
 } from "@rocky/contracts";
@@ -396,3 +405,104 @@ export async function askStream(
   if (!result) throw new ApiError(500, "STREAM_ENDED", "The answer stream ended early.");
   return result;
 }
+
+/**
+ * POST with an SSE reply (briefs, drafts): progress events go to `onEvent`; resolves with the
+ * `done` event's result, rejects with the `error` event as an ApiError.
+ */
+export async function postStream<T>(
+  path: string,
+  body: unknown,
+  onEvent: (e: { type: string; [k: string]: unknown }) => void = () => {},
+  signal?: AbortSignal,
+): Promise<T> {
+  const res = await fetch(`/api/v1${path}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
+  });
+  if (!res.ok || !res.body) throw await toError(res);
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    let sep = buf.indexOf("\n\n");
+    while (sep !== -1) {
+      const block = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+      sep = buf.indexOf("\n\n");
+      let event = "message";
+      let data = "";
+      for (const line of block.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) data += line.slice(5).trim();
+      }
+      if (!data) continue;
+      const payload = JSON.parse(data) as Record<string, unknown>;
+      if (event === "error")
+        throw new ApiError(
+          500,
+          String(payload.code ?? "INTERNAL"),
+          String(payload.error ?? "Failed"),
+        );
+      if (event === "done") return payload.result as T;
+      onEvent({ type: event, ...payload });
+    }
+  }
+  throw new ApiError(500, "STREAM_ENDED", "The stream ended early.");
+}
+
+// --- Assistant layer (Phase 6) ---
+export const assistant = {
+  home: () => call<HomeSummary>("/home"),
+  timeline: (from: number, to: number) =>
+    call<{ items: TimelineItem[] }>(`/timeline?from=${from}&to=${to}`),
+  brief: (req: BriefRequest, onEvent?: (e: { type: string }) => void) =>
+    postStream<Brief>("/briefs", req, onEvent),
+  latestBrief: (kind: "event" | "notebook", subject: string) =>
+    call<{ brief: Brief | null }>(
+      `/briefs/latest?kind=${kind}&subject=${encodeURIComponent(subject)}`,
+    ),
+  routines: () => call<{ routines: Routine[] }>("/routines"),
+  routine: (id: string) => call<Routine>(`/routines/${encodeURIComponent(id)}`),
+  createRoutine: (input: RoutineCreate) =>
+    call<Routine>("/routines", { method: "POST", body: JSON.stringify(input) }),
+  addFromTemplate: (pack: string, template?: string) =>
+    call<{ added: number; routines: Routine[] }>("/routines/from-template", {
+      method: "POST",
+      body: JSON.stringify({ pack, ...(template ? { template } : {}) }),
+    }),
+  updateRoutine: (id: string, patch: RoutineUpdate) =>
+    call<Routine>(`/routines/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteRoutine: (id: string) =>
+    call<{ deleted: boolean }>(`/routines/${id}`, { method: "DELETE" }),
+  runRoutine: (id: string) => call<{ jobId: string }>(`/routines/${id}/run`, { method: "POST" }),
+  runs: (id: string) => call<{ runs: RoutineRun[] }>(`/routines/${encodeURIComponent(id)}/runs`),
+  templates: () =>
+    call<{
+      packs: {
+        id: string;
+        name: string;
+        description: string;
+        routines: { template: string; name: string; schedule: string }[];
+      }[];
+    }>("/templates"),
+  draft: (req: DraftRequest, onEvent?: (e: { type: string; text?: unknown }) => void) =>
+    postStream<ActionRecord>("/drafts", req, onEvent),
+  propose: (documentId: string, instruction: string) =>
+    call<{ proposed: ActionRecord[]; dropped: { type: string; reason: string }[] }>("/proposals", {
+      method: "POST",
+      body: JSON.stringify({ documentId, instruction }),
+    }),
+  style: () =>
+    call<{ profile: { descriptor: string; exemplars: string[]; updatedAt: number } | null }>(
+      "/style",
+    ),
+  refreshStyle: () => call<{ jobId: string }>("/style/refresh", { method: "POST" }),
+  sourcePack: (notebookId: string) =>
+    call<ActionRecord>(`/notebooks/${notebookId}/source-pack`, { method: "POST" }),
+};

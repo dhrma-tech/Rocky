@@ -5,6 +5,7 @@ import { ArrowLeft, CircleAlert, Mic, RotateCcw, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { api } from "../api.ts";
 import { AudioPlayer, clock, type PlayerHandle, TranscriptView } from "../components/capture.tsx";
+import { MakeTasks } from "../components/MakeTasks.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { Button, IconButton } from "../components/ui.tsx";
 import { CommitmentStatusSelect, DueDate } from "./CommitmentsPage.tsx";
@@ -101,6 +102,7 @@ export function MeetingDetailPage() {
             {progress.note} {Math.round(progress.progress * 100)}%
           </span>
         )}
+        {m.status === "done" && <MakeTasks documentId={m.documentId} />}
         <StatusBadge status={m.status} />
         <IconButton label="Delete meeting" onClick={() => confirm.current?.showModal()}>
           <Trash2 size={18} aria-hidden />

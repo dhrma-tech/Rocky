@@ -57,6 +57,13 @@
     inset 3px 3px 7px rgba(156, 163, 172, 0.45), inset -3px -3px 7px rgba(255, 255, 255, 0.9);
   --shadow-float: 0 14px 32px rgba(120, 128, 140, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --composer-glow: 0 0 0 3px rgba(145, 94, 86, 0.25);
+  /* Home brief cards (§5.6): Periwinkle to Blush at the top-right. */
+  --card-glow: radial-gradient(
+    circle at top right,
+    var(--pal-periwinkle),
+    var(--pal-blush) 40%,
+    transparent 70%
+  );
   /* motion (§3.5) */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-ui: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -103,6 +110,7 @@
   --shadow-raised-lg: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 16px 48px rgba(0, 0, 0, 0.55);
   --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.55);
   --composer-glow: 0 0 0 3px rgba(237, 176, 177, 0.25);
+  --card-glow: radial-gradient(circle at top right, rgba(208, 217, 230, 0.12), transparent 65%);
   color-scheme: dark;
 }
 
@@ -137,6 +145,7 @@
     --shadow-raised-lg: 0 1px 0 rgba(249, 235, 235, 0.05) inset, 0 16px 48px rgba(0, 0, 0, 0.55);
     --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.55);
     --composer-glow: 0 0 0 3px rgba(237, 176, 177, 0.25);
+    --card-glow: radial-gradient(circle at top right, rgba(208, 217, 230, 0.12), transparent 65%);
     color-scheme: dark;
   }
 }

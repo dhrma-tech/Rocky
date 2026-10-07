@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api.ts";
+import { DraftsPanel, EmailPreview } from "../components/DraftsPanel.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
 import { CitationChip } from "../components/trust.tsx";
@@ -131,10 +132,13 @@ function ApprovalCard({ a, onOpen }: { a: ActionRecord; onOpen: (c: Citation) =>
         </div>
       ) : (
         <>
-          <p className="sr-only">Exact payload:</p>
-          <pre className="max-h-72 overflow-auto rounded-md bg-sunken p-3 font-mono text-[13px] leading-5 text-primary">
-            {JSON.stringify(a.payload, null, 2)}
-          </pre>
+          {a.type.startsWith("gmail.draft") && <EmailPreview payload={a.payload} />}
+          <details open={!a.type.startsWith("gmail.draft")}>
+            <summary className="cursor-pointer text-xs text-secondary">Exact payload</summary>
+            <pre className="mt-1 max-h-72 overflow-auto rounded-md bg-sunken p-3 font-mono text-[13px] leading-5 text-primary">
+              {JSON.stringify(a.payload, null, 2)}
+            </pre>
+          </details>
         </>
       )}
 
@@ -353,6 +357,7 @@ export function ActionsPage() {
 
           {tab === "queue" ? (
             <section aria-label="Approval queue" className="space-y-4">
+              <DraftsPanel />
               <fieldset className="flex flex-wrap gap-2">
                 <legend className="sr-only">Filter by status</legend>
                 {FILTERS.map((f) => (

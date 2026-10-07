@@ -1,5 +1,6 @@
-import type { AnswerSentence, AskResult, Citation } from "@rocky/contracts";
+import type { AskResult, Citation } from "@rocky/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearch } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowUp,
@@ -13,8 +14,8 @@ import { ApiError, api, askStream } from "../api.ts";
 import { CreateIssueButton } from "../components/CreateIssue.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
-import { CitationChip } from "../components/trust.tsx";
 import { cls, Toggle } from "../components/ui.tsx";
+import { Sentences } from "../components/verified.tsx";
 
 interface Turn {
   id: number;
@@ -61,11 +62,6 @@ function PathChip({ result }: { result: AskResult }) {
 }
 
 function Answer({ result, onOpen }: { result: AskResult; onOpen: (c: Citation) => void }) {
-  const index = new Map<string, number>();
-  const n = (c: Citation) => {
-    if (!index.has(c.chunkId)) index.set(c.chunkId, index.size + 1);
-    return index.get(c.chunkId) as number;
-  };
   if (result.notFound) {
     return (
       <div className="space-y-2">
@@ -78,37 +74,20 @@ function Answer({ result, onOpen }: { result: AskResult; onOpen: (c: Citation) =
       </div>
     );
   }
-  return (
-    <p className="font-answer text-base leading-[26px] text-primary">
-      {result.answer.map((s: AnswerSentence) => (
-        <span
-          key={s.i}
-          className={s.status === "unsupported" ? "line-through opacity-60" : undefined}
-        >
-          <SafeText text={s.text} />
-          {s.citations.map((c) => (
-            <CitationChip key={c.chunkId} index={n(c)} citation={c} onOpen={onOpen} />
-          ))}
-          {s.status === "partial" && (
-            <span className="ml-1 text-xs text-warning" title={s.reason}>
-              (partially supported)
-            </span>
-          )}{" "}
-        </span>
-      ))}
-    </p>
-  );
+  return <Sentences answer={result.answer} onOpen={onOpen} />;
 }
 
-const POLICY_HELP: Record<string, string> = {
+export const POLICY_HELP: Record<string, string> = {
   BUDGET_EXCEEDED: "Raise the cap in Settings → Budget, or turn on local-only mode.",
   EGRESS_BLOCKED: "Local-only mode is on, so API models are blocked.",
   MISSING_API_KEY: "Add an API key in Settings → Models, or turn on local-only mode.",
   TASK_NEEDS_API: "This needs an API model. Turn off local-only mode to use it.",
 };
 
+/** /ask, optionally with ?q= from the Home composer (asked on arrival). */
 export function AskPage() {
-  return <AskView />;
+  const { q } = useSearch({ from: "/ask" });
+  return <AskView key={q ?? ""} {...(q ? { initialQuestion: q } : {})} />;
 }
 
 /**
@@ -119,10 +98,12 @@ export function AskView({
   notebookIds: fixed,
   heading = "What do you want to know?",
   grounding = "Answers come only from your sources, with a citation on every statement.",
+  initialQuestion,
 }: {
   notebookIds?: string[];
   heading?: string;
   grounding?: string;
+  initialQuestion?: string;
 } = {}) {
   const [scopeIds, setScopeIds] = useState<string[]>(fixed ?? []);
   const notebookIds = fixed ?? scopeIds;
@@ -156,9 +137,9 @@ export function AskView({
   const update = (id: number, f: (t: Turn) => Turn) =>
     setTurns((ts) => ts.map((t) => (t.id === id ? f(t) : t)));
 
-  async function submit(e?: FormEvent) {
+  async function submit(e?: FormEvent, override?: string) {
     e?.preventDefault();
-    const question = text.trim();
+    const question = (override ?? text).trim();
     if (!question || busy) return;
     const id = Date.now();
     setTurns((ts) => [...ts, { id, question, drafts: [] }]);
@@ -187,6 +168,16 @@ export function AskView({
       void qc.invalidateQueries({ queryKey: ["usage"] });
     }
   }
+
+  // A question handed over from Home is asked once on arrival.
+  const asked = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per initial question
+  useEffect(() => {
+    if (initialQuestion && !asked.current) {
+      asked.current = true;
+      void submit(undefined, initialQuestion);
+    }
+  }, [initialQuestion]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -3,6 +3,7 @@ import { Link, Outlet } from "@tanstack/react-router";
 import {
   BookOpen,
   CalendarCheck,
+  House,
   Layers,
   ListChecks,
   MessageSquareText,
@@ -10,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plug,
+  Repeat,
   Settings,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,12 +21,14 @@ import { LocalBadge } from "./components/trust.tsx";
 import { cls, IconButton } from "./components/ui.tsx";
 
 const NAV = [
-  { to: "/", label: "Ask", icon: MessageSquareText },
+  { to: "/", label: "Home", icon: House },
+  { to: "/ask", label: "Ask", icon: MessageSquareText },
   { to: "/notebooks", label: "Notebooks", icon: BookOpen },
   { to: "/study", label: "Study", icon: Layers },
   { to: "/meetings", label: "Meetings", icon: Mic },
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/actions", label: "Actions", icon: ListChecks },
+  { to: "/routines", label: "Routines", icon: Repeat },
   { to: "/connectors", label: "Connectors", icon: Plug },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

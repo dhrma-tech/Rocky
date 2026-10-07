@@ -1,17 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ActionsPage } from "./routes/ActionsPage.tsx";
 import { AskPage } from "./routes/AskPage.tsx";
 import { CommitmentsPage } from "./routes/CommitmentsPage.tsx";
-import { ConnectorsPage } from "./routes/ConnectorsPage.tsx";
+import { HomePage } from "./routes/HomePage.tsx";
 import { MeetingDetailPage } from "./routes/MeetingDetailPage.tsx";
 import { MeetingsPage } from "./routes/MeetingsPage.tsx";
-import { NotebookDetailPage } from "./routes/NotebookDetailPage.tsx";
 import { NotebooksPage } from "./routes/NotebooksPage.tsx";
-import { SettingsPage } from "./routes/SettingsPage.tsx";
-import { StudyPage } from "./routes/StudyPage.tsx";
 import { Shell } from "./Shell.tsx";
 import "./styles/app.css";
 import { applyTheme } from "./theme.ts";
@@ -19,18 +22,34 @@ import { applyTheme } from "./theme.ts";
 applyTheme();
 
 const rootRoute = createRootRoute({ component: Shell });
+// Less-used screens (lazyRouteComponent) load on first visit, keeping the first download small.
 const routeTree = rootRoute.addChildren([
-  createRoute({ getParentRoute: () => rootRoute, path: "/", component: AskPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/", component: HomePage }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/ask",
+    component: AskPage,
+    validateSearch: (s: Record<string, unknown>): { q?: string } =>
+      typeof s.q === "string" && s.q.trim() ? { q: s.q.slice(0, 4000) } : {},
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/routines",
+    component: lazyRouteComponent(() => import("./routes/RoutinesPage.tsx"), "RoutinesPage"),
+  }),
   createRoute({ getParentRoute: () => rootRoute, path: "/notebooks", component: NotebooksPage }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/notebooks/$id",
-    component: NotebookDetailPage,
+    component: lazyRouteComponent(
+      () => import("./routes/NotebookDetailPage.tsx"),
+      "NotebookDetailPage",
+    ),
   }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/study",
-    component: StudyPage,
+    component: lazyRouteComponent(() => import("./routes/StudyPage.tsx"), "StudyPage"),
     validateSearch: (s: Record<string, unknown>): { notebook?: string } =>
       typeof s.notebook === "string" && s.notebook ? { notebook: s.notebook } : {},
   }),
@@ -46,8 +65,16 @@ const routeTree = rootRoute.addChildren([
     component: CommitmentsPage,
   }),
   createRoute({ getParentRoute: () => rootRoute, path: "/actions", component: ActionsPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: "/connectors", component: ConnectorsPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: SettingsPage }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/connectors",
+    component: lazyRouteComponent(() => import("./routes/ConnectorsPage.tsx"), "ConnectorsPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/settings",
+    component: lazyRouteComponent(() => import("./routes/SettingsPage.tsx"), "SettingsPage"),
+  }),
 ]);
 const router = createRouter({ routeTree });
 
