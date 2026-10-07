@@ -6,5 +6,10 @@
   "license": "Apache-2.0",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@rocky/connector-sdk": "workspace:*",
+    "@rocky/contracts": "workspace:*",
+    "fflate": "0.8.3"
   }
 }

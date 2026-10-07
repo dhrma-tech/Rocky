@@ -52,16 +52,23 @@ export async function ingestCommand(target: string, opts: { dataDir?: string | u
  */
 export async function importCommand(
   file: string,
-  opts: { dataDir?: string | undefined; kind?: string; title?: string; wait?: boolean },
+  opts: {
+    dataDir?: string | undefined;
+    kind?: string;
+    title?: string;
+    wait?: boolean;
+    format?: string;
+  },
 ) {
   const abs = path.resolve(file);
-  if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
-    console.error(`No such file: ${abs}`);
+  if (!fs.existsSync(abs)) {
+    console.error(`No such file or folder: ${abs}`);
     return 1;
   }
-  if (!isMediaFile(abs)) {
-    console.error("Not an audio or video file. For documents use `rocky ingest`.");
-    return 1;
+  // Chat exports (zip, folder, .txt, tweets.js, CSVs) go to the archive importers.
+  if (fs.statSync(abs).isDirectory() || !isMediaFile(abs)) {
+    const { archiveImportCommand } = await import("./imports.ts");
+    return archiveImportCommand(abs, opts);
   }
   const { dir } = resolveDataDir({ flag: opts.dataDir });
   const rt = await openRuntime({ dataDir: dir });
@@ -293,7 +300,7 @@ export async function openCommand(opts: { dataDir?: string | undefined }) {
 }
 
 /** The running daemon's base URL and token, or null if it is not running. */
-async function daemonClient(dir: string): Promise<{ base: string; token: string } | null> {
+export async function daemonClient(dir: string): Promise<{ base: string; token: string } | null> {
   const { daemonInfoFile } = await import("@rocky/daemon");
   const file = daemonInfoFile(dir);
   if (!fs.existsSync(file)) return null;

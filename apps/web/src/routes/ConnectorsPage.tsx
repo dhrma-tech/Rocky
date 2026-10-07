@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { SafeText } from "../components/SafeText.tsx";
 import { Badge, Button, cls, IconButton, Toggle } from "../components/ui.tsx";
+import { ImportPanel } from "./ImportPanel.tsx";
 
 const ICONS: Record<string, LucideIcon> = {
   github: GitBranch,
@@ -158,6 +159,7 @@ export function ConnectorsPage() {
               />
             ))}
           </div>
+          <ImportPanel />
         </div>
       </div>
       {entry && (

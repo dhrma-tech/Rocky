@@ -1,0 +1,11 @@
+{
+  "participants": [{"name": "Alex Smith"}, {"name": "Me"}],
+  "messages": [
+    {"sender_name": "Alex Smith", "timestamp_ms": 1717236000000, "content": "CafÃ© at 5? ð\u009f\u0098\u0080"},
+    {"sender_name": "Me", "timestamp_ms": 1717235000000, "content": "Did you get the tickets?"},
+    {"sender_name": "Me", "timestamp_ms": 1717235000000, "content": "Two of them"},
+    {"sender_name": "Alex Smith", "timestamp_ms": 1717230000000, "photos": [{"uri": "x.jpg"}]}
+  ],
+  "title": "Alex Smith",
+  "thread_path": "inbox/alexsmith_123"
+}

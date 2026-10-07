@@ -8,6 +8,7 @@
     "@rocky/contracts": "workspace:*",
     "@rocky/core": "workspace:*",
     "@rocky/daemon": "workspace:*",
+    "@rocky/importers": "workspace:*",
     "commander": "15.0.0"
   }
 }

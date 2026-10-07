@@ -1,6 +1,8 @@
 import type {
   ActionRecord,
   ActionStatus,
+  ArchiveImportResult,
+  ArchiveImportRow,
   AskEvent,
   AskRequest,
   AskResult,
@@ -98,22 +100,32 @@ export function uploadMedia(
   file: File,
   opts: { kind: MeetingKind; onProgress?: (p: number) => void },
 ): Promise<{ meetingId: string; jobId: string }> {
+  const q = new URLSearchParams({ filename: file.name, kind: opts.kind });
+  return uploadFile(`/api/v1/imports/media?${q}`, file, opts.onProgress);
+}
+
+/** Streams a chat export (zip, .txt, tweets.js, CSV) to POST /imports/archive. */
+export function uploadArchive(
+  file: File,
+  onProgress?: (p: number) => void,
+): Promise<ArchiveImportResult> {
+  const q = new URLSearchParams({ filename: file.name });
+  return uploadFile(`/api/v1/imports/archive?${q}`, file, onProgress);
+}
+
+function uploadFile<T>(url: string, file: File, onProgress?: (p: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const q = new URLSearchParams({ filename: file.name, kind: opts.kind });
-    xhr.open("POST", `/api/v1/imports/media?${q}`);
+    xhr.open("POST", url);
     xhr.withCredentials = true;
     xhr.setRequestHeader("content-type", "application/octet-stream");
-    xhr.upload.onprogress = (e) => e.lengthComputable && opts.onProgress?.(e.loaded / e.total);
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
     xhr.onload = () => {
-      const body = JSON.parse(xhr.responseText || "{}") as {
-        meetingId?: string;
-        jobId?: string;
-        error?: string;
-        code?: string;
-      };
-      if (xhr.status >= 200 && xhr.status < 300)
-        resolve({ meetingId: body.meetingId as string, jobId: body.jobId as string });
+      let body: { error?: string; code?: string } = {};
+      try {
+        body = JSON.parse(xhr.responseText || "{}") as typeof body;
+      } catch {}
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
       else
         reject(
           new ApiError(xhr.status, body.code ?? `HTTP_${xhr.status}`, body.error ?? xhr.statusText),
@@ -287,6 +299,12 @@ export const api = {
   syncConnector: (id: string) =>
     call<{ started: boolean }>(`/connectors/${id}/sync`, { method: "POST" }),
   connectorRuns: (id: string) => call<{ runs: ConnectorRun[] }>(`/connectors/${id}/runs`),
+  archiveImports: () => call<{ imports: ArchiveImportRow[] }>("/imports/archives"),
+  deleteArchiveImport: (format: string, archive: string) =>
+    call<{ documents: number }>(
+      `/imports/archives/${format}?archive=${encodeURIComponent(archive)}`,
+      { method: "DELETE" },
+    ),
   proposeAction: (type: string, payload: unknown, citations: Citation[]) =>
     call<ActionRecord>("/actions", {
       method: "POST",

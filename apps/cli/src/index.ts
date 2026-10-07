@@ -47,14 +47,28 @@ program
 
 program
   .command("import")
-  .description("import an audio or video recording (lecture or meeting): transcribe and extract")
-  .argument("<file>", "mp3, m4a, wav, mp4, … (anything ffmpeg reads)")
-  .option("--kind <kind>", "lecture or meeting", "lecture")
-  .option("--title <title>", "title (default: the file name)")
-  .option("--no-wait", "only queue it; the running daemon does the work")
-  .action(async (file: string, opts: { kind: string; title?: string; wait: boolean }) => {
-    process.exitCode = await importCommand(file, { ...opts, dataDir: dataDir() });
-  });
+  .description(
+    "import a recording (transcribe and extract) or a chat export (WhatsApp, Discord, Instagram, X, LinkedIn)",
+  )
+  .argument(
+    "<file>",
+    "audio/video (mp3, m4a, mp4, …), or an export: .zip, folder, chat .txt, tweets.js, messages.csv",
+  )
+  .option("--kind <kind>", "recordings: lecture or meeting", "lecture")
+  .option("--title <title>", "recordings: title (default: the file name)")
+  .option("--no-wait", "recordings: only queue it; the running daemon does the work")
+  .option(
+    "--format <format>",
+    "exports: whatsapp, discord, instagram, x or linkedin (default: detect)",
+  )
+  .action(
+    async (
+      file: string,
+      opts: { kind: string; title?: string; wait: boolean; format?: string },
+    ) => {
+      process.exitCode = await importCommand(file, { ...opts, dataDir: dataDir() });
+    },
+  );
 
 program
   .command("ask")

@@ -5,6 +5,7 @@ export * from "./capture.ts";
 export * from "./config.ts";
 export * from "./connectors.ts";
 export * from "./doctor.ts";
+export * from "./imports.ts";
 export * from "./memory.ts";
 export * from "./notebooks.ts";
 export * from "./router.ts";

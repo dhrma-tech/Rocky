@@ -20,6 +20,7 @@ import { registerConnectors } from "./connectors.ts";
 export { createApp } from "./app.ts";
 export { Auth, newToken } from "./auth.ts";
 export { registerConnectors } from "./connectors.ts";
+export { deleteArchiveImport, importArchive, listArchiveImports } from "./imports.ts";
 
 /** Built UI from apps/web (Phase 1 web shell); absent until `pnpm --filter @rocky/web build`. */
 const defaultWebDir = fileURLToPath(new URL("../../web/dist/", import.meta.url));

@@ -39,6 +39,7 @@ import { registerAssistantRoutes } from "./assistant-routes.ts";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
+import { registerImportRoutes } from "./imports.ts";
 import { registerNotebookRoutes } from "./notebook-routes.ts";
 
 export const VERSION = "0.0.0";
@@ -507,6 +508,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
 
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
+  registerImportRoutes(api, { rt, poke, body });
   registerNotebookRoutes(api, { rt, poke, body });
   registerAssistantRoutes(api, { rt, body, errorBody, poke });
 
