@@ -1,6 +1,6 @@
 # Connectors — verified findings
 
-Checked 2026-10-02; GitHub, Notion, Gmail, Calendar and Drive re-verified 2026-10-06 for Phase 4 (see "Phase 4 re-verification" below). **Re-verify each connector's docs at the start of the phase that implements it** and update this file. Items marked (re-verify) are ones where sources disagreed or I could not confirm them.
+Checked 2026-10-02; GitHub, Notion, Gmail, Calendar and Drive re-verified 2026-10-06 for Phase 4, the other seven on 2026-10-07 for Phase 7 (see the re-verification sections below). Setup steps per connector: [CONNECTORS-SETUP.md](CONNECTORS-SETUP.md). **Re-verify each connector's docs at the start of the phase that implements it** and update this file. Items marked (re-verify) are ones where sources disagreed or I could not confirm them.
 
 General rules:
 - Read-sync first.
@@ -33,6 +33,16 @@ General rules:
 - **Calendar:** `syncToken` can't be combined with `timeMin`/`timeMax`/`q`/`orderBy`; `nextSyncToken` only on the last page; 410 → clear and full sync.
 - **Drive:** Docs export to `text/markdown` is supported; exports are capped at 10 MB; `startPageToken` doesn't expire.
 - **Not in Phase 4:** Google write executors (drafts, events, source pack) arrive in Phase 6 with their write scopes; GitHub commits and PR review comments, Gmail attachments and Drive shared drives are follow-ups.
+
+## Phase 7 re-verification (2026-10-07)
+
+- **Linear:** `POST https://api.linear.app/graphql`, personal key in `Authorization` without `Bearer`. Issues paged with `first`/`after` and `filter: {updatedAt: {gt}}`, `includeArchived: true` (archived issues become tombstones). Create takes `teamId` (looked up from the team key); update accepts the `ENG-123` identifier. Idempotency: a hidden `<!-- rocky:key -->` marker in the description, searched with `description: {contains}` before creating.
+- **Todoist:** unified API v1 `/api/v1/sync` (form-encoded). Writes are sync commands; Todoist runs a command uuid once, so the uuid is derived from the idempotency key. A full sync returns only active tasks, so no presence list is sent (completed tasks stay as history); deletions arrive as `is_deleted`.
+- **Slack:** **polling, not Socket Mode** (decision for V1): `conversations.history` per member channel every 5 minutes, one document per channel per UTC day, rebuilt from the start of the last seen day; thread replies via `conversations.replies` (up to 50 threads per channel per sync; replies to threads older than that day are picked up only when the parent day is re-read). Bot token only; no app-level token. Drafts never post: `chat.postMessage` and friends are banned by the no-send test. Socket Mode is a follow-up.
+- **Apple Calendar:** CalDAV written by hand instead of `tsdav`, so requests go through the SDK http wrapper (retries, rate limits, fixture replay). Discovery `caldav.icloud.com` → `current-user-principal` → `calendar-home-set` → calendars with VEVENT; RFC 6578 `sync-collection` (404 entries are tombstones; an invalid token restarts from an empty token) and `calendar-multiget`. Recurring events are stored once with their RRULE text (no expansion yet). Writes PUT a new `.ics` with `If-None-Match: *` and a UID derived from the idempotency key (412 = already created). **No guests** on created events: iCloud sends invitations itself.
+- **Asana:** `GET /tasks?project=…|workspace=…&assignee=me&modified_since=…` with offset pagination. Deleted tasks are not reported by this endpoint (they stay until removed by hand). Create checks for a task with the same name in the project from the last 10 minutes before creating (Asana has no idempotency keys).
+- **PostHog:** `GET /api/projects/:id/insights/?saved=true&basic=true` then `/insights/:id/?refresh=blocking` per insight (the `/environments/` path is deprecated). Query reads: 2,400/h, 240/min, 3 concurrent; Rocky syncs once a day, at most 50 insights, one dated snapshot document each.
+- **Notion Calendar:** still no data API. The local deep link `cron://showEvent?accountEmail=&iCalUID=&startDate=&endDate=&title=&ref=` opens an event; Google Calendar events now store `iCalUID` for it.
 
 ## Archive importers (no live APIs)
 
