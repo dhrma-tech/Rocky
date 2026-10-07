@@ -3,6 +3,7 @@ export * from "./actions/registry.ts";
 export * from "./actions/service.ts";
 export * from "./actions/types.ts";
 export * from "./assistant/ask.ts";
+export * from "./assistant/verified.ts";
 export * from "./audit/append.ts";
 export * from "./audit/verify.ts";
 export * from "./capture/audio.ts";

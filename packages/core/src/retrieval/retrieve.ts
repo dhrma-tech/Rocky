@@ -147,3 +147,48 @@ export async function retrieve(
   }
   return selected;
 }
+
+function toRetrieved(r: ChunkRow & { seq: number }): RetrievedChunk {
+  return {
+    seq: r.seq,
+    id: r.id,
+    documentId: r.document_id,
+    title: r.title,
+    text: r.text,
+    anchor: AnchorSchema.parse(JSON.parse(r.anchor)),
+    charStart: r.char_start,
+    charEnd: r.char_end,
+    tokenCount: r.token_count,
+    sourceType: r.source_type,
+    sectionPath: r.section_path,
+    suspicious: r.suspicious === 1,
+    localOnly: r.local_only === 1,
+    score: 0,
+  };
+}
+
+const CHUNK_COLUMNS = `select c.seq, c.id, c.document_id, d.title, c.text, c.anchor, c.char_start, c.char_end,
+  c.token_count, d.source_type, c.section_path, d.suspicious, d.local_only
+  from chunks c join documents d on d.id = c.document_id`;
+
+/**
+ * Chunks loaded directly rather than searched (briefs and routines collect their own context).
+ * Documents keep their order; within a document chunks are in reading order, at most `perDoc`.
+ */
+export function documentChunks(db: Db, documentIds: string[], perDoc = 4): RetrievedChunk[] {
+  const out: RetrievedChunk[] = [];
+  const stmt = db.prepare(`${CHUNK_COLUMNS} where c.document_id = ? order by c.seq limit ?`);
+  for (const id of [...new Set(documentIds)])
+    for (const r of stmt.all(id, perDoc) as (ChunkRow & { seq: number })[])
+      out.push(toRetrieved(r));
+  return out;
+}
+
+/** Chunks by id, in the given order; unknown ids are skipped. */
+export function chunksById(db: Db, ids: string[]): RetrievedChunk[] {
+  const stmt = db.prepare(`${CHUNK_COLUMNS} where c.id = ?`);
+  return [...new Set(ids)].flatMap((id) => {
+    const r = stmt.get(id) as (ChunkRow & { seq: number }) | undefined;
+    return r ? [toRetrieved(r)] : [];
+  });
+}

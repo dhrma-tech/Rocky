@@ -1,4 +1,4 @@
-import { normalizeForQuote } from "../assistant/ask.ts";
+import { normalizeForQuote } from "../assistant/verified.ts";
 
 /** Evidence quotes may be longer than answer quotes (40 words): a commitment can span a sentence or two. */
 export const MAX_EVIDENCE_WORDS = 60;
