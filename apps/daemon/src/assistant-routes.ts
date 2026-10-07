@@ -1,6 +1,7 @@
 import {
   type AskEvent,
   BriefRequestSchema,
+  DraftRequestSchema,
   RoutineCreateSchema,
   RoutineUpdateSchema,
 } from "@rocky/contracts";
@@ -10,6 +11,7 @@ import {
   briefForNotebook,
   createRoutine,
   deleteRoutine,
+  draftEmail,
   enqueue,
   getRoutine,
   home,
@@ -84,6 +86,18 @@ export function registerAssistantRoutes(
     if (!q.success)
       return c.json({ error: "kind and subject are required", code: "BAD_REQUEST" }, 400);
     return c.json({ brief: latestBrief(rt.db, q.data.kind, q.data.subject) });
+  });
+
+  // --- drafts (proposal for gmail.draftCreate; reaches Gmail only after approval) ---
+  api.post("/drafts", async (c) => {
+    const req = await body(c, DraftRequestSchema);
+    return sse(c, errorBody, (send) =>
+      draftEmail(
+        { ...deps, actions: rt.actions, hasType: (t) => Boolean(rt.registry.get(t)) },
+        req,
+        send,
+      ),
+    );
   });
 
   // --- home and timeline ---
