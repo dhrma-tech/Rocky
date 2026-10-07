@@ -62,6 +62,29 @@ async function seedDoc(name: string, body: string, connectorId?: string) {
     subjectId: id,
     payload: { title: name, excerpt: body.slice(0, 40) },
   });
+  // Generated text that quotes the document: a brief, a routine run and a style profile (Phase 6).
+  const output = JSON.stringify([
+    {
+      i: 0,
+      text: "Sam sends the deck.",
+      status: "supported",
+      citations: [
+        { chunkId: c0, documentId: id, title: name, anchor: { kind: "text" }, quote: "sends" },
+      ],
+    },
+  ]);
+  db.prepare(
+    "insert into briefs (id, kind, subject_id, title, output, created_at) values (?, 'event', 'ev', 'Standup', ?, 1)",
+  ).run(`b-${id}`, output);
+  db.prepare(
+    "insert or ignore into routines (id, name, schedule_cron, enabled) values ('r1', 'Morning', '0 7 * * *', 1)",
+  ).run();
+  db.prepare(
+    "insert into routine_runs (id, routine_id, started_at, status, output) values (?, 'r1', 1, 'done', ?)",
+  ).run(`rr-${id}`, output);
+  db.prepare(
+    "insert into style_profiles (id, channel, descriptor, exemplars, updated_at, source_document_ids) values (?, 'email', 'brief', '[]', 1, ?)",
+  ).run(`sp-${id}`, JSON.stringify([id]));
   return { id, chunkIds: chunks.map((c) => c.id), seqs: chunks.map((c) => c.seq) };
 }
 
@@ -141,7 +164,13 @@ describe("deletion leaves nothing behind", () => {
     expect(before.length).toBeGreaterThan(8);
 
     const report = deleteData(db, blobs, { documentIds: [a.id] });
-    expect(report).toMatchObject({ documents: 1, cards: 1, blobs: 1, auditPayloads: 1 });
+    expect(report).toMatchObject({
+      documents: 1,
+      cards: 1,
+      blobs: 1,
+      auditPayloads: 1,
+      generated: 3,
+    });
     expect(remnants([a.id, ...a.chunkIds], a.seqs)).toEqual([]);
     expect(fs.existsSync(blobPath(blobs, blob.blob_hash))).toBe(false);
     // The audit log keeps only events about the document, never its content.

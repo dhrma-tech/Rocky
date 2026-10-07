@@ -24,6 +24,8 @@ export interface DeletionReport {
   meetings: number;
   /** Auto-created (unconfirmed) people and orgs no longer mentioned anywhere. */
   entities: number;
+  /** Briefs, routine runs and style profiles that quoted the deleted documents. */
+  generated: number;
   /** Sources kept because another notebook still uses them (notebook deletes only). */
   keptShared: number;
 }
@@ -89,6 +91,7 @@ export function deleteData(
     jobs: 0,
     meetings: 0,
     entities: 0,
+    generated: 0,
     keptShared,
   };
   let blobHashes: string[] = [];
@@ -143,6 +146,22 @@ export function deleteData(
           )
           .run(...meetingIds).changes;
 
+      // Generated text that quotes these documents (briefs, routine output, style exemplars).
+      const inDocs = `(${marks(ids.length)})`;
+      const citesDocs = (table: string) =>
+        `delete from ${table} where exists (select 1 from json_each(${table}.output) s, json_each(s.value, '$.citations') c
+           where json_extract(c.value, '$.documentId') in ${inDocs})`;
+      report.generated += db.prepare(citesDocs("briefs")).run(...ids).changes;
+      report.generated += db
+        .prepare(`delete from briefs where subject_id in ${inDocs}`)
+        .run(...ids).changes;
+      report.generated += db.prepare(citesDocs("routine_runs")).run(...ids).changes;
+      report.generated += db
+        .prepare(
+          `delete from style_profiles where exists (select 1 from json_each(style_profiles.source_document_ids) s where s.value in ${inDocs})`,
+        )
+        .run(...ids).changes;
+
       // Payload bodies about these documents go, unless another subject still references them.
       report.auditPayloads = db
         .prepare(
@@ -175,6 +194,9 @@ export function deleteData(
       // Queued study work for this notebook (cards, guide, mind map) goes too.
       report.jobs += db
         .prepare("delete from jobs where json_extract(payload, '$.notebookId') = ?")
+        .run(target.notebookId).changes;
+      report.generated += db
+        .prepare("delete from briefs where kind = 'notebook' and subject_id = ?")
         .run(target.notebookId).changes;
       db.prepare("delete from notebooks where id = ?").run(target.notebookId);
     }

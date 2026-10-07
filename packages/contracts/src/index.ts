@@ -1,5 +1,6 @@
 export * from "./actions.ts";
 export * from "./assistant.ts";
+export * from "./assistant-layer.ts";
 export * from "./capture.ts";
 export * from "./config.ts";
 export * from "./connectors.ts";
