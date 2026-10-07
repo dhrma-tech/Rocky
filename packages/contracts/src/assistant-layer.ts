@@ -15,11 +15,23 @@ export const BriefRequestSchema = z.union([
 ]);
 export type BriefRequest = z.infer<typeof BriefRequestSchema>;
 
+/** Computed, not generated (dates, countdowns): shown as is, so they need no quote. */
+export const BriefFactSchema = z.object({
+  label: z.string(),
+  detail: z.string(),
+  at: z.number().int().nullable(),
+  documentId: z.string().nullable(),
+});
+export type BriefFact = z.infer<typeof BriefFactSchema>;
+
 export const BriefSchema = z.object({
   id: z.string(),
   kind: z.enum(["event", "notebook"]),
   subjectId: z.string(),
   title: z.string(),
+  /** When the meeting or class starts, if known. */
+  startsAt: z.number().int().nullable(),
+  facts: z.array(BriefFactSchema),
   answer: z.array(AnswerSentenceSchema),
   notFound: z.boolean(),
   path: PathInfoSchema.nullable(),

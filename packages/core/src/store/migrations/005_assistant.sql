@@ -22,6 +22,8 @@ create table briefs (
   kind text not null check (kind in ('event', 'notebook')),
   subject_id text not null,
   title text not null,
+  starts_at integer,
+  facts text not null default '[]',
   output text not null default '[]',
   not_found integer not null default 0,
   path text,

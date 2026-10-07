@@ -35,6 +35,7 @@ import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
+import { registerAssistantRoutes } from "./assistant-routes.ts";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
@@ -503,6 +504,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerNotebookRoutes(api, { rt, poke, body });
+  registerAssistantRoutes(api, { rt, body, errorBody });
 
   app.route("/api/v1", api);
 
