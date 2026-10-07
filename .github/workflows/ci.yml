@@ -25,3 +25,29 @@ jobs:
       - run: pnpm test
         env:
           ROCKY_CI: "1"
+
+  # Acceptance #1 of Phase 9: a clean clone installs and reaches a cited Ask answer through the
+  # real CLI and SQLite store, with a fake Ollama (scripts/ci/fake-ollama.ts) for the models.
+  fresh-clone:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: source
+      - name: Clone into a clean directory (no untracked or ignored files)
+        shell: bash
+        run: git clone --no-local source "$RUNNER_TEMP/fresh"
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: source/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+        working-directory: ${{ runner.temp }}/fresh
+      - run: node scripts/fresh-clone.ts
+        working-directory: ${{ runner.temp }}/fresh
