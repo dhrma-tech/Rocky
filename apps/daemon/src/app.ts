@@ -534,7 +534,12 @@ export function externalUrl(anchor: Anchor, uri: string | null, meta: string): s
         .commentUrls;
       return urls?.[anchor.rowId] ?? uri;
     }
-    case "message":
+    case "message": {
+      // Slack keeps a permalink per message; mail threads open as a whole.
+      const urls = (JSON.parse(meta || "{}") as { messageUrls?: Record<string, string> })
+        .messageUrls;
+      return urls?.[anchor.messageId] ?? uri;
+    }
     case "event":
       return uri;
     default:

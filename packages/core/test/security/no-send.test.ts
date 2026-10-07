@@ -11,6 +11,8 @@ const FORBIDDEN = [
   /\bdrafts\s*\.\s*send\b/i,
   /gmail[^\n]{0,80}\/(messages|drafts)\/send\b/i,
   /\/gmail\/v1\/users\/[^\n]{0,40}\/messages\/send/i,
+  // Slack drafts stay local (Phase 7): nothing posts, schedules or edits messages.
+  /\bchat\.(postMessage|postEphemeral|scheduleMessage|update|meMessage)\b/,
 ];
 
 function* sources(dir: string): Generator<string> {
@@ -22,8 +24,8 @@ function* sources(dir: string): Generator<string> {
   }
 }
 
-describe("no email is ever sent", () => {
-  it("no source file calls a Gmail send endpoint", () => {
+describe("no email or chat message is ever sent", () => {
+  it("no source file calls a Gmail send endpoint or a Slack posting method", () => {
     const hits: string[] = [];
     for (const root of SCAN)
       for (const file of sources(path.join(ROOT, root))) {
@@ -39,6 +41,8 @@ describe("no email is ever sent", () => {
       "gmail.users.messages.send({ userId: 'me' })",
       "await drafts.send(id)",
       "fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send')",
+      "fetch(`https://slack.com/api/chat.postMessage`)",
+      "slack.chat.scheduleMessage({ channel })",
     ];
     for (const s of samples)
       expect(
