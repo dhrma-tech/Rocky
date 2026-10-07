@@ -15,11 +15,13 @@ import {
   draftEmail,
   enqueue,
   getRoutine,
+  getStyleProfile,
   home,
   latestBrief,
   listPacks,
   listRoutines,
   proposeFromDocument,
+  queueStyleRefresh,
   ROUTINE_JOB,
   type Runtime,
   routineRuns,
@@ -112,6 +114,22 @@ export function registerAssistantRoutes(
       201,
     ),
   );
+
+  // --- style profile (learned from sent mail; built when the user asks, then monthly) ---
+  api.get("/style", (c) => c.json({ profile: getStyleProfile(rt.db) }));
+  api.post("/style/refresh", (c) => {
+    const jobId = queueStyleRefresh(rt.db, { force: true });
+    if (!jobId)
+      return c.json(
+        {
+          error: "Rocky needs at least 5 sent emails from Gmail to learn your style.",
+          code: "EMPTY",
+        },
+        400,
+      );
+    poke?.();
+    return c.json({ jobId }, 202);
+  });
 
   // --- home and timeline ---
   api.get("/home", (c) => c.json(home(rt.db)));

@@ -7,6 +7,7 @@ import {
   routineJobHandler,
   seedRoutines,
 } from "./assistant/routines.ts";
+import { queueStyleRefresh, STYLE_JOB, styleJobHandler } from "./assistant/style.ts";
 import { resolveFfmpeg } from "./capture/ffmpeg.ts";
 import { TRANSCRIBE_JOB } from "./capture/recordings.ts";
 import { transcribeMeeting, UNDERSTAND_JOB } from "./capture/transcribe-job.ts";
@@ -160,6 +161,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
       ),
     [STUDY_JOB]: studyJobHandler({ db, router, embedder }),
     [ROUTINE_JOB]: routineJobHandler({ db, router, dataDir: opts.dataDir }),
+    [STYLE_JOB]: styleJobHandler({ db, router }),
     [UNDERSTAND_JOB]: async (job) => {
       await understandMeeting({ db, router }, job);
     },
@@ -181,7 +183,11 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     connectors,
     jobHandlers,
     // Routines run as heavy jobs when the model is local (they compete with whisper for the CPU).
-    tickRoutines: (now) => queueDueRoutines(db, now, router.chain("routine", {})[0]?.local ?? true),
+    // The same tick refreshes a style profile the user built once, monthly.
+    tickRoutines: (now) => {
+      queueStyleRefresh(db, now === undefined ? {} : { now });
+      return queueDueRoutines(db, now, router.chain("routine", {})[0]?.local ?? true);
+    },
     refreshNotebooks,
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => {

@@ -25,6 +25,8 @@ tasks:
   draft: { primary: api:strong }
   # local_allowed stays false until a >=14B local model is configured (router.md).
   propose_actions: { primary: api:strong, local_allowed: false }
+  # Style profile from sent mail (assistant.md): local first, the mail stays on the machine when it can.
+  style: { primary: local:medium, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_300s] }
 models:
   api:strong: anthropic/claude-sonnet-5-5
   api:cheap: anthropic/claude-haiku-4-5

@@ -8,6 +8,7 @@ export * from "./assistant/draft.ts";
 export * from "./assistant/home.ts";
 export * from "./assistant/propose.ts";
 export * from "./assistant/routines.ts";
+export * from "./assistant/style.ts";
 export * from "./assistant/timeline.ts";
 export * from "./assistant/verified.ts";
 export * from "./audit/append.ts";

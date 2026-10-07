@@ -18,6 +18,7 @@ export const TaskSchema = z.enum([
   "routine",
   "draft",
   "propose_actions",
+  "style",
 ]);
 export type Task = z.infer<typeof TaskSchema>;
 
