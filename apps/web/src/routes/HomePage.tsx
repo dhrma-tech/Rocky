@@ -97,6 +97,17 @@ export function HomePage() {
                         <Sparkles size={14} aria-hidden /> Brief me
                       </Button>
                     )}
+                    {i.openIn.map((o) => (
+                      <a
+                        key={o.url}
+                        href={o.url}
+                        className="text-xs"
+                        title={`Open in ${o.label}`}
+                        aria-label={`Open ${i.title} in ${o.label}`}
+                      >
+                        {o.label}
+                      </a>
+                    ))}
                   </li>
                 ))}
               </ul>

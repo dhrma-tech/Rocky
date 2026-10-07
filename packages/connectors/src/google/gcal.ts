@@ -34,6 +34,7 @@ interface GEvent {
   organizer?: { email?: string; displayName?: string };
   attendees?: { email?: string; displayName?: string; responseStatus?: string }[];
   recurringEventId?: string;
+  iCalUID?: string;
 }
 interface EventsPage {
   items?: GEvent[];
@@ -91,6 +92,8 @@ export function eventToDocument(calendar: string, e: GEvent): SourceDocument {
       attendeeEmails: (e.attendees ?? []).flatMap((a) => (a.email ? [a.email.toLowerCase()] : [])),
       allDay: Boolean(e.start?.date && !e.start.dateTime),
       ...(e.recurringEventId ? { recurringEventId: e.recurringEventId } : {}),
+      // Notion Calendar deep links address events by iCalUID (Phase 7).
+      ...(e.iCalUID ? { iCalUID: e.iCalUID } : {}),
     },
   };
 }

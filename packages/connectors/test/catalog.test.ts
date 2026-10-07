@@ -4,8 +4,22 @@ import { builtinConnectors } from "../src/index.ts";
 
 /** Rules every built-in connector must meet to load in the daemon (keychain names, catalog). */
 describe("built-in connector catalog", () => {
-  it("ids are unique and keychain-safe", () => {
+  it("registers all 12 connectors of PLAN.md, with unique, keychain-safe ids", () => {
     const ids = builtinConnectors.map((c) => c.id);
+    expect(ids).toEqual([
+      "github",
+      "notion",
+      "gmail",
+      "gcal",
+      "gdrive",
+      "linear",
+      "todoist",
+      "slack",
+      "caldav",
+      "asana",
+      "posthog",
+      "notion-calendar",
+    ]);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id).toMatch(/^[a-z0-9][a-z0-9-]{0,39}$/);
   });

@@ -129,6 +129,8 @@ export const TimelineItemSchema = z.object({
   documentId: z.string().nullable(),
   /** Other sources merged into this item (same title, same time). */
   mergedFrom: z.array(z.string()),
+  /** Other apps that can open it, e.g. Notion Calendar (cron:// deep link). */
+  openIn: z.array(z.object({ label: z.string(), url: z.string() })),
 });
 export type TimelineItem = z.infer<typeof TimelineItemSchema>;
 

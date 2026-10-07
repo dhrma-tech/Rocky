@@ -63,6 +63,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
   const lo = ymd(from - DAY);
   const hi = ymd(to + DAY);
   const items: TimelineItem[] = [];
+  const notionCal = notionCalendarAccount(db);
 
   for (const d of db
     .prepare(
@@ -70,10 +71,25 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
        where source_type = 'calendar' and substr(json_extract(meta, '$.start'), 1, 10) between ? and ?`,
     )
     .all(lo, hi) as DocRow[]) {
-    const meta = parse<{ start?: string; end?: string }>(d.meta, {});
+    const meta = parse<{ start?: string; end?: string; iCalUID?: string }>(d.meta, {});
     const start = parseWhen(meta.start);
     if (!start || !inRange(start.at)) continue;
     const end = parseWhen(meta.end);
+    const openIn =
+      notionCal && d.connector_id === "gcal" && meta.iCalUID
+        ? [
+            {
+              label: "Notion Calendar",
+              url: notionCalendarLink(
+                notionCal,
+                meta.iCalUID,
+                start.at,
+                end?.at ?? start.at,
+                d.title,
+              ),
+            },
+          ]
+        : [];
     items.push({
       kind: "event",
       title: d.title,
@@ -85,6 +101,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
       deepLink: d.uri,
       documentId: d.id,
       mergedFrom: [],
+      openIn,
     });
   }
 
@@ -114,6 +131,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
         deepLink: d.uri,
         documentId: d.id,
         mergedFrom: [],
+        openIn: [],
       });
     }
   }
@@ -139,6 +157,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
       deepLink: d.uri,
       documentId: d.id,
       mergedFrom: [],
+      openIn: [],
     });
   }
 
@@ -165,6 +184,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
       deepLink: c.uri,
       documentId: c.source_document_id,
       mergedFrom: [],
+      openIn: [],
     });
 
   for (const n of db.prepare("select name, exam_dates from notebooks").all() as {
@@ -184,6 +204,7 @@ export function timeline(db: Db, range: { from: number; to: number }): TimelineI
           deepLink: null,
           documentId: null,
           mergedFrom: [],
+          openIn: [],
         });
 
   return mergeDuplicates(items);
@@ -224,4 +245,32 @@ export function dayRange(now: number): { from: number; to: number } {
   const d = new Date(now);
   const from = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   return { from, to: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() };
+}
+
+/** The Google account Notion Calendar uses, when its virtual connector is on (CONNECTORS.md #12). */
+export function notionCalendarAccount(db: Db): string | null {
+  const r = db
+    .prepare("select config from connectors where kind = 'notion-calendar' and enabled = 1 limit 1")
+    .get() as { config: string } | undefined;
+  const email = r ? parse<{ accountEmail?: string }>(r.config, {}).accountEmail : undefined;
+  return email ?? null;
+}
+
+/** Notion Calendar's local deep link (cron://showEvent), verified 2026-10-07. */
+export function notionCalendarLink(
+  account: string,
+  iCalUID: string,
+  start: number,
+  end: number,
+  title: string,
+): string {
+  const q = new URLSearchParams({
+    accountEmail: account,
+    iCalUID,
+    startDate: new Date(start).toISOString(),
+    endDate: new Date(end).toISOString(),
+    title,
+    ref: "rocky",
+  });
+  return `cron://showEvent?${q}`;
 }

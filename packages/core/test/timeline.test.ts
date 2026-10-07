@@ -121,6 +121,7 @@ describe("timeline (acceptance #4)", () => {
       deepLink: null,
       documentId: null,
       mergedFrom: [],
+      openIn: [],
     };
     const items: TimelineItem[] = [
       {
@@ -146,6 +147,38 @@ describe("timeline (acceptance #4)", () => {
       ["Unrelated", "notion", []],
       ["Send the deck to Priya", "gcal", []],
     ]);
+  });
+
+  it("adds Notion Calendar links to Google events only while its virtual connector is on", () => {
+    add(
+      "ev",
+      "Design review",
+      "calendar",
+      {
+        start: new Date(at(8, 14)).toISOString(),
+        end: new Date(at(8, 15)).toISOString(),
+        iCalUID: "abc123@google.com",
+      },
+      "gcal",
+    );
+    const range = { from: at(8), to: at(9) };
+    expect(timeline(db, range)[0]?.openIn).toEqual([]);
+    db.prepare(
+      "insert into connectors (id, kind, display_name, enabled, config, created_at) values ('notion-calendar', 'notion-calendar', 'Notion Calendar', 1, ?, 1)",
+    ).run(JSON.stringify({ accountEmail: "me@gmail.com" }));
+    const [item] = timeline(db, range);
+    expect(item?.openIn).toHaveLength(1);
+    const url = new URL(item?.openIn[0]?.url ?? "");
+    expect(url.protocol).toBe("cron:");
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      accountEmail: "me@gmail.com",
+      iCalUID: "abc123@google.com",
+      startDate: new Date(at(8, 14)).toISOString(),
+      endDate: new Date(at(8, 15)).toISOString(),
+      title: "Design review",
+    });
+    db.prepare("update connectors set enabled = 0").run();
+    expect(timeline(db, range)[0]?.openIn).toEqual([]);
   });
 
   it("reads date-only strings as local midnight", () => {
