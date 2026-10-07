@@ -2,7 +2,7 @@
 
 Design system and UI specification for an open-source, local-first AI assistant (cross-app memory, cited answers, approval-gated actions, student notebook module). Covers the **marketing landing page** (`apps/landing`) and the **app interface** (`apps/web`). Written for Claude Code, Claude Design and any human contributor.
 
-**Status:** v1 draft. Colors are final (user-supplied palette). Fonts, logo and install command are open (Section 0.2). Product name: Rocky.
+**Status:** v1. Colors are final (user-supplied palette). Fonts, logo, install command and hosting were decided in Phase 9 (Section 0.2). Product name: Rocky.
 
 ---
 
@@ -26,11 +26,11 @@ Rules this implies:
 
 | # | Decision | Where it plugs in |
 |---|---|---|
-| 1 | **Fonts**: 3 roles (Display, UI sans, Mono), chosen by the owner | `--font-display`, `--font-sans`, `--font-mono` (Section 3) |
-| 2 | Logo (name decided: Rocky) | Header, footer, README |
-| 3 | Install command and download targets | Hero, final CTA (`{{INSTALL_COMMAND}}`) |
-| 4 | GitHub repo URL and star-count source | Announcement bar, header, trust strip |
-| 5 | Hosted tier: yes or no (affects "Ways to run it") | Section 4.12 |
+| 1 | **Fonts** (decided Phase 9): Display **Instrument Serif** 400, UI **Inter** (variable), Mono **JetBrains Mono**. All OFL, self-hosted via `@fontsource`, no runtime third-party request | `--font-display`, `--font-sans`, `--font-mono` (Section 3) |
+| 2 | Logo (decided Phase 9): a rounded pebble mark plus the "Rocky" wordmark, palette colors only (`apps/landing/public/logo.svg`) | Header, footer, README |
+| 3 | Install command (decided Phase 9): `git clone https://github.com/dhrma-tech/Rocky && cd Rocky && pnpm i && pnpm rocky doctor --fix`. "Download" goes to the README quickstart until a packaged release exists | Hero, final CTA (`{{INSTALL_COMMAND}}`) |
+| 4 | Repo: github.com/dhrma-tech/Rocky. Stars and contributors are fetched at build time; hidden if the API is unavailable | Announcement bar, header, trust strip |
+| 5 | Hosted tier: **no** (decided Phase 9) | Section 4.12 |
 | 6 | Visual check of the dark theme (it is derived, not designed) | Section 2.4 |
 | 7 | Reference for thread view and side panels (optional follow-up teardown) | Section 5.5 |
 

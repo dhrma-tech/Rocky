@@ -71,10 +71,10 @@
   --dur-base: 240ms;
   --dur-panel: 320ms;
   --dur-flip: 280ms;
-  /* fonts: owner decision pending (§0.2 #1); system stacks until chosen */
-  --font-display: Georgia, "Times New Roman", serif;
-  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* fonts (§0.2 #1, decided Phase 9): self-hosted OFL webfonts via @fontsource, system fallbacks */
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --font-answer: var(--font-sans);
   color-scheme: light;
 }

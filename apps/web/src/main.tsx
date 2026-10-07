@@ -16,6 +16,11 @@ import { MeetingDetailPage } from "./routes/MeetingDetailPage.tsx";
 import { MeetingsPage } from "./routes/MeetingsPage.tsx";
 import { NotebooksPage } from "./routes/NotebooksPage.tsx";
 import { Shell } from "./Shell.tsx";
+// Self-hosted fonts (no runtime third-party request). Latin subsets cover the UI strings.
+import "@fontsource-variable/inter/wght.css";
+import "@fontsource/instrument-serif/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
 import "./styles/app.css";
 import { applyTheme } from "./theme.ts";
 
