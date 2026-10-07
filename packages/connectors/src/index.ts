@@ -1,4 +1,5 @@
 import type { Connector } from "@rocky/connector-sdk";
+import { asana } from "./asana/index.ts";
 import { caldav } from "./caldav/index.ts";
 import { github } from "./github/index.ts";
 import { GOOGLE_GROUP } from "./google/common.ts";
@@ -10,7 +11,7 @@ import { notion } from "./notion/index.ts";
 import { slackConnector as slack } from "./slack/index.ts";
 import { todoist } from "./todoist/index.ts";
 
-export { caldav, GOOGLE_GROUP, gcal, gdrive, github, gmail, linear, notion, slack, todoist };
+export { asana, caldav, GOOGLE_GROUP, gcal, gdrive, github, gmail, linear, notion, slack, todoist };
 
 /** Built-in connectors, registered by the daemon and CLI (core never imports this package). */
 // biome-ignore lint/suspicious/noExplicitAny: each connector has its own config and cursor types.
