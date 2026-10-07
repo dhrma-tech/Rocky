@@ -157,6 +157,12 @@ importers:
         specifier: 8.3.2
         version: 8.3.2(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1)
 
+  examples/rss-plugin:
+    dependencies:
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
   packages/connector-sdk:
     dependencies:
       '@rocky/contracts':

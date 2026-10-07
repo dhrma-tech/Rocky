@@ -2,19 +2,59 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 8 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connected apps and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; and an MCP server, all from the CLI and a local web UI.
+> Status: V1 complete, early software ([docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connected apps and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; opt-in store encryption; and an MCP server, all from the CLI and a local web UI. Website: see [apps/landing](apps/landing).
 
 ## Quickstart (developers)
 
-Requires Node 22.18+, pnpm 10, and [Ollama](https://ollama.com) with `nomic-embed-text` for embeddings. Answers use Claude when an Anthropic key is stored, and local models otherwise (or always, in local-only mode).
+These steps take a new Windows machine to a cited answer. macOS and Linux work the same way; only the whisper and ffmpeg downloads from `doctor --fix` are Windows-only (install them yourself elsewhere).
+
+**1. Install the prerequisites** (once):
+- [Git](https://git-scm.com/download/win).
+- [Node.js](https://nodejs.org) 22.18 or newer (24 LTS recommended). Check with `node -v`.
+- pnpm 10: `npm install -g pnpm@10`.
+- [Ollama](https://ollama.com/download). Then, in a new terminal:
+  ```sh
+  ollama pull nomic-embed-text   # embeddings (~270 MB)
+  ollama pull qwen3.5:4b         # the local answer model (a few GB); skip if you will only use an API key
+  ```
+  Little space on C:? Set the user environment variable `OLLAMA_MODELS` to a folder on another drive and restart Ollama before pulling.
+
+**2. Get Rocky and check the machine:**
 
 ```sh
+git clone https://github.com/dhrma-tech/Rocky
+cd Rocky
 pnpm i
-pnpm test
-pnpm rocky doctor          # checks RAM, GPU, Ollama, whisper, ffmpeg, sqlite-vec, disk, keychain
-pnpm rocky doctor --fix    # pinned whisper-cli + model and ffmpeg (Windows x64); creates the 16k-context local model
-pnpm rocky doctor --bench  # measures transcription speed on this CPU
+pnpm rocky doctor --fix    # downloads pinned whisper-cli, its model and ffmpeg (Windows x64); creates the 16k-context local model
+pnpm rocky doctor          # every line should say pass or warn; each failure prints its fix
 ```
+
+Rocky keeps its data in `%APPDATA%Rocky`. To use another drive, pass `--data-dir E:RockyData` to every command or set the `ROCKY_DATA_DIR` environment variable.
+
+**3. Ask your first question:**
+
+```sh
+pnpm rocky ingest evals/public/corpus                      # a small sample corpus that ships with the repo
+pnpm rocky ask --local-only "What do economists mean by demand?"
+```
+
+The answer cites its sources, and each citation quotes the passage it came from. If nothing supports an answer, Rocky says "Not found in your sources." On a CPU-only laptop a local answer takes a minute or two. For faster, stronger answers, store an Anthropic key (`pnpm rocky secrets set anthropic`, input hidden) and drop `--local-only`; spending is capped at $10 a month by default.
+
+**4. Open the app:**
+
+```sh
+pnpm build:web
+pnpm rocky daemon          # API and UI on http://127.0.0.1:7337 (leave it running)
+pnpm rocky open            # in a second terminal: prints a one-time sign-in link
+```
+
+**Troubleshooting:**
+- `pnpm` not found: open a new terminal after installing it.
+- `doctor` says Ollama is unreachable: start the Ollama app; it listens on 127.0.0.1:11434.
+- `ask` says the model is missing: run `ollama pull qwen3.5:4b`, then `pnpm rocky doctor --fix` again.
+- An answer is "Not found": run `pnpm rocky ingest <folder>` first; Rocky only answers from what it has stored.
+
+Development: `pnpm test`, `pnpm lint`, `pnpm typecheck`. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Ask over your own files:
 
