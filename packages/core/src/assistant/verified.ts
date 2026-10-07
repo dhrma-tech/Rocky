@@ -54,10 +54,10 @@ ${UNTRUSTED_RULE}`;
 export function normalizeForQuote(s: string): string {
   return s
     .normalize("NFKC")
-    .replace(/[​-‍﻿­]/g, "")
-    .replace(/[‘’‚‛′`´]/g, "'")
-    .replace(/[“”„‟″«»]/g, '"')
-    .replace(/[‐-―−]/g, "-")
+    .replace(/[\u200b-\u200d\ufeff\u00ad]/g, "")
+    .replace(/[\u2018\u2019\u201a\u201b\u2032`\u00b4]/g, "'")
+    .replace(/[\u201c\u201d\u201e\u201f\u2033\u00ab\u00bb]/g, '"')
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
