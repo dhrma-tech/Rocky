@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { briefCommand, routinesCommand } from "./assistant.ts";
 import { daemonBackground, daemonInstallCommand } from "./autostart.ts";
 import {
   askCommand,
@@ -116,6 +117,25 @@ program
     } else if (opts.background)
       process.exitCode = await daemonBackground({ ...opts, dataDir: dataDir() });
     else process.exitCode = await daemonCommand({ ...opts, dataDir: dataDir() });
+  });
+
+program
+  .command("brief")
+  .description(
+    "a cited brief before a meeting (calendar event id) or a class (notebook id or name)",
+  )
+  .argument("<subject>", "calendar event document id, or notebook id or name")
+  .action(async (subject: string) => {
+    process.exitCode = await briefCommand(subject, { dataDir: dataDir() });
+  });
+
+program
+  .command("routines")
+  .description("scheduled, cited summaries: list, or run one now")
+  .argument("<action>", "list | run")
+  .argument("[routine]", "with run: routine id or name")
+  .action(async (action: string, routine: string | undefined) => {
+    process.exitCode = await routinesCommand(action, routine, { dataDir: dataDir() });
   });
 
 program

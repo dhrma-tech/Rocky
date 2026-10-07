@@ -15,9 +15,9 @@
 | **Connectors** | 4 | `GET /connectors` (with health and last sync) · `GET /connectors/catalog` (built-in + plugins, config schema as JSON Schema) · `POST /connectors` `{kind, config}` · `POST /connectors/:id/auth` (starts OAuth, returns URL) · `POST /connectors/:id/test` · `POST /connectors/:id/sync` · `GET /connectors/:id/log` · `DELETE /connectors/:id?purge=` · `POST /imports/archive` (Phase 8) |
 | **Notebooks** | 5 | `GET/POST /notebooks` · `GET/PATCH/DELETE /notebooks/:id` · `GET /notebooks/:id/sources` · `POST/DELETE /notebooks/:id/sources/:docId` · `POST /notebooks/:id/scope/preview` (rule → matching docs count) · `GET /notebooks/:id/workload` · `POST /notebooks/:id/guide` (SSE) · `POST /notebooks/:id/mindmap` · `GET /notebooks/:id/export?format=anki\|md` · `POST /notebooks/:id/source-pack` (→ action proposal) |
 | **Study** | 5 | `GET /study/review?notebook=` · `POST /cards/:id/review {rating}` · `POST /notebooks/:id/cards/generate` · `PATCH/DELETE /cards/:id` · `POST /quizzes` `{notebookId, topics, difficulty, examGrade}` · `GET /quizzes/:id/next` · `POST /quizzes/:id/answer` · `GET /notebooks/:id/countdown` (exam, weak topics, daily plan) |
-| **Home & Brief** | 6 | `GET /home` (today timeline, due/overdue commitments, pending approvals count, last brief) · `GET /timeline?from=&to=` · `POST /briefs` `{eventId \| notebookId}` (SSE) |
-| **Routines** | 6 | `GET/POST /routines` · `PATCH/DELETE /routines/:id` · `POST /routines/:id/run` · `GET /routines/:id/runs` |
-| **Drafts** (in Actions) | 6 | `POST /drafts` `{threadId?, instruction, channel}` (SSE) → creates action proposal |
+| **Home & Brief** | 6 | `GET /home` (today timeline, due/overdue commitments, pending approvals count, last routine run) · `GET /timeline?from=&to=` · `POST /briefs` `{eventId \| notebookId}` (SSE; facts are computed, sentences verified) · `GET /briefs/latest?kind=&subject=` |
+| **Routines** | 6 | `GET/POST /routines` · `POST /routines/from-template` `{pack, template?}` · `GET/PATCH/DELETE /routines/:id` · `POST /routines/:id/run` (→ job) · `GET /routines/:id/runs` · `GET /templates` |
+| **Drafts** (in Actions) | 6 | `POST /drafts` `{threadId?, instruction, channel}` (SSE) → `gmail.draftCreate` proposal · `GET /style` · `POST /style/refresh` (→ job) · `POST /proposals` `{documentId, instruction}` (≤ 10 cited proposals) |
 
 ## Global UI rules
 
