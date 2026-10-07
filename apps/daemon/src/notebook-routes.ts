@@ -30,6 +30,7 @@ import {
   reviewCard,
   reviewQueue,
   type StudyTask,
+  sourcePack,
   studyGuideMarkdown,
   updateCard,
   updateNotebook,
@@ -113,6 +114,24 @@ export function registerNotebookRoutes(
   api.get("/notebooks/:id/workload", async (c) =>
     c.json({ items: await workload(rt.db, c.req.param("id"), rt.embedder) }),
   );
+  // Drive source pack: this week of the course as a Google Doc, queued for approval (notebooks.md).
+  api.post("/notebooks/:id/source-pack", (c) => {
+    const draft = sourcePack(rt.db, c.req.param("id"));
+    if (!rt.registry.get("gdrive.sourcePackWrite"))
+      return c.json({ error: "Connect Google Drive first.", code: "NOT_CONFIGURED" }, 400);
+    if (draft.documents === 0)
+      return c.json({ error: "Nothing was added to this notebook this week.", code: "EMPTY" }, 400);
+    return c.json(
+      rt.actions.propose({
+        type: "gdrive.sourcePackWrite",
+        payload: draft.payload,
+        origin: "user_turn",
+        citations: draft.citations,
+        allowedTypes: ["gdrive.sourcePackWrite"],
+      }),
+      201,
+    );
+  });
   api.get("/notebooks/:id/cards", (c) => c.json({ cards: listCards(rt.db, c.req.param("id")) }));
   api.get("/notebooks/:id/export", (c) => {
     const id = c.req.param("id");
