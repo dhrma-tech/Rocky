@@ -110,3 +110,35 @@ How it works:
 Notion Calendar has no API. It shows your Google Calendar and Notion databases, and Rocky already reads both directly.
 
 Turn this connector on and enter the Google account Notion Calendar uses. Google Calendar events on Home then get an **Open in Notion Calendar** link.
+
+## Chat exports (WhatsApp, Discord, Instagram, X, LinkedIn)
+
+These apps have no API Rocky can use, so you import an export file once (and again later to add newer messages). Import on the Connectors page (**Import an export**) or with `rocky import <file or folder>`. The format is detected; `--format` forces one.
+
+| App | How to export | What to give Rocky |
+|---|---|---|
+| WhatsApp | Open the chat → More → Export chat (without media is enough) | The `.txt`, or the `.zip` |
+| Discord | Settings → Data & Privacy → Request all of my data | The package `.zip`, or its unpacked folder |
+| Instagram | Accounts Center → Your information and permissions → Download your information → **JSON** format | The `.zip`, or its unpacked folder |
+| X | Settings → Your account → Download an archive of your data | The `.zip`, or its unpacked folder |
+| LinkedIn | Settings → Data privacy → Get a copy of your data (Messages, Connections) | The `.zip`, or `messages.csv` / `Connections.csv` |
+
+How it works:
+- The file is read on this machine. Photos, voice notes and videos inside an export are skipped without being unpacked.
+- Each conversation becomes one document per month (for example "WhatsApp · Sam · 2025-03"). Citations open the message where that part of the conversation starts.
+- Importing the same export again changes nothing; a newer export adds or updates only the months that changed.
+- Remove an import from the Connectors page. That deletes its documents, chunks and anything generated from them.
+- Discord's data package contains only your own messages, so only those are imported.
+- Tested with hand-made fixtures of each format; real exports change format over time. If yours is not recognized, the error names the files Rocky found.
+
+## Claude Code and other MCP clients
+
+Rocky exposes your memory to MCP clients with six read-only tools. They can search and read; they cannot write, send or approve anything.
+
+```sh
+claude mcp add rocky -- node E:/CODEBASE/Rocky/apps/cli/src/index.ts mcp
+```
+
+- Every result is wrapped as untrusted data, so the client's model treats it as evidence, not instructions.
+- Local-only documents and notebooks are hidden. In local-only mode, every tool refuses. To allow both, set `mcp: { allowLocalOnly: true }` in `rocky.yaml`; the client may send what it reads to a cloud model.
+- HTTP clients: with the daemon running, `rocky mcp --http` prints the endpoint. Requests need the install token (`--show-token` prints it). Prefer stdio, which needs no token.

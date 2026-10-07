@@ -50,6 +50,12 @@ Times are rough. Items are ordered by when the phase needs them.
 - [ ] **Asana:** My settings → Apps → Developer apps → Personal access token.
 - [ ] **PostHog:** Personal API key with scopes `query:read` and `insight:read`. Note the project ID and region (us/eu).
 
+## Phase 8 — checks only you can do
+
+- [ ] **Claude Code + MCP:** install Claude Code, run `claude mcp add rocky -- node E:/CODEBASE/Rocky/apps/cli/src/index.ts mcp`, then ask it something only your memory knows. It should call `search_memory` and cite your documents.
+- [ ] **One real chat export:** WhatsApp → a chat → More → Export chat (without media is enough). Import it with `rocky import <file>` or Connectors → Import an export, then ask about it.
+- [ ] **`rocky record`:** `rocky record --list-devices`, then a 1-minute test with `--consent --minutes 1 --device "<your mic>"`. Not tested live yet.
+
 ## Before Phase 9
 
 - [ ] Choose the license (Apache-2.0 recommended).

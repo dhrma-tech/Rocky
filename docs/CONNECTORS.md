@@ -56,6 +56,15 @@ General rules:
 
 Formats drift. Each parser has fixtures per known version and fails with a clear message naming the unrecognized file.
 
+Decisions (Phase 8):
+- **Documents:** one per conversation per month, `sourceType: chat`, stored under the pseudo connector `import:<format>` with `meta.archive` naming the export (list and remove group by it). Re-imports are idempotent because unchanged content is skipped.
+- **Units:** consecutive messages are grouped into bursts (a new one after 30 min of silence or ~1,500 characters), each anchored at its first message (`{kind: "message", messageId, threadId}`). One unit per message would give thousands of one-line chunks; bursts keep chunks readable while citations still open an exact message.
+- **WhatsApp:** no message ids or time zone in the export. Ids are `L<line>@<ts>`, times are read as this machine's local time, and day/month order is inferred per file (a part over 12 decides; otherwise "." and 24 h mean d/m, AM/PM means m/d). Media placeholders and system lines are dropped.
+- **Discord:** snowflake ids are bare JSON numbers above 2^53 and are quoted before parsing. The package holds only your own messages.
+- **Instagram:** strings are re-decoded when they are Latin-1-escaped UTF-8; real Unicode is left alone. Same-millisecond messages get `#2`, `#3` suffixes.
+- **LinkedIn:** `Connections.csv` starts with a "Notes:" preamble; the header row is found by its "First Name" column. Connections become one document with row anchors.
+- **Zips** are streamed and only `.txt/.json/.js/.csv` entries are inflated (text capped at 512 MB), so a multi-GB WhatsApp export with media never sits in memory.
+
 ## Not built (community plugin candidates)
 
 Outlook, Jira/Confluence, Discord bot, Teams, Mixpanel, Amplitude, Stripe, Mercury, HubSpot, Miro, Lucid, Canva, observability tools. No live WhatsApp, Instagram, X or LinkedIn integrations.

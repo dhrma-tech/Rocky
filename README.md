@@ -2,7 +2,7 @@
 
 A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
 
-> Status: early development (Phase 4 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files and connected apps (GitHub, Notion, Gmail, Google Calendar, Google Drive), meeting and lecture capture with extracted commitments, the approval queue and the audit log work from the CLI and a local web UI.
+> Status: early development (Phase 8 of [docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connected apps and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; and an MCP server, all from the CLI and a local web UI.
 
 ## Quickstart (developers)
 
@@ -48,7 +48,30 @@ pnpm rocky connectors sync                       # or let the daemon sync every 
 pnpm rocky daemon install                        # start the daemon at Windows sign-in (no admin needed)
 ```
 
-Actions that write to your apps wait in an approval queue (web UI → Actions). Nothing runs until you approve the exact payload shown, and every step is in the audit log.
+Actions that write to your apps wait in an approval queue (web UI → Actions, or `rocky actions`). Nothing runs until you approve the exact payload shown, and every step is in the audit log.
+
+```sh
+pnpm rocky actions list --status draft
+pnpm rocky actions approve <id>            # shows the payload and its hash, then asks; --yes for scripts
+pnpm rocky actions run <id>
+```
+
+Chat exports (web UI → Connectors → Import an export, or the CLI). Media inside an export is skipped:
+
+```sh
+pnpm rocky import "WhatsApp Chat - Sam.zip"      # also: Discord package, Instagram JSON, X archive, LinkedIn CSVs
+```
+
+Use your memory from Claude Code (or any MCP client). The tools are read-only and every result is wrapped as untrusted data:
+
+```sh
+claude mcp add rocky -- node E:/CODEBASE/Rocky/apps/cli/src/index.ts mcp
+# then ask Claude Code: "search my Rocky memory for what we decided about pricing"
+```
+
+Tools: `search_memory`, `search_notebook`, `get_document`, `list_commitments`, `list_decisions`, `list_notebooks`. Local-only documents and notebooks are hidden, and in local-only mode every tool refuses (`mcp.allowLocalOnly: true` in `rocky.yaml` overrides both). The daemon also serves the same tools over Streamable HTTP at `/api/v1/mcp` with the install token (`rocky mcp --http`).
+
+More CLI: `rocky sync`, `rocky study [notebook] [--quiz]`, `rocky record --consent` (microphone; tab audio needs the web UI), `rocky templates list | eject <pack>`, `rocky routines`, `rocky brief`.
 
 Web UI:
 
