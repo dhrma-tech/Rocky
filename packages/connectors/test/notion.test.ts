@@ -75,6 +75,12 @@ describe("Notion connector", () => {
       { anchor: { kind: "row", rowId: "row-1" }, text: "Date: 2026-11-03\nStatus: Planned" },
     ]);
     expect(r1.title).toBe("Exam: Linear algebra");
+    expect(r1.meta).toMatchObject({
+      kind: "row",
+      dataSourceId: "ds-1",
+      dates: [{ name: "Date", start: "2026-11-03", end: null }],
+    });
+    expect(p1.meta).not.toHaveProperty("dates");
     // First sync is a sweep: the full id list lets the core drop unshared pages.
     expect(res.batches.at(-1)).toMatchObject({ presentExternalIds: ["p-1", "row-1"] });
     expect(res.cursor).toMatchObject({ lastEdited: "2026-09-03T00:00:00.000Z" });

@@ -53,7 +53,11 @@ describe("GitHub connector", () => {
         url: listUrl("2026-07-01T00:00:00.000Z", 2),
         headers: H(),
         body: [
-          issue(3, "2026-09-04T10:00:00Z", { pull_request: { url: "x" }, title: "Add export" }),
+          issue(3, "2026-09-04T10:00:00Z", {
+            pull_request: { url: "x" },
+            title: "Add export",
+            milestone: { title: "Beta", due_on: "2026-11-01T07:00:00Z" },
+          }),
         ],
       },
     ]);
@@ -75,6 +79,8 @@ describe("GitHub connector", () => {
       type: "pr",
       number: 3,
     });
+    expect(d3?.meta).toMatchObject({ dueOn: "2026-11-01T07:00:00Z", milestone: "Beta" });
+    expect(d1?.meta).not.toHaveProperty("dueOn");
     expect(r.calls).toHaveLength(3);
   });
 

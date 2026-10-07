@@ -121,6 +121,8 @@ export function threadToDocument(t: Thread): SourceDocument | null {
     meta: {
       messageCount: msgs.length,
       labels: [...new Set(msgs.flatMap((m) => m.labelIds ?? []))],
+      // The user's own messages (style profile samples them, Phase 6).
+      sentMessageIds: msgs.filter((m) => m.labelIds?.includes("SENT")).map((m) => m.id),
     },
   };
 }

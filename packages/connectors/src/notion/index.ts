@@ -247,8 +247,21 @@ export async function pageToDocument(http: Http, tok: string, p: NPage): Promise
       // Notebook rules match a page "with descendants" through this parent chain.
       ...(p.parent.page_id ? { parentId: p.parent.page_id } : {}),
       ...(p.parent.data_source_id ? { dataSourceId: p.parent.data_source_id } : {}),
+      // Date properties put rows on the unified timeline (Phase 6).
+      ...(isRow ? { dates: dateProperties(p) } : {}),
     },
   };
+}
+
+/** A row's date properties as {name, start, end} (ISO strings as Notion returns them). */
+export function dateProperties(p: NPage): { name: string; start: string; end: string | null }[] {
+  const out: { name: string; start: string; end: string | null }[] = [];
+  for (const [name, prop] of Object.entries(p.properties)) {
+    if (prop.type !== "date") continue;
+    const d = prop.date as { start?: string; end?: string | null } | null;
+    if (d?.start) out.push({ name, start: d.start, end: d.end ?? null });
+  }
+  return out;
 }
 
 /** Pages visible to the integration, newest edit first; stops once older than `after`. */

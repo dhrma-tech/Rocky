@@ -32,6 +32,7 @@ interface GEvent {
   end?: { dateTime?: string; date?: string };
   organizer?: { email?: string; displayName?: string };
   attendees?: { email?: string; displayName?: string; responseStatus?: string }[];
+  recurringEventId?: string;
 }
 interface EventsPage {
   items?: GEvent[];
@@ -85,6 +86,10 @@ export function eventToDocument(calendar: string, e: GEvent): SourceDocument {
       end: when(e.end),
       status: e.status,
       attendees: (e.attendees ?? []).length,
+      // Briefs find related documents and earlier sessions of a series through these (Phase 6).
+      attendeeEmails: (e.attendees ?? []).flatMap((a) => (a.email ? [a.email.toLowerCase()] : [])),
+      allDay: Boolean(e.start?.date && !e.start.dateTime),
+      ...(e.recurringEventId ? { recurringEventId: e.recurringEventId } : {}),
     },
   };
 }

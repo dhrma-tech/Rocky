@@ -64,6 +64,7 @@ describe("Gmail", () => {
               "m2",
               "t1",
               "Sure, by Friday.\n\nOn Mon, Priya wrote:\n> Can you send the budget?",
+              { labelIds: ["SENT"] },
             ),
           ],
         },
@@ -92,6 +93,7 @@ describe("Gmail", () => {
       [{ kind: "message", messageId: "m1", threadId: "t1" }, "Can you send the budget?"],
       [{ kind: "message", messageId: "m2", threadId: "t1" }, "Sure, by Friday."],
     ]);
+    expect(t1.meta).toMatchObject({ sentMessageIds: ["m2"] });
     expect(res.cursor).toEqual({ historyId: "1000" });
   });
 
@@ -189,15 +191,33 @@ const incUrl = (tok: string) => `${CAL}?singleEvents=true&maxResults=250&syncTok
 describe("Google Calendar", () => {
   it("full sync pages through events and stores the sync token from the last page", async () => {
     const r = replay([
-      { url: fullUrl(), body: { items: [event("e1")], nextPageToken: "p2" } },
+      {
+        url: fullUrl(),
+        body: {
+          items: [
+            event("e1", {
+              recurringEventId: "series1",
+              attendees: [{ email: "Prof@Uni.edu" }, { displayName: "No email" }],
+            }),
+          ],
+          nextPageToken: "p2",
+        },
+      },
       {
         url: fullUrl("p2"),
-        body: { items: [event("e2", { summary: "Office hours" })], nextSyncToken: "S1" },
+        body: {
+          items: [event("e2", { summary: "Office hours", start: { date: "2026-11-04" } })],
+          nextSyncToken: "S1",
+        },
       },
     ]);
     const res = await runSync(gcal, { fetch: r.fetch, config: calCfg, accessToken, since });
     expect(res.documents.map((d) => d.externalId)).toEqual(["primary:e1", "primary:e2"]);
     expect(res.cursor).toEqual({ primary: "S1" });
+    expect(res.documents.map((d) => d.meta)).toMatchObject([
+      { attendeeEmails: ["prof@uni.edu"], recurringEventId: "series1", allDay: false },
+      { attendeeEmails: ["me@example.com"], allDay: true },
+    ]);
     const e1 = res.documents[0];
     if (e1?.body.kind !== "text") throw new Error("text body expected");
     expect(e1.body.units?.[0]).toMatchObject({

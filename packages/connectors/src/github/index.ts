@@ -46,6 +46,7 @@ interface GhIssue {
   created_at: string;
   updated_at: string;
   pull_request?: unknown;
+  milestone?: { title: string; due_on: string | null } | null;
 }
 interface GhComment {
   id: number;
@@ -134,6 +135,9 @@ export function issueToDocument(
       number: issue.number,
       kind: isPr ? "pr" : "issue",
       state: issue.state,
+      ...(issue.milestone?.due_on
+        ? { dueOn: issue.milestone.due_on, milestone: issue.milestone.title }
+        : {}),
       labels,
       commentUrls: Object.fromEntries(comments.map((c) => [String(c.id), c.html_url])),
     },
