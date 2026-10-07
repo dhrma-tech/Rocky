@@ -114,4 +114,21 @@ describe(".gitignore", () => {
     expect(ignored(".env.example")).toBe(false);
     expect(ignored("evals/public/questions.yaml")).toBe(false);
   });
+  it("never ignores test fixtures (a data/ folder inside one once went missing in CI)", () => {
+    expect(ignored("packages/importers/test/fixtures/x/data/tweets.js")).toBe(false);
+    const missed: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === "node_modules") continue;
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (full.includes(`${path.sep}fixtures${path.sep}`)) {
+          const rel = path.relative(repo, full).split(path.sep).join("/");
+          if (ignored(rel)) missed.push(rel);
+        }
+      }
+    };
+    for (const top of ["packages", "apps"]) walk(path.join(repo, top));
+    expect(missed).toEqual([]);
+  });
 });
