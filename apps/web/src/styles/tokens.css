@@ -63,6 +63,7 @@
   --dur-fast: 180ms;
   --dur-base: 240ms;
   --dur-panel: 320ms;
+  --dur-flip: 280ms;
   /* fonts: owner decision pending (§0.2 #1); system stacks until chosen */
   --font-display: Georgia, "Times New Roman", serif;
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;

@@ -121,3 +121,7 @@ export function Toggle({
 }
 
 export const cls = cx;
+
+/** Classes for a link that looks like a secondary Button (a button inside a link is invalid HTML). */
+export const linkButton =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-raised px-4 text-sm font-semibold text-primary no-underline shadow-raised-sm transition-transform duration-[180ms] ease-ui hover:-translate-y-px hover:text-primary";

@@ -6,6 +6,7 @@ import type {
   AskResult,
   AuditRow,
   AuditVerify,
+  Card,
   Citation,
   Commitment,
   CommitmentPatch,
@@ -15,6 +16,7 @@ import type {
   ConnectorHealth,
   ConnectorRun,
   ConnectorUpdate,
+  Countdown,
   Decision,
   Entity,
   Hardware,
@@ -22,10 +24,25 @@ import type {
   Meeting,
   MeetingDetail,
   MeetingKind,
+  MindMap,
+  Notebook,
+  NotebookCreate,
+  NotebookSource,
+  NotebookUpdate,
+  QuizCreate,
+  QuizGrade,
+  QuizQuestion,
+  Rating,
   RecordingStart,
+  ReviewQueue,
+  ScopeRules,
   SettingsUpdate,
+  StudyGuide,
   TranscriptSegment,
+  WorkloadItem,
 } from "@rocky/contracts";
+
+export type StudyTask = "cards" | "summaries" | "guide" | "mindmap";
 
 /** Error from the daemon: `code` is stable (BUDGET_EXCEEDED, EGRESS_BLOCKED, …), message is shown verbatim. */
 export class ApiError extends Error {
@@ -270,6 +287,57 @@ export const api = {
     call<{ results: { status: string; path: string; reason?: string }[] }>("/ingest", {
       method: "POST",
       body: JSON.stringify({ path }),
+    }),
+  // --- Notebooks and study (Phase 5) ---
+  notebooks: () => call<{ notebooks: Notebook[] }>("/notebooks"),
+  notebook: (id: string) => call<Notebook>(`/notebooks/${encodeURIComponent(id)}`),
+  createNotebook: (input: NotebookCreate) =>
+    call<Notebook>("/notebooks", { method: "POST", body: JSON.stringify(input) }),
+  updateNotebook: (id: string, patch: NotebookUpdate) =>
+    call<Notebook>(`/notebooks/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteNotebook: (id: string, withSources: boolean) =>
+    call<unknown>(`/notebooks/${id}${withSources ? "?withSources=1" : ""}`, { method: "DELETE" }),
+  notebookSources: (id: string) =>
+    call<{ sources: NotebookSource[] }>(`/notebooks/${encodeURIComponent(id)}/sources`),
+  addSource: (id: string, docId: string) =>
+    call<Notebook>(`/notebooks/${id}/sources/${encodeURIComponent(docId)}`, { method: "POST" }),
+  removeSource: (id: string, docId: string) =>
+    call<Notebook>(`/notebooks/${id}/sources/${encodeURIComponent(docId)}`, { method: "DELETE" }),
+  previewScope: (rules: ScopeRules) =>
+    call<{ count: number; sample: { id: string; title: string }[] }>("/notebooks/scope/preview", {
+      method: "POST",
+      body: JSON.stringify(rules),
+    }),
+  studyJob: (id: string, task: StudyTask) =>
+    call<{ jobId: string }>(`/notebooks/${id}/jobs/${task}`, { method: "POST" }),
+  studyGuide: (id: string) =>
+    call<{ guide: StudyGuide | null }>(`/notebooks/${encodeURIComponent(id)}/guide`),
+  mindMap: (id: string) =>
+    call<{ mindmap: MindMap | null }>(`/notebooks/${encodeURIComponent(id)}/mindmap`),
+  countdown: (id: string) => call<Countdown>(`/notebooks/${encodeURIComponent(id)}/countdown`),
+  workload: (id: string) =>
+    call<{ items: WorkloadItem[] }>(`/notebooks/${encodeURIComponent(id)}/workload`),
+  cards: (id: string) => call<{ cards: Card[] }>(`/notebooks/${encodeURIComponent(id)}/cards`),
+  /** Direct download link; the daemon sets content-disposition. */
+  exportUrl: (id: string, format: "anki" | "md") =>
+    `/api/v1/notebooks/${encodeURIComponent(id)}/export?format=${format}`,
+  reviewQueue: (notebookId?: string) =>
+    call<ReviewQueue>(
+      `/study/review${notebookId ? `?notebook=${encodeURIComponent(notebookId)}` : ""}`,
+    ),
+  reviewCard: (id: string, rating: Rating) =>
+    call<Card>(`/cards/${id}/review`, { method: "POST", body: JSON.stringify({ rating }) }),
+  updateCard: (id: string, patch: { front?: string; back?: string; suspended?: boolean }) =>
+    call<Card>(`/cards/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteCard: (id: string) => call<{ deleted: boolean }>(`/cards/${id}`, { method: "DELETE" }),
+  createQuiz: (input: QuizCreate) =>
+    call<{ id: string }>("/quizzes", { method: "POST", body: JSON.stringify(input) }),
+  nextQuestion: (quizId: string) =>
+    call<QuizQuestion>(`/quizzes/${quizId}/next`, { method: "POST" }),
+  answerQuestion: (quizId: string, questionId: string, answer: string) =>
+    call<QuizGrade>(`/quizzes/${quizId}/answer`, {
+      method: "POST",
+      body: JSON.stringify({ questionId, answer }),
     }),
 };
 

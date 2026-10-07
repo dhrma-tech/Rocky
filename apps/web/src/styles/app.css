@@ -114,3 +114,50 @@ a:hover {
 .pulse-dot {
   animation: rocky-pulse 1.2s var(--ease-ui) infinite;
 }
+
+/* Mind map (@xyflow/react): its defaults are replaced with palette tokens. */
+.rocky-flow .react-flow {
+  --xy-background-color: var(--bg-raised);
+  --xy-background-pattern-dots-color: var(--border-strong);
+  --xy-node-background-color: var(--bg-page);
+  --xy-node-color: var(--text-primary);
+  --xy-node-border: 1px solid var(--border-strong);
+  --xy-node-border-radius: 12px;
+  --xy-node-boxshadow-selected: 0 0 0 2px var(--focus-ring);
+  --xy-node-boxshadow-hover: var(--shadow-raised-sm);
+  --xy-edge-stroke: var(--border-strong);
+  --xy-edge-stroke-selected: var(--accent-strong);
+  --xy-edge-label-background-color: var(--bg-raised);
+  --xy-edge-label-color: var(--text-secondary);
+  --xy-controls-button-background-color: var(--bg-raised);
+  --xy-controls-button-background-color-hover: var(--layer-subtle);
+  --xy-controls-button-color: var(--text-primary);
+  --xy-controls-button-color-hover: var(--text-primary);
+  --xy-controls-button-border-color: var(--border-base);
+  --xy-controls-box-shadow: var(--shadow-raised-sm);
+  --xy-attribution-background-color: transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+/* Study guide print-to-PDF (notebooks.md "Exports"): only the guide prints. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-guide,
+  .print-guide * {
+    visibility: visible;
+  }
+  .print-guide {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    box-shadow: none;
+    background: var(--raised);
+    color: var(--ink);
+  }
+  .no-print {
+    display: none;
+  }
+}

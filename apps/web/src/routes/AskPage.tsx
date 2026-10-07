@@ -1,13 +1,20 @@
 import type { AnswerSentence, AskResult, Citation } from "@rocky/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowUp, CircleCheck, CircleSlash, Square } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUp,
+  ChevronDown,
+  CircleCheck,
+  CircleSlash,
+  Square,
+} from "lucide-react";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ApiError, api, askStream } from "../api.ts";
 import { CreateIssueButton } from "../components/CreateIssue.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
 import { CitationChip } from "../components/trust.tsx";
-import { Toggle } from "../components/ui.tsx";
+import { cls, Toggle } from "../components/ui.tsx";
 
 interface Turn {
   id: number;
@@ -101,6 +108,24 @@ const POLICY_HELP: Record<string, string> = {
 };
 
 export function AskPage() {
+  return <AskView />;
+}
+
+/**
+ * The verified Ask thread (§5.5). On the Ask page the scope chip picks Everything or one or more
+ * notebooks (several = a cross-notebook question); inside a notebook the scope is fixed.
+ */
+export function AskView({
+  notebookIds: fixed,
+  heading = "What do you want to know?",
+  grounding = "Answers come only from your sources, with a citation on every statement.",
+}: {
+  notebookIds?: string[];
+  heading?: string;
+  grounding?: string;
+} = {}) {
+  const [scopeIds, setScopeIds] = useState<string[]>(fixed ?? []);
+  const notebookIds = fixed ?? scopeIds;
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -142,7 +167,7 @@ export function AskPage() {
     abort.current = new AbortController();
     try {
       const result = await askStream(
-        { question, showFlagged },
+        { question, showFlagged, ...(notebookIds.length ? { scope: { notebookIds } } : {}) },
         (ev) => {
           if (ev.type === "draft_sentence")
             update(id, (t) => ({ ...t, drafts: [...t.drafts, ev.text] }));
@@ -177,12 +202,8 @@ export function AskPage() {
         <div className="min-h-0 flex-1 overflow-y-auto px-4">
           {empty ? (
             <div className="mx-auto flex h-full max-w-[720px] flex-col justify-center pb-24">
-              <h1 className="text-2xl font-normal leading-8 text-primary">
-                What do you want to know?
-              </h1>
-              <p className="mt-1 text-sm text-secondary">
-                Answers come only from your sources, with a citation on every statement.
-              </p>
+              <h1 className="text-2xl font-normal leading-8 text-primary">{heading}</h1>
+              <p className="mt-1 text-sm text-secondary">{grounding}</p>
             </div>
           ) : (
             <ol
@@ -253,7 +274,7 @@ export function AskPage() {
             />
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 text-xs text-secondary">
-                <span className="rounded-full bg-layer-subtle px-3 py-1">Everything</span>
+                <ScopeChip value={notebookIds} onChange={setScopeIds} locked={Boolean(fixed)} />
                 {settings.data && (
                   <span>
                     {settings.data.localOnly ? "Local models" : "Claude via API, local fallback"}
@@ -302,5 +323,83 @@ export function AskPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Scope chip (§5.4): Everything, or one or more notebooks. A union of notebooks is a cross-notebook question. */
+function ScopeChip({
+  value,
+  onChange,
+  locked,
+}: {
+  value: string[];
+  onChange: (ids: string[]) => void;
+  locked: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const notebooks = useQuery({ queryKey: ["notebooks"], queryFn: api.notebooks });
+  const names = (notebooks.data?.notebooks ?? [])
+    .filter((n) => value.includes(n.id))
+    .map((n) => n.name);
+  const label =
+    value.length === 0
+      ? "Everything"
+      : names.length > 1
+        ? `${names.length} notebooks`
+        : (names[0] ?? "Notebook");
+  if (locked)
+    return <span className="rounded-full bg-accent-soft px-3 py-1 text-primary">{label}</span>;
+  const toggle = (id: string) =>
+    onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cls(
+          "inline-flex min-h-8 items-center gap-1 rounded-full px-3 py-1",
+          value.length ? "bg-accent-soft text-primary" : "bg-layer-subtle",
+        )}
+      >
+        {label} <ChevronDown size={12} aria-hidden />
+      </button>
+      {open && (
+        <fieldset
+          aria-label="Search scope"
+          className="absolute bottom-10 left-0 z-50 m-0 w-64 rounded-lg border-0 bg-overlay p-2 shadow-float"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange([]);
+              setOpen(false);
+            }}
+            className="flex min-h-10 w-full items-center rounded-md px-2 text-left text-sm hover:bg-layer-subtle"
+          >
+            Everything
+          </button>
+          {(notebooks.data?.notebooks ?? []).map((n) => (
+            <label
+              key={n.id}
+              className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2 text-sm hover:bg-layer-subtle"
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(n.id)}
+                onChange={() => toggle(n.id)}
+                className="size-4 shrink-0 accent-[var(--accent-strong)]"
+              />
+              <span className="truncate">{n.name}</span>
+              {n.localOnly && <span className="ml-auto text-xs text-tertiary">local</span>}
+            </label>
+          ))}
+          {notebooks.data?.notebooks.length === 0 && (
+            <p className="px-2 py-1 text-xs text-tertiary">No notebooks yet.</p>
+          )}
+        </fieldset>
+      )}
+    </span>
   );
 }

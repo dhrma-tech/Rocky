@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
 import {
+  BookOpen,
   CalendarCheck,
+  Layers,
   ListChecks,
   MessageSquareText,
   Mic,
@@ -18,6 +20,8 @@ import { cls, IconButton } from "./components/ui.tsx";
 
 const NAV = [
   { to: "/", label: "Ask", icon: MessageSquareText },
+  { to: "/notebooks", label: "Notebooks", icon: BookOpen },
+  { to: "/study", label: "Study", icon: Layers },
   { to: "/meetings", label: "Meetings", icon: Mic },
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/actions", label: "Actions", icon: ListChecks },
