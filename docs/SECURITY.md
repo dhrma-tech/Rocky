@@ -60,3 +60,24 @@ Each connector requests the minimum scopes listed in [CONNECTORS.md](CONNECTORS.
 ## Plugin trust
 
 Plugins run in-process with the same OS privileges as the daemon. They only receive the `connector-sdk` context (HTTP client, cursor store, secret handle for their own keys) and not a store handle. That's a convention, not a sandbox. Install only plugins you trust; a sandbox is a V2 item.
+
+## Where each claim is tested
+
+| Claim | Test |
+|---|---|
+| Retrieved text is wrapped; delimiters escaped | `core/test/security/untrusted-and-redact.test.ts`, `injection.test.ts` |
+| Untrusted steps get no tools; proposals not calls | `injection.test.ts`, `propose-injection.test.ts`, `transcript-injection.test.ts` |
+| No write without approval bound to the payload hash | `no-write-without-approval.test.ts`, `actions-state.test.ts`, `apps/cli/test/commands.test.ts` |
+| No email is ever sent (drafts only) | `no-send.test.ts` |
+| Audit log append-only and hash-chained | `audit-append.test.ts`, `audit-chain.test.ts` |
+| Local-only blocks network model calls | `local-only.test.ts` |
+| Deletion removes everything derived | `deletion.test.ts` |
+| Package boundaries (core, connectors, MCP read-only, importers parse only) | `boundaries.test.ts` |
+| Token redaction for every listed pattern; secrets not in DB or logs | `claims.test.ts` |
+| `.gitignore` covers data, `.env*`, private evals | `claims.test.ts` |
+| No invisible or bidi control characters in source | `source-hygiene.test.ts` |
+| No exfiltration through rendering (no images, no live links) | `apps/web/test/safe-text.test.ts` |
+| Daemon binds 127.0.0.1, token, Host and Origin checks | `apps/daemon/test/server.test.ts`, `app.test.ts`, `mcp-http.test.ts` |
+| Recording needs both consent checks; consent is audited | `apps/daemon/test/capture.test.ts`, `core/test/capture.test.ts` |
+| MCP output wrapped; local-only hidden | `packages/mcp/test/mcp.test.ts` |
+| Executors call fixed endpoints | per-connector write tests (`packages/connectors/test/write-actions.test.ts` and others) assert exact URLs; there is no generic host allowlist yet (V2 candidate, together with a plugin sandbox) |
