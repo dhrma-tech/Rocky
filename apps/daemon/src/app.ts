@@ -528,9 +528,14 @@ export function externalUrl(anchor: Anchor, uri: string | null, meta: string): s
     }
     case "notion_block":
       return `${uri.split("#")[0]}#${anchor.blockId.replace(/-/g, "")}`;
+    case "row": {
+      // Task comments (Linear) keep their own links.
+      const urls = (JSON.parse(meta || "{}") as { commentUrls?: Record<string, string> })
+        .commentUrls;
+      return urls?.[anchor.rowId] ?? uri;
+    }
     case "message":
     case "event":
-    case "row":
       return uri;
     default:
       return null;

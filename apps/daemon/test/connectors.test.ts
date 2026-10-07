@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { builtinConnectors } from "@rocky/connectors";
 import type {
   ActionRecord,
   Connector,
@@ -123,7 +124,10 @@ describe("connectors API", () => {
   it("lists the built-in catalog with secret specs but never values", async () => {
     const cat = (await req<{ catalog: ConnectorCatalogEntry[] }>("/connectors/catalog")).body
       .catalog;
-    expect(cat.map((c) => c.kind)).toEqual(["github", "notion", "gmail", "gcal", "gdrive"]);
+    expect(cat.map((c) => c.kind)).toEqual(builtinConnectors.map((c) => c.id));
+    expect(cat.map((c) => c.kind)).toEqual(
+      expect.arrayContaining(["github", "notion", "gmail", "gcal", "gdrive"]),
+    );
     expect(cat.find((c) => c.kind === "gmail")).toMatchObject({
       oauthGroup: "google-oauth",
       secrets: [],
