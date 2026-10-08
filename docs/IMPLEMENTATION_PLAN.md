@@ -198,7 +198,7 @@ Per-screen "Done when" (spec F.3): loading, empty, error and populated states at
 - [x] M3 Connector tier field (supported/experimental/link-only) in SDK + UI + README
 - [x] A2 Nightly live smoke workflow (skips without secrets); live passes pending test accounts
 - [x] M1/X3 Copy changes in README and landing (+ X2 copy, comparison page)
-- [ ] EV Typed event union + `/api/v1/events` with seq replay
+- [x] EV Typed event union + `/api/v1/events` with seq replay (+ reversible migration 006, `rocky db rollback`)
 - [ ] A4 Policy table + grants (migration 006, reversible, backup first)
 - [ ] U-T1–T5, U-L Tokens from tokens.json, light + dark
 - [ ] Ladle + Playwright + axe harness
