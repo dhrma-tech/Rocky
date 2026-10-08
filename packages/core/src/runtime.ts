@@ -31,7 +31,7 @@ import { loadPrices } from "./router/prices.ts";
 import { Router } from "./router/router.ts";
 import { coreOnlySecrets, keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
 import { type Db, openDb } from "./store/db.ts";
-import { storeKey } from "./store/encryption.ts";
+import { encryptNewStore, storeKey } from "./store/encryption.ts";
 import { migrate } from "./store/migrate.ts";
 import type { ProcessRunner } from "./system/exec.ts";
 import { detectHardware } from "./system/hardware.ts";
@@ -90,12 +90,18 @@ export interface OpenRuntimeOptions {
 /** Wires store, config, router and embedder for one data dir (CLI, evals, daemon). */
 export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   const paths = dataPaths(opts.dataDir);
-  const config = loadAppConfig(opts.dataDir);
+  const loaded = loadAppConfig(opts.dataDir);
   const rawSecrets = opts.secrets ?? keychainSecrets();
   const connectorMode = opts.connectors ?? { kind: opts.secrets ? "in-process" : "none" };
   // Outside tests, this process never reads or writes a connector token.
   const secrets = connectorMode.kind === "in-process" ? rawSecrets : coreOnlySecrets(rawSecrets);
   const dbFile = opts.dbFile ?? paths.db;
+  // Encrypted by default for a new main store (roadmap M5). Not for a side file such as an eval
+  // DB (the setting is per data dir), and not for test seams that pass their own secrets.
+  const config =
+    opts.secrets || opts.dbFile
+      ? loaded
+      : encryptNewStore(opts.dataDir, loaded, rawSecrets, paths.db);
   const db = openDb(dbFile, { key: storeKey(config, secrets, dbFile) });
   migrate(db, { backupDir: paths.backups });
 

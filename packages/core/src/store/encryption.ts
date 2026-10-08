@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { AppConfig } from "@rocky/contracts";
+import YAML from "yaml";
 import { loadAppConfig, saveAppConfig } from "../config/load.ts";
 import { dataPaths } from "../config/paths.ts";
 import type { SecretStore } from "../secrets/keychain.ts";
@@ -87,4 +88,46 @@ export function storageStatus(
     configured: config.storage.encrypt,
     encrypted: isEncryptedFile(dataPaths(dataDir).db),
   };
+}
+
+/** The user's own `storage.encrypt` from rocky.yaml, or undefined when they never set it. */
+function explicitEncryptSetting(dataDir: string): boolean | undefined {
+  const file = dataPaths(dataDir).config;
+  if (!fs.existsSync(file)) return undefined;
+  const raw = (YAML.parse(fs.readFileSync(file, "utf8")) ?? {}) as {
+    storage?: { encrypt?: unknown };
+  };
+  return typeof raw.storage?.encrypt === "boolean" ? raw.storage.encrypt : undefined;
+}
+
+/**
+ * Encryption on by default (roadmap M5): a brand-new store is created encrypted, with a random key
+ * in the OS keychain, unless the user set `storage.encrypt` themselves, the SQLCipher driver is
+ * missing, or the keychain can't hold the key (then it stays plain and doctor says so). An
+ * existing plain store is never converted silently: `rocky db encrypt` does that, with a backup.
+ */
+export function encryptNewStore(
+  dataDir: string,
+  config: AppConfig,
+  secrets: SecretStore,
+  dbFile: string,
+): AppConfig {
+  if (config.storage.encrypt) return config;
+  if (fs.existsSync(dbFile) && fs.statSync(dbFile).size > 0) return config;
+  if (explicitEncryptSetting(dataDir) !== undefined) return config;
+  try {
+    cipherDriver();
+  } catch {
+    return config;
+  }
+  try {
+    const key = secrets.get("db-key") ?? randomBytes(32).toString("hex");
+    secrets.set("db-key", key);
+    if (secrets.get("db-key") !== key) return config;
+  } catch {
+    return config;
+  }
+  const next: AppConfig = { ...config, storage: { ...config.storage, encrypt: true } };
+  saveAppConfig(dataDir, next);
+  return next;
 }

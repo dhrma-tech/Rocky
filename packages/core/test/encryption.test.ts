@@ -112,3 +112,50 @@ describe("encrypted store (opt-in)", () => {
     expect(() => encryptStore(dir, secrets)).toThrow(/already encrypted/);
   });
 });
+
+describe("encryption on by default for new stores (M5)", () => {
+  it("turns it on for a brand-new data dir and keeps the key in the keychain", async () => {
+    const { encryptNewStore } = await import("../src/store/encryption.ts");
+    const { loadAppConfig } = await import("../src/config/load.ts");
+    const { dataPaths } = await import("../src/config/paths.ts");
+    const { memorySecrets } = await import("../src/secrets/keychain.ts");
+    const dir = tempDir();
+    const secrets = memorySecrets();
+    const c = encryptNewStore(dir, loadAppConfig(dir), secrets, dataPaths(dir).db);
+    expect(c.storage.encrypt).toBe(true);
+    expect(loadAppConfig(dir).storage.encrypt).toBe(true);
+    expect(secrets.get("db-key")).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("leaves an existing plain store, an explicit choice, and a broken keychain alone", async () => {
+    const { encryptNewStore } = await import("../src/store/encryption.ts");
+    const { loadAppConfig, saveAppConfig } = await import("../src/config/load.ts");
+    const { dataPaths } = await import("../src/config/paths.ts");
+    const { memorySecrets } = await import("../src/secrets/keychain.ts");
+    // Existing plain store: only `rocky db encrypt` converts it.
+    const a = tempDir();
+    fs.mkdirSync(a, { recursive: true });
+    fs.writeFileSync(dataPaths(a).db, "x");
+    expect(
+      encryptNewStore(a, loadAppConfig(a), memorySecrets(), dataPaths(a).db).storage.encrypt,
+    ).toBe(false);
+    // The user said no.
+    const b = tempDir();
+    saveAppConfig(b, { ...loadAppConfig(b), storage: { encrypt: false } });
+    expect(
+      encryptNewStore(b, loadAppConfig(b), memorySecrets(), dataPaths(b).db).storage.encrypt,
+    ).toBe(false);
+    // No working keychain (common on CI Linux): stay plain rather than lose the key.
+    const c = tempDir();
+    const broken = {
+      ...memorySecrets(),
+      set: () => {
+        throw new Error("no secret service");
+      },
+    };
+    expect(encryptNewStore(c, loadAppConfig(c), broken, dataPaths(c).db).storage.encrypt).toBe(
+      false,
+    );
+    expect(fs.existsSync(dataPaths(c).config)).toBe(false);
+  });
+});
