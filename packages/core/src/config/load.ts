@@ -75,3 +75,15 @@ export function loadLayeredYaml(name: string, dataDir: string, baseDir = repoCon
   const user = read(path.join(dataPaths(dataDir).configDir, `${name}.yaml`));
   return deepMerge(base, user);
 }
+
+/**
+ * Deep-merges `patch` into the user's own `<dataDir>/config/<name>.yaml` (the override layer);
+ * the repo defaults are never edited. Returns the file written.
+ */
+export function updateUserYaml(name: string, dataDir: string, patch: Plain): string {
+  const file = path.join(dataPaths(dataDir).configDir, `${name}.yaml`);
+  const prev = fs.existsSync(file) ? YAML.parse(fs.readFileSync(file, "utf8")) : {};
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, YAML.stringify(deepMerge(isPlain(prev) ? prev : {}, patch)));
+  return file;
+}

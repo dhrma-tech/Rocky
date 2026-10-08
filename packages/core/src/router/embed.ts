@@ -55,3 +55,35 @@ export function ollamaEmbedder(opts: {
     },
   };
 }
+
+/**
+ * Remembers query embeddings (roadmap A8: cache embeddings and retrieval). Asking the same or a
+ * repeated question skips the embedding call. Documents are never cached here: they are stored
+ * with their chunks already.
+ */
+export function cachedEmbedder(inner: Embedder, max = 256): Embedder {
+  const cache = new Map<string, Float32Array>();
+  return {
+    model: inner.model,
+    dim: inner.dim,
+    async embed(texts, kind) {
+      if (kind !== "query") return inner.embed(texts, kind);
+      const missing = [...new Set(texts.filter((t) => !cache.has(t)))];
+      if (missing.length) {
+        const vecs = await inner.embed(missing, kind);
+        missing.forEach((t, i) => {
+          const v = vecs[i];
+          if (v) cache.set(t, v);
+        });
+        while (cache.size > max) cache.delete(cache.keys().next().value as string);
+      }
+      return texts.map((t) => {
+        const v = cache.get(t) as Float32Array;
+        // Refresh recency: the most used questions stay.
+        cache.delete(t);
+        cache.set(t, v);
+        return v;
+      });
+    },
+  };
+}

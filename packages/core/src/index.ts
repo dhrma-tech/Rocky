@@ -81,6 +81,7 @@ export * from "./system/disk.ts";
 export * from "./system/exec.ts";
 export * from "./system/hardware.ts";
 export * from "./system/keychain.ts";
+export * from "./system/models.ts";
 export * from "./system/ollama.ts";
 export * from "./system/whisper.ts";
 export * from "./text/quote.ts";

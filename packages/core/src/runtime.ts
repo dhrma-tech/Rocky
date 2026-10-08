@@ -24,7 +24,7 @@ import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
 import { STUDY_JOB, studyJobHandler } from "./notebooks/jobs.ts";
 import { materializeAll } from "./notebooks/scope.ts";
-import { type Embedder, ollamaEmbedder } from "./router/embed.ts";
+import { cachedEmbedder, type Embedder, ollamaEmbedder } from "./router/embed.ts";
 import { ProviderGate } from "./router/gate.ts";
 import { loadPolicy } from "./router/policy.ts";
 import { loadPrices } from "./router/prices.ts";
@@ -126,11 +126,13 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     globalLocalOnly: localOnly,
   });
   const embedModel = policy.models.embed?.split("/").slice(1).join("/") ?? "nomic-embed-text";
-  const embedder = ollamaEmbedder({
-    baseUrl: config.ollama.baseUrl,
-    model: embedModel,
-    ...(opts.fetch ? { fetch: opts.fetch } : {}),
-  });
+  const embedder = cachedEmbedder(
+    ollamaEmbedder({
+      baseUrl: config.ollama.baseUrl,
+      model: embedModel,
+      ...(opts.fetch ? { fetch: opts.fetch } : {}),
+    }),
+  );
 
   seedRoutines(db, { dataDir: opts.dataDir });
   const registry = new ActionRegistry();

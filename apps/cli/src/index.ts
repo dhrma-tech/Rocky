@@ -312,6 +312,23 @@ program
   });
 
 program
+  .command("models")
+  .description("local models: what fits this machine, measured speed, and which to use")
+  .argument("[action]", "list (default) | bench | use")
+  .option("--small <name>", "with use or bench: the small model (checks, tags)")
+  .option("--medium <name>", "with use or bench: the model that writes answers")
+  .option("--json", "with list: print JSON")
+  .action(
+    async (
+      action: string | undefined,
+      opts: { small?: string; medium?: string; json?: boolean },
+    ) => {
+      const { modelsCommand } = await import("./models.ts");
+      process.exitCode = await modelsCommand(action, { ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
   .command("rules")
   .description("approval rules and time-bound grants: list, preview, add, revoke")
   .argument("<action>", "list | preview | add | revoke")
