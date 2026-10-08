@@ -16,6 +16,7 @@ import { Cron } from "croner";
 import { ulid } from "ulid";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
+import { recordEvent } from "../events/log.ts";
 import { enqueue, type Job } from "../jobs/queue.ts";
 import type { JobHandler } from "../jobs/runner.ts";
 import { chunksById, documentChunks, type RetrievedChunk } from "../retrieval/retrieve.ts";
@@ -238,7 +239,11 @@ function toRoutine(db: Db, r: Row, dataDir: string | undefined, now: number): Ro
     enabled: r.enabled === 1,
     inputs: parseJson<RoutineInput[]>(r.inputs, []),
     prompt: r.prompt ?? shipped,
-    edited: r.prompt !== null && r.pack !== null,
+    edited: r.prompt !== null && r.pack !== null && r.pack !== "file",
+    file:
+      r.pack === "file" && dataDir && r.template
+        ? path.join(dataDir, "routines", r.template, "ROUTINE.md")
+        : null,
     lastRunAt: r.last_run_at,
     nextRunAt: r.enabled === 1 ? nextScheduled(r.schedule_cron, now) : null,
     lastRun: last ? toRun(last) : null,
@@ -310,6 +315,20 @@ export function createRoutine(db: Db, input: RoutineCreate, now = Date.now()): s
 
 export function updateRoutine(db: Db, id: string, patch: RoutineUpdate, now = Date.now()): void {
   const r = row(db, id);
+  // A routine kept as a file is edited in its file; the screen can only pause or resume it.
+  if (
+    r.pack === "file" &&
+    (patch.name !== undefined ||
+      patch.schedule !== undefined ||
+      patch.inputs !== undefined ||
+      patch.prompt !== undefined)
+  )
+    throw Object.assign(
+      new Error("This routine lives in a ROUTINE.md file. Edit the file to change it."),
+      {
+        code: "BAD_REQUEST",
+      },
+    );
   if (patch.schedule !== undefined && !validCron(patch.schedule))
     throw Object.assign(new Error("Invalid schedule"), { code: "BAD_REQUEST" });
   if (patch.prompt === null && r.pack === null)
@@ -476,12 +495,36 @@ export async function runRoutine(
     db.prepare(
       "update routine_runs set status = 'failed', finished_at = ?, error = ? where id = ?",
     ).run(Date.now(), err instanceof Error ? err.message : String(err), runId);
+    pauseAfterRepeatedFailures(db, id, r.name);
   }
   db.prepare("update routines set last_run_at = max(coalesce(last_run_at, 0), ?) where id = ?").run(
     now,
     id,
   );
   return toRun(db.prepare("select * from routine_runs where id = ?").get(runId) as RunRow);
+}
+
+/** UI spec 11: a routine that fails three times in a row pauses itself and says so. */
+export const PAUSE_AFTER_FAILURES = 3;
+function pauseAfterRepeatedFailures(db: Db, id: string, name: string): void {
+  const last = db
+    .prepare(
+      "select status from routine_runs where routine_id = ? order by started_at desc limit ?",
+    )
+    .all(id, PAUSE_AFTER_FAILURES) as { status: string }[];
+  if (last.length < PAUSE_AFTER_FAILURES || last.some((r) => r.status !== "failed")) return;
+  const paused = db
+    .prepare("update routines set enabled = 0 where id = ? and enabled = 1")
+    .run(id).changes;
+  if (!paused) return;
+  recordEvent(db, {
+    kind: "error",
+    runId: null,
+    code: "ROUTINE_PAUSED",
+    message: `${name} failed ${PAUSE_AFTER_FAILURES} times in a row, so Rocky paused it.`,
+    tried: `Ran it at its last ${PAUSE_AFTER_FAILURES} scheduled times.`,
+    youCan: "Check the last error, fix the cause, then resume it.",
+  });
 }
 
 /**

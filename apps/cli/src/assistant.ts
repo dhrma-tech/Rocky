@@ -2,11 +2,14 @@ import type { AnswerSentence } from "@rocky/contracts";
 import {
   briefForEvent,
   briefForNotebook,
+  exportRoutine,
   listNotebooks,
   listRoutines,
   openRuntime,
   resolveDataDir,
+  routinesDir,
   runRoutine,
+  syncRoutineFiles,
 } from "@rocky/core";
 
 /** Sentences with numbered sources underneath, for the terminal. */
@@ -74,7 +77,7 @@ export async function briefCommand(
 export async function routinesCommand(
   action: string,
   arg: string | undefined,
-  opts: { dataDir?: string | undefined },
+  opts: { dataDir?: string | undefined; folder?: string },
 ): Promise<number> {
   const { dir } = resolveDataDir({ flag: opts.dataDir });
   const rt = await openRuntime({ dataDir: dir });
@@ -106,7 +109,30 @@ export async function routinesCommand(
       else printAnswer(run.answer);
       return 0;
     }
-    console.error("Usage: rocky routines list | run <id or name>");
+    if (action === "export") {
+      const r = all.find((x) => x.id === arg || x.name.toLowerCase() === arg?.toLowerCase());
+      if (!r) {
+        console.error("Usage: rocky routines export <id or name> [folder]");
+        return 1;
+      }
+      const file = exportRoutine(rt.db, r.id, opts.folder ?? routinesDir(rt.dataDir), {
+        dataDir: rt.dataDir,
+      });
+      console.log(
+        `Wrote ${file}. Rocky reads routine folders in ${routinesDir(rt.dataDir)} on its next tick.`,
+      );
+      return 0;
+    }
+    if (action === "check") {
+      const results = syncRoutineFiles(rt.db, rt.dataDir);
+      if (!results.length) console.log(`No routine folders in ${routinesDir(rt.dataDir)}.`);
+      for (const x of results)
+        console.log(x.ok ? `ok     ${x.file}` : `broken ${x.file}\n       ${x.error}`);
+      return results.every((x) => x.ok) ? 0 : 1;
+    }
+    console.error(
+      "Usage: rocky routines list | run <id or name> | export <id or name> [folder] | check",
+    );
     return 1;
   } finally {
     rt.close();

@@ -145,11 +145,17 @@ program
 
 program
   .command("routines")
-  .description("scheduled, cited summaries: list, or run one now")
-  .argument("<action>", "list | run")
-  .argument("[routine]", "with run: routine id or name")
-  .action(async (action: string, routine: string | undefined) => {
-    process.exitCode = await routinesCommand(action, routine, { dataDir: dataDir() });
+  .description(
+    "scheduled, cited summaries: list, run one now, export as a file, check routine files",
+  )
+  .argument("<action>", "list | run | export | check")
+  .argument("[routine]", "with run or export: routine id or name")
+  .argument("[folder]", "with export: where to write it (default: the routines folder)")
+  .action(async (action: string, routine: string | undefined, folder: string | undefined) => {
+    process.exitCode = await routinesCommand(action, routine, {
+      dataDir: dataDir(),
+      ...(folder ? { folder } : {}),
+    });
   });
 
 program

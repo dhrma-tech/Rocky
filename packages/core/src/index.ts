@@ -9,6 +9,7 @@ export * from "./assistant/brief.ts";
 export * from "./assistant/draft.ts";
 export * from "./assistant/home.ts";
 export * from "./assistant/propose.ts";
+export * from "./assistant/routine-files.ts";
 export * from "./assistant/routines.ts";
 export * from "./assistant/style.ts";
 export * from "./assistant/timeline.ts";

@@ -1,6 +1,7 @@
 import type { AppConfig, Hardware } from "@rocky/contracts";
 import { ActionRegistry } from "./actions/registry.ts";
 import { ActionService } from "./actions/service.ts";
+import { syncRoutineFiles } from "./assistant/routine-files.ts";
 import {
   queueDueRoutines,
   ROUTINE_JOB,
@@ -136,6 +137,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   );
 
   seedRoutines(db, { dataDir: opts.dataDir });
+  syncRoutineFiles(db, opts.dataDir);
   const registry = new ActionRegistry();
   const actions = new ActionService(db, registry);
   // Memory facts are saved through the approval queue like any other change (roadmap A5).
@@ -224,6 +226,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     // Routines run as heavy jobs when the model is local (they compete with whisper for the CPU).
     // The same tick refreshes a style profile the user built once, monthly.
     tickRoutines: (now) => {
+      // Routine files are read again on every tick: the file is the source of truth (roadmap A6).
+      syncRoutineFiles(db, opts.dataDir, now);
       queueStyleRefresh(db, now === undefined ? {} : { now });
       return queueDueRoutines(db, now, router.chain("routine", {})[0]?.local ?? true);
     },

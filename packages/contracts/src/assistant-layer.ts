@@ -83,6 +83,8 @@ export const RoutineSchema = z.object({
   /** The prompt in effect (the user's edit, else the template's). */
   prompt: z.string(),
   edited: z.boolean(),
+  /** For a routine kept as a file (roadmap A6): the ROUTINE.md path, edited in any editor. */
+  file: z.string().nullable(),
   lastRunAt: z.number().int().nullable(),
   nextRunAt: z.number().int().nullable(),
   lastRun: RoutineRunSchema.nullable(),
