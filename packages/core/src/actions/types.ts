@@ -31,7 +31,8 @@ export type ActionErrorCode =
   | "INVALID_PAYLOAD"
   | "ORIGIN_FORBIDDEN"
   | "NO_CITATION"
-  | "TYPE_NOT_ALLOWED";
+  | "TYPE_NOT_ALLOWED"
+  | "REVIEW_REQUIRED";
 
 export class ActionError extends Error {
   readonly code: ActionErrorCode;

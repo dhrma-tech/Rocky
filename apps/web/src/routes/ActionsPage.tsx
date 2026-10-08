@@ -48,12 +48,14 @@ function ApprovalCard({ a, onOpen }: { a: ActionRecord; onOpen: (c: Citation) =>
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => JSON.stringify(a.payload, null, 2));
   const [parseError, setParseError] = useState<string | null>(null);
+  const [checkedSources, setCheckedSources] = useState(false);
+  const strict = a.review === "strict";
   const refresh = () => qc.invalidateQueries({ queryKey: ["actions"] });
 
   // Approve sends the hash of the payload shown on this card; execution follows immediately.
   const approve = useMutation({
     mutationFn: async () => {
-      await api.approveAction(a.id, a.payloadHash);
+      await api.approveAction(a.id, a.payloadHash, strict && checkedSources);
       return api.executeAction(a.id);
     },
     onSettled: refresh,
@@ -104,6 +106,34 @@ function ApprovalCard({ a, onOpen }: { a: ActionRecord; onOpen: (c: Citation) =>
           <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0" />A source behind this
           action contains text that looks like instructions to an AI. Check the payload carefully.
         </p>
+      )}
+
+      {strict && a.status === "draft" && (
+        <div role="note" className="space-y-2 rounded-md bg-layer-subtle p-3 text-sm">
+          <p className="flex items-start gap-2 text-warning">
+            <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0" />
+            Drafted from text someone else may have written. Check where it came from:
+          </p>
+          <ul className="list-disc pl-6 text-secondary">
+            {a.provenance.map((p) => (
+              <li key={p.documentId}>
+                <SafeText text={p.title} /> ({p.sourceType}
+                {p.connectorId ? `, ${p.connectorId}` : ""})
+                {p.flags.length > 0 && (
+                  <span className="text-warning"> · flagged: {p.flags.join("; ")}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={checkedSources}
+              onChange={(e) => setCheckedSources(e.target.checked)}
+            />
+            I checked these sources
+          </label>
+        </div>
       )}
 
       {a.description.summary && (
@@ -194,7 +224,7 @@ function ApprovalCard({ a, onOpen }: { a: ActionRecord; onOpen: (c: Citation) =>
             <>
               <Button
                 variant="primary"
-                disabled={approve.isPending}
+                disabled={approve.isPending || (strict && !checkedSources)}
                 onClick={() => approve.mutate()}
               >
                 {approve.isPending ? "Running…" : "Approve"}

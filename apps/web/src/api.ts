@@ -229,10 +229,10 @@ export const api = {
     call<{ actions: ActionRecord[] }>(`/actions${status ? `?status=${status}` : ""}`),
   editAction: (id: string, payload: unknown) =>
     call<ActionRecord>(`/actions/${id}`, { method: "PATCH", body: JSON.stringify({ payload }) }),
-  approveAction: (id: string, payloadHash: string) =>
+  approveAction: (id: string, payloadHash: string, acknowledgeSources = false) =>
     call<ActionRecord>(`/actions/${id}/approve`, {
       method: "POST",
-      body: JSON.stringify({ payloadHash }),
+      body: JSON.stringify({ payloadHash, ...(acknowledgeSources ? { acknowledgeSources } : {}) }),
     }),
   executeAction: (id: string) => call<ActionRecord>(`/actions/${id}/execute`, { method: "POST" }),
   rejectAction: (id: string) => call<ActionRecord>(`/actions/${id}/reject`, { method: "POST" }),

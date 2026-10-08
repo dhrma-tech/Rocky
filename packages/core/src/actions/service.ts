@@ -3,11 +3,14 @@ import {
   type ActionStatus,
   type Citation,
   CitationSchema,
+  type Provenance,
+  type ReviewLevel,
   type Risk,
 } from "@rocky/contracts";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { appendAudit, canonical } from "../audit/append.ts";
+import { LOCAL_CONNECTOR } from "../ingest/upsert.ts";
 import { redact } from "../security/redact.ts";
 import { sha256 } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
@@ -44,6 +47,57 @@ export interface ProposeInput {
 }
 
 const hashPayload = (p: unknown) => sha256(canonical(p));
+
+/**
+ * Sources the user wrote themselves: local notes and their own recordings. Everything else (mail,
+ * chat, web pages, PDFs, synced apps) is external, and a proposal citing it gets strict review
+ * (roadmap I1, docs/DECISIONS.md D-024).
+ */
+const OWN_SOURCE_TYPES = new Set(["markdown", "text", "meeting", "transcript"]);
+
+/** Provenance of the cited sources and the review level it implies. */
+export function provenanceOf(
+  db: Db,
+  citations: Citation[],
+): { provenance: Provenance[]; review: ReviewLevel } {
+  const ids = [...new Set(citations.map((c) => c.documentId))];
+  if (!ids.length) return { provenance: [], review: "standard" };
+  const rows = db
+    .prepare(
+      `select id, title, source_type, connector_id, meta, suspicious from documents where id in (${ids.map(() => "?").join(",")})`,
+    )
+    .all(...ids) as {
+    id: string;
+    title: string;
+    source_type: string;
+    connector_id: string | null;
+    meta: string;
+    suspicious: number;
+  }[];
+  const provenance = rows.map((r): Provenance => {
+    let flags: string[] = [];
+    try {
+      const f = (JSON.parse(r.meta) as { flags?: unknown }).flags;
+      if (Array.isArray(f)) flags = f.filter((x): x is string => typeof x === "string");
+    } catch {
+      // unreadable meta: no flags
+    }
+    if (r.suspicious === 1 && !flags.length) flags = ["contains instruction-like text"];
+    return {
+      documentId: r.id,
+      title: r.title,
+      sourceType: r.source_type,
+      connectorId: r.connector_id,
+      external: !(r.connector_id === LOCAL_CONNECTOR && OWN_SOURCE_TYPES.has(r.source_type)),
+      flags,
+    };
+  });
+  // A cited document that no longer exists can't be checked: treat it as external.
+  const missing = ids.length > rows.length;
+  const review: ReviewLevel =
+    missing || provenance.some((p) => p.external || p.flags.length) ? "strict" : "standard";
+  return { provenance, review };
+}
 const EXECUTE_TIMEOUT_MS = 120_000;
 
 /**
@@ -181,8 +235,15 @@ export class ActionService {
     return this.get(id);
   }
 
-  /** The UI sends the hash of the payload it displayed; it must match the current payload. */
-  approve(id: string, payloadHash: string): ActionRecord {
+  /**
+   * The UI sends the hash of the payload it displayed; it must match the current payload. When
+   * external or flagged text motivated the action, the user must also acknowledge its sources.
+   */
+  approve(
+    id: string,
+    payloadHash: string,
+    opts: { acknowledgeSources?: boolean } = {},
+  ): ActionRecord {
     const r = this.row(id);
     if (r.status !== "draft")
       throw new ActionError(
@@ -194,6 +255,12 @@ export class ActionService {
         "HASH_MISMATCH",
         "The action changed since you viewed it. Review it again before approving.",
       );
+    const { review } = provenanceOf(this.db, JSON.parse(r.citations) as Citation[]);
+    if (review === "strict" && !opts.acknowledgeSources)
+      throw new ActionError(
+        "REVIEW_REQUIRED",
+        "This action was drafted from text someone else may have written. Check its sources, then confirm.",
+      );
     this.db.transaction(() => {
       const n = this.db
         .prepare(
@@ -202,7 +269,7 @@ export class ActionService {
         )
         .run(payloadHash, this.now(), this.now(), id, payloadHash).changes;
       if (n !== 1) throw new ActionError("HASH_MISMATCH", "The action changed while approving.");
-      this.audit("action_approved", "user", id, { meta: { payloadHash } });
+      this.audit("action_approved", "user", id, { meta: { payloadHash, review } });
     })();
     return this.get(id);
   }
@@ -339,16 +406,8 @@ export class ActionService {
     } catch {
       // A payload the definition can't describe still shows raw in the card.
     }
-    const docIds = [...new Set(citations.map((c) => c.documentId))];
-    const suspicious =
-      docIds.length > 0 &&
-      Boolean(
-        this.db
-          .prepare(
-            `select 1 from documents where suspicious = 1 and id in (${docIds.map(() => "?").join(",")}) limit 1`,
-          )
-          .get(...docIds),
-      );
+    const { provenance, review } = provenanceOf(this.db, citations);
+    const suspicious = provenance.some((p) => p.flags.length > 0);
     return {
       id: r.id,
       type: r.action_type,
@@ -361,6 +420,8 @@ export class ActionService {
       origin: r.origin,
       citations,
       suspicious,
+      provenance,
+      review,
       description,
       idempotencyKey: r.idempotency_key,
       approvedAt: r.approved_at,

@@ -65,7 +65,10 @@ describe("rocky actions (acceptance #3: headless approval)", () => {
       .prepare("select event_type as eventType, meta from audit_log where event_type = ?")
       .all("action_approved") as (Pick<AuditRow, "eventType"> & { meta: string })[];
     expect(audit).toHaveLength(1);
-    expect(JSON.parse(audit[0]?.meta ?? "{}")).toEqual({ payloadHash: a.payloadHash });
+    expect(JSON.parse(audit[0]?.meta ?? "{}")).toEqual({
+      payloadHash: a.payloadHash,
+      review: "standard",
+    });
 
     expect(await runActions(rt, "run", a.id, {}, t.io)).toBe(0);
     expect(echo.calls).toHaveLength(1);

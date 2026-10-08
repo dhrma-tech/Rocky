@@ -23,6 +23,26 @@ export const ActionDescriptionSchema = z.object({
 });
 export type ActionDescription = z.infer<typeof ActionDescriptionSchema>;
 
+/**
+ * Where a proposal's content came from (roadmap I1): each cited source, whether a third party
+ * could have written it, and any instruction-like text the flagger found in it.
+ */
+export const ProvenanceSchema = z.object({
+  documentId: z.string(),
+  title: z.string(),
+  sourceType: z.string(),
+  connectorId: z.string().nullable(),
+  /** Mail, chat, web pages, PDFs, synced apps: text someone other than the user may control. */
+  external: z.boolean(),
+  /** Flagger reasons; non-empty means the source contains instruction-like text. */
+  flags: z.array(z.string()),
+});
+export type Provenance = z.infer<typeof ProvenanceSchema>;
+
+/** "strict" when external or flagged text motivated the action: approving needs an explicit acknowledgement. */
+export const ReviewLevelSchema = z.enum(["standard", "strict"]);
+export type ReviewLevel = z.infer<typeof ReviewLevelSchema>;
+
 export const ActionRecordSchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -37,6 +57,8 @@ export const ActionRecordSchema = z.object({
   citations: z.array(CitationSchema),
   /** A cited source was flagged as possibly containing injected instructions. */
   suspicious: z.boolean(),
+  provenance: z.array(ProvenanceSchema),
+  review: ReviewLevelSchema,
   description: ActionDescriptionSchema,
   idempotencyKey: z.string(),
   approvedAt: z.number().nullable(),
@@ -47,7 +69,11 @@ export const ActionRecordSchema = z.object({
 });
 export type ActionRecord = z.infer<typeof ActionRecordSchema>;
 
-export const ApproveRequestSchema = z.object({ payloadHash: z.string().regex(/^[0-9a-f]{64}$/) });
+export const ApproveRequestSchema = z.object({
+  payloadHash: z.string().regex(/^[0-9a-f]{64}$/),
+  /** Required for review "strict": the user saw where the content came from. */
+  acknowledgeSources: z.literal(true).optional(),
+});
 export const EditRequestSchema = z.object({ payload: z.unknown() });
 
 export const AuditRowSchema = z.object({

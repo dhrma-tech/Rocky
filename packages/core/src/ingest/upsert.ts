@@ -1,6 +1,7 @@
 import type { SourceType } from "@rocky/contracts";
 import { ulid } from "ulid";
 import { flagInstructions } from "../security/flagger.ts";
+import { stripOneTimeSecrets } from "../security/one-time-secrets.ts";
 import { sha256 } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
 import { type ChunkDraft, chunkDocument } from "./chunker.ts";
@@ -68,9 +69,27 @@ function insertChunks(db: Db, documentId: string, title: string, drafts: ChunkDr
  * Unchanged content is skipped; changed content drops old chunks and their index rows.
  * Embedding is left to the caller (a queued job), since it needs the network to Ollama.
  */
+/** Mail and chat lose one-time codes and sign-in links before anything is stored (roadmap I1). */
+const STRIP_SECRETS_FROM: ReadonlySet<SourceType> = new Set(["email", "chat"]);
+
+function withoutOneTimeSecrets(parsed: ParsedDoc): ParsedDoc {
+  if (!STRIP_SECRETS_FROM.has(parsed.sourceType)) return parsed;
+  const body = stripOneTimeSecrets(parsed.text);
+  const title = stripOneTimeSecrets(parsed.title);
+  const codes = body.codes + title.codes;
+  const links = body.links + title.links;
+  if (!codes && !links) return parsed;
+  return {
+    ...parsed,
+    title: title.text,
+    text: body.text,
+    meta: { ...(parsed.meta ?? {}), strippedSecrets: { codes, links } },
+  };
+}
+
 export function upsertDocument(db: Db, input: UpsertInput): UpsertResult {
   const now = input.now ?? Date.now();
-  const { parsed } = input;
+  const parsed = withoutOneTimeSecrets(input.parsed);
   const connectorId = input.connectorId ?? LOCAL_CONNECTOR;
   const contentHash = sha256(`${parsed.title}\u0000${parsed.text}`);
   const sourceType: SourceType = parsed.sourceType;

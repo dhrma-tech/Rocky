@@ -143,7 +143,12 @@ describe("drafts (acceptance #2)", () => {
     expect(google).toEqual([]); // nothing reaches Gmail before approval
 
     expect(
-      (await post(`/actions/${done.id}/approve`, { payloadHash: done.payloadHash })).status,
+      (
+        await post(`/actions/${done.id}/approve`, {
+          payloadHash: done.payloadHash,
+          acknowledgeSources: true,
+        })
+      ).status,
     ).toBe(200);
     const executed = await post<ActionRecord>(`/actions/${done.id}/execute`);
     expect(executed.body).toMatchObject({ status: "executed", result: { draftId: "r-1" } });

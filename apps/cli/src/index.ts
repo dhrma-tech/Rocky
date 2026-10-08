@@ -217,6 +217,10 @@ program
     "with list: draft, approved, rejected, executing, executed or failed",
   )
   .option("--yes", "with approve: approve the payload shown without asking (headless)")
+  .option(
+    "--ack-sources",
+    "with approve: confirm you checked the sources of an action drafted from external text",
+  )
   .option("--json", "print JSON")
   .action(
     async (

@@ -30,6 +30,13 @@ export function formatAction(a: ActionRecord): string {
   ];
   if (a.suspicious)
     lines.push("WARNING: a cited source looks like it contains injected instructions.");
+  if (a.review === "strict") {
+    lines.push("Drafted from text someone else may have written:");
+    for (const p of a.provenance)
+      lines.push(
+        `  - ${p.title} (${p.sourceType}${p.connectorId ? `, ${p.connectorId}` : ""})${p.flags.length ? ` FLAGGED: ${p.flags.join("; ")}` : ""}`,
+      );
+  }
   lines.push("", "Payload:", JSON.stringify(a.payload, null, 2), "");
   if (a.citations.length) {
     lines.push("Sources:");
@@ -58,7 +65,7 @@ export async function runActions(
   rt: Runtime,
   action: string,
   id: string | undefined,
-  opts: { status?: string | undefined; yes?: boolean; json?: boolean },
+  opts: { status?: string | undefined; yes?: boolean; ackSources?: boolean; json?: boolean },
   io: ActionsIo,
 ): Promise<number> {
   const print = (a: ActionRecord | ActionRecord[], text: string) =>
@@ -104,7 +111,22 @@ export async function runActions(
           return 1;
         }
       }
-      const r = rt.actions.approve(a.id, a.payloadHash);
+      // Strict review (roadmap I1): a second, separate acknowledgement of where the content came from.
+      if (a.review === "strict" && !opts.ackSources) {
+        if (opts.yes || !io.confirm) {
+          io.err(
+            "This action was drafted from external text. Re-run with --ack-sources after checking its sources.",
+          );
+          return 1;
+        }
+        if (!(await io.confirm("You checked the sources listed above and still want this?"))) {
+          io.err("Not approved.");
+          return 1;
+        }
+      }
+      const r = rt.actions.approve(a.id, a.payloadHash, {
+        acknowledgeSources: a.review === "strict",
+      });
       io.out(`Approved ${r.id}. Run it with: rocky actions run ${r.id}`);
       return 0;
     }
@@ -133,16 +155,24 @@ export async function runActions(
 export async function actionsCommand(
   action: string,
   id: string | undefined,
-  opts: { dataDir?: string | undefined; status?: string; yes?: boolean; json?: boolean },
+  opts: {
+    dataDir?: string | undefined;
+    status?: string;
+    yes?: boolean;
+    ackSources?: boolean;
+    json?: boolean;
+  },
 ): Promise<number> {
   const { dir } = resolveDataDir({ flag: opts.dataDir });
-  const rt = await openRuntime({ dataDir: dir });
+  const daemon = action === "run" ? await import("@rocky/daemon") : null;
+  // Executors run in the forked connector host, which alone holds connector tokens (roadmap I1).
+  const rt = await openRuntime({
+    dataDir: dir,
+    ...(daemon ? { connectors: { kind: "process", entry: daemon.CONNECTOR_HOST_ENTRY } } : {}),
+  });
   try {
     // Executors come from the connectors; registering them is what lets `run` find them.
-    if (action === "run") {
-      const { registerConnectors } = await import("@rocky/daemon");
-      await registerConnectors(rt, (m) => console.error(m));
-    }
+    if (daemon) await daemon.registerConnectors(rt, (m) => console.error(m));
     const tty = process.stdin.isTTY && process.stdout.isTTY;
     return await runActions(rt, action, id, opts, {
       out: (s) => console.log(s),

@@ -210,8 +210,20 @@ describe("connectors API", () => {
     expect((await post(`/actions/${id}/approve`, { payloadHash: "0".repeat(64) })).status).toBe(
       409,
     );
+    // Drafted from a synced issue: strict review, so the right hash alone is not enough (I1).
+    expect(proposed.body.review).toBe("strict");
+    const unacked = await post(`/actions/${id}/approve`, {
+      payloadHash: proposed.body.payloadHash,
+    });
+    expect(unacked.status).toBe(409);
+    expect(JSON.stringify(unacked.body)).toContain("REVIEW_REQUIRED");
     expect(
-      (await post(`/actions/${id}/approve`, { payloadHash: proposed.body.payloadHash })).status,
+      (
+        await post(`/actions/${id}/approve`, {
+          payloadHash: proposed.body.payloadHash,
+          acknowledgeSources: true,
+        })
+      ).status,
     ).toBe(200);
     const done = await post<ActionRecord>(`/actions/${id}/execute`);
     expect(done.body).toMatchObject({ status: "executed", result: { number: 143 } });
