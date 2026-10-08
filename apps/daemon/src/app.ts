@@ -45,6 +45,7 @@ import { registerCaptureRoutes } from "./capture-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
 import { registerEventRoutes } from "./event-routes.ts";
 import { registerImportRoutes } from "./imports.ts";
+import { registerMemoryRoutes } from "./memory-routes.ts";
 import { registerModelRoutes } from "./model-routes.ts";
 import { registerNotebookRoutes } from "./notebook-routes.ts";
 import { registerSampleRoutes } from "./sample-routes.ts";
@@ -77,6 +78,9 @@ const STATUS: Record<string, 400 | 403 | 404 | 409> = {
   HASH_MISMATCH: 409,
   REVIEW_REQUIRED: 409,
   INVALID_RULE: 400,
+  BAD_PATH: 400,
+  CONFLICT: 409,
+  UNSUPPORTED_QUOTE: 409,
 };
 
 const POLICY_CODES = new Set([
@@ -544,6 +548,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerConnectorRoutes(api, { rt, body });
   registerEventRoutes(api, { rt });
   registerModelRoutes(api, { rt });
+  registerMemoryRoutes(api, { rt, body });
   registerSampleRoutes(api, { rt, poke: poke ?? (() => {}) });
   registerImportRoutes(api, { rt, poke, body });
 

@@ -45,6 +45,7 @@ export function actionSentence(a: ActionRecord): string {
     const guests = count(p.attendees);
     return `Create the event “${str(p.summary)}”${guests ? ` with ${guests} guest${guests === 1 ? "" : "s"}` : ""}`;
   }
+  if (a.type === "memory.add") return `Remember: “${str(p.fact)}”`;
   if (/eventPatch/.test(a.type)) return `Change the event “${str(p.summary ?? p.eventId)}”`;
   return `${a.title}${a.description.target ? ` in ${a.description.target}` : ""}`;
 }
@@ -85,6 +86,22 @@ export function ChangePreview({ a }: { a: ActionRecord }) {
         />
         <p className="rk-small rk-muted" style={{ margin: 0 }}>
           Saved as a Gmail draft. Rocky never sends email.
+        </p>
+      </>
+    );
+  if (a.type === "memory.add")
+    return (
+      <>
+        <Fields
+          rows={[
+            ["Fact", str(p.fact)],
+            ["Saved in", `memory/${str(p.file)}`],
+            ["Quote", `“${str(p.quote)}”`],
+          ]}
+        />
+        <p className="rk-small rk-muted" style={{ margin: 0 }}>
+          Rocky saves it only if this quote is still in the source. You can edit or forget it in
+          Memory.
         </p>
       </>
     );

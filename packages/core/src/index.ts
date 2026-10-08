@@ -48,6 +48,8 @@ export type * from "./ingest/types.ts";
 export * from "./ingest/upsert.ts";
 export * from "./jobs/queue.ts";
 export * from "./jobs/runner.ts";
+export * from "./memory/profile.ts";
+export * from "./memory/suggest.ts";
 export * from "./notebooks/export.ts";
 export * from "./notebooks/flashcards.ts";
 export * from "./notebooks/guide.ts";

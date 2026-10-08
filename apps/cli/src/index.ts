@@ -312,6 +312,16 @@ program
   });
 
 program
+  .command("memory")
+  .description("what Rocky remembers, as plain Markdown files: list, or export them")
+  .argument("<action>", "list | export")
+  .argument("[folder]", "with export: where to copy the files")
+  .action(async (action: string, folder: string | undefined) => {
+    const { memoryCommand } = await import("./memory.ts");
+    process.exitCode = memoryCommand(action, folder, { dataDir: dataDir() });
+  });
+
+program
   .command("sample")
   .description("a small fictional workspace to try Rocky before importing anything")
   .argument("<action>", "load | remove | tour")

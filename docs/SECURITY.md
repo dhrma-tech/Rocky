@@ -98,6 +98,7 @@ Plugins run in the connector host process with the same OS privileges as you. Th
 | Connector tokens only in the connector host; daemon keychain view refuses them; IPC and a real fork | `connector-host.test.ts`, `boundaries.test.ts` |
 | Egress allowlist per connector, on the SDK client and the global fetch | `connector-host.test.ts`, `packages/connectors/test/manifest.test.ts` |
 | Strict review for proposals from external or flagged text; provenance listed | `untrusted-provenance.test.ts` |
+| Memory: facts need a verbatim source quote or the user's own words; suggestions are proposals; edits are versioned and audited; paths stay inside the folder | `memory.test.ts` |
 | Rules: ask first wins; allow needs constraints and an end date; never sends, deletes or strict proposals; hash-bound and audited; 10 s Undo | `rules.test.ts`, `apps/daemon/test/rules.test.ts` |
 | One-time codes and sign-in links removed from mail and chat | `untrusted-provenance.test.ts` |
 | Hidden instructions in PDFs and web pages are flagged | `injection.test.ts`, `untrusted-provenance.test.ts` |

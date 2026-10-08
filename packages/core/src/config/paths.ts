@@ -25,6 +25,8 @@ export function dataPaths(dataDir: string) {
     logs: path.join(dataDir, "logs"),
     /** In-progress recordings: rec/<meetingId>/<channel>/<n>.pcm, removed after transcription. */
     rec: path.join(dataDir, "rec"),
+    /** The memory profile: plain Markdown files the user can read and edit (roadmap A5). */
+    memory: path.join(dataDir, "memory"),
   };
 }
 export type DataPaths = ReturnType<typeof dataPaths>;

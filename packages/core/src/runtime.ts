@@ -22,6 +22,7 @@ import { forkConnectorHost } from "./connectors/host-ipc.ts";
 import { ConnectorRegistry, ConnectorService } from "./connectors/service.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
+import { memoryAddAction } from "./memory/suggest.ts";
 import { STUDY_JOB, studyJobHandler } from "./notebooks/jobs.ts";
 import { materializeAll } from "./notebooks/scope.ts";
 import { cachedEmbedder, type Embedder, ollamaEmbedder } from "./router/embed.ts";
@@ -137,6 +138,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   seedRoutines(db, { dataDir: opts.dataDir });
   const registry = new ActionRegistry();
   const actions = new ActionService(db, registry);
+  // Memory facts are saved through the approval queue like any other change (roadmap A5).
+  registry.register(memoryAddAction(db, opts.dataDir));
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   const refreshNotebooks = () => {
     if (refreshTimer) return;
