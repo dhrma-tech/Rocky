@@ -191,10 +191,10 @@ Per-screen "Done when" (spec F.3): loading, empty, error and populated states at
 
 ## P1 checklist (ticked only after verification)
 
-- [ ] I1a Untrusted labelling + provenance for all ingested sources; OTP/reset-link stripping at email ingestion
-- [ ] I1b Connector worker process holding keychain access; daemon never reads connector tokens
-- [ ] I1c Egress allowlist for the connector process
-- [ ] I1d Injection fixtures (PDF, email, web) in `test:security`
+- [x] I1a Untrusted labelling + provenance for all ingested sources; OTP/reset-link stripping at email ingestion
+- [x] I1b Connector worker process holding keychain access; daemon never reads connector tokens
+- [x] I1c Egress allowlist for the connector process (in-process guard, D-023)
+- [x] I1d Injection fixtures (PDF, email, web) in `test:security`
 - [ ] M3 Connector tier field (supported/experimental/link-only) in SDK + UI + README
 - [ ] A2 Nightly live smoke workflow (skips without secrets)
 - [ ] M1/X3 Copy changes in README and landing
