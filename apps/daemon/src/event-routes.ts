@@ -1,4 +1,4 @@
-import { eventsAfter, type Runtime } from "@rocky/core";
+import { eventsAfter, type Runtime, recentEvents } from "@rocky/core";
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
@@ -18,12 +18,18 @@ const Query = z.object({
   after: z.coerce.number().int().nonnegative().default(0),
   runId: z.string().min(1).max(64).optional(),
   limit: z.coerce.number().int().min(1).max(5000).default(500),
+  /** The newest N events instead of the ones after a cursor. */
+  tail: z.coerce.number().int().min(1).max(5000).optional(),
 });
 
 export function registerEventRoutes(api: Hono, { rt }: { rt: Runtime }): void {
   api.get("/events/page", (c) => {
     const q = Query.safeParse(c.req.query());
     if (!q.success) return c.json({ error: z.prettifyError(q.error), code: "BAD_REQUEST" }, 400);
+    if (q.data.tail) {
+      const events = recentEvents(rt.db, q.data.tail);
+      return c.json({ events, last: events.at(-1)?.seq ?? 0 });
+    }
     const events = eventsAfter(rt.db, q.data.after, {
       limit: q.data.limit,
       ...(q.data.runId ? { runId: q.data.runId } : {}),

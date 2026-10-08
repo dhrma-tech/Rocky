@@ -53,3 +53,14 @@ export function eventsAfter(
 export function lastEventSeq(db: Db): number {
   return (db.prepare("select coalesce(max(seq), 0) as n from events").get() as { n: number }).n;
 }
+
+/** The newest `n` events, oldest first (a screen's starting point before it follows the stream). */
+export function recentEvents(db: Db, n: number): RockyEvent[] {
+  const limit = Math.min(Math.max(n, 1), 5000);
+  const first = (
+    db.prepare("select seq from events order by seq desc limit 1 offset ?").get(limit - 1) as
+      | { seq: number }
+      | undefined
+  )?.seq;
+  return eventsAfter(db, first === undefined ? 0 : first - 1, { limit });
+}

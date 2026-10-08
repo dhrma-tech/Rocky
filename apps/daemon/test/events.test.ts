@@ -89,6 +89,15 @@ describe("events API", () => {
     ).toBe(400);
   });
 
+  it("returns the newest N events with tail", async () => {
+    for (const t of ["a", "b", "c"]) say(t);
+    const res = await app.request(`http://127.0.0.1:${PORT}/api/v1/events/page?tail=2`, {
+      headers,
+    });
+    const page = (await res.json()) as EventsPage;
+    expect(page.events.map((e) => (e.kind === "message" ? e.text : ""))).toEqual(["b", "c"]);
+  });
+
   it("streams with id and event fields, replays after Last-Event-ID, then follows new events", async () => {
     const a = say("missed while offline");
     const b = say("also missed");
