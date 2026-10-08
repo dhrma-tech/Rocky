@@ -72,6 +72,7 @@ export * from "./secrets/keychain.ts";
 export * from "./security/flagger.ts";
 export * from "./security/redact.ts";
 export * from "./security/untrusted.ts";
+export * from "./store/backup.ts";
 export * from "./store/blobs.ts";
 export * from "./store/db.ts";
 export * from "./store/encryption.ts";

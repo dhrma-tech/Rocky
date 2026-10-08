@@ -95,7 +95,7 @@ pnpm rocky connectors add notion && pnpm rocky connectors secret notion token
 pnpm rocky connectors google-client client_secret.json && pnpm rocky connectors add gmail
 pnpm rocky connectors connect gmail              # Google sign-in in the browser (shared by Calendar and Drive)
 pnpm rocky connectors sync                       # or let the daemon sync every few minutes
-pnpm rocky daemon install                        # start the daemon at Windows sign-in (no admin needed)
+pnpm rocky daemon install                        # start the daemon at sign-in (Windows, macOS, Linux; no admin); doctor --fix does this too
 ```
 
 Actions that write to your apps wait in an approval queue (web UI → Actions, or `rocky actions`). Nothing runs until you approve the exact payload shown, and every step is in the audit log.

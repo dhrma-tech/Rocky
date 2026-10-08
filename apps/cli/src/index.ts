@@ -111,7 +111,7 @@ program
   .description(
     "run the local daemon (API, background jobs, connectors, web UI) on 127.0.0.1; 'install' starts it at sign-in",
   )
-  .argument("[action]", "install | uninstall (Windows autostart)")
+  .argument("[action]", "install | uninstall (start at sign-in: Windows, macOS, Linux)")
   .option("--port <n>", "port (default from rocky.yaml, 7337)")
   .option(
     "--background",

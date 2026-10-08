@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 import {
   ActionScheduler,
   ConnectorScheduler,
+  dailyBackup,
   deleteEverything,
   FolderWatcher,
   JobRunner,
@@ -99,6 +100,17 @@ export async function startDaemon(opts: {
   tickRoutines();
   const routineTimer = setInterval(tickRoutines, 60_000);
   routineTimer.unref();
+  // Daily backup (roadmap I3): checked at start and hourly, so a day missed in sleep is made on wake.
+  const backup = () => {
+    try {
+      dailyBackup(rt.db, rt.paths.backups);
+    } catch (err) {
+      log(`daily backup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+  backup();
+  const backupTimer = setInterval(backup, 60 * 60_000);
+  backupTimer.unref();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -111,6 +123,7 @@ export async function startDaemon(opts: {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
+      clearInterval(backupTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();
@@ -139,6 +152,7 @@ export async function startDaemon(opts: {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
+      clearInterval(backupTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();

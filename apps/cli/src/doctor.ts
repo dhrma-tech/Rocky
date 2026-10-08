@@ -1,4 +1,4 @@
-import type { DoctorReport } from "@rocky/contracts";
+import type { DoctorCheck, DoctorReport } from "@rocky/contracts";
 import {
   createDerivedModel,
   hasModel,
@@ -10,6 +10,7 @@ import {
   resolveDataDir,
   runDoctor,
 } from "@rocky/core";
+import { autostartStatus, installAutostart } from "./autostart.ts";
 
 const TAG = { pass: "PASS", warn: "WARN", fail: "FAIL" } as const;
 
@@ -50,6 +51,16 @@ export async function doctorCommand(opts: {
       console.error(`ollama: created ${name} (${spec.from}, num_ctx ${spec.num_ctx})`);
     }
   }
+  // Roadmap I3: --fix also makes the daemon start at sign-in, so it works while you are busy.
+  let autostart = await autostartStatus();
+  if (opts.fix && !autostart.installed) {
+    try {
+      console.error(await installAutostart(dir));
+      autostart = await autostartStatus();
+    } catch (err) {
+      console.error(`autostart: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
   const report = await runDoctor({
     dataDir: dir,
     dataDirSource: source,
@@ -57,6 +68,20 @@ export async function doctorCommand(opts: {
     derivedModels,
     bench: Boolean(opts.bench || opts.fix),
   });
+  report.checks.push(autostartCheck(autostart));
   console.log(opts.json ? JSON.stringify(report, null, 2) : formatReport(report));
   return report.ok ? 0 : 1;
+}
+
+/** Optional, so it warns rather than fails: Rocky works without starting at sign-in. */
+export function autostartCheck(a: { installed: boolean; where: string }): DoctorCheck {
+  return a.installed
+    ? { id: "autostart", label: "Starts at sign-in", status: "pass", detail: a.where }
+    : {
+        id: "autostart",
+        label: "Starts at sign-in",
+        status: "warn",
+        detail: "not set up; routines and syncs run only while the daemon is running",
+        hint: "rocky doctor --fix, or rocky daemon install",
+      };
 }
