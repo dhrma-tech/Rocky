@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import "./button.css";
 
 export type ButtonVariant = "primary" | "secondary" | "tertiary" | "danger";
@@ -10,6 +10,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Shows this label and disables the button while an action runs ("Opening…"). */
   loading?: string | false;
   icon?: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 const cls = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");

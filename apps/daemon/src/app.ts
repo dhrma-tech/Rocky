@@ -132,6 +132,9 @@ export interface AppDeps {
   deleteEverything?: () => Promise<void>;
 }
 
+/** Deny with an optional note for Rocky (UI spec 17). */
+const DenyBody = z.object({ note: z.string().max(500).optional() });
+
 export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }: AppDeps): Hono {
   const app = new Hono();
   app.use("*", auth.hostGuard());
@@ -216,7 +219,10 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     return c.json(rt.actions.rules.create(input), 201);
   });
   api.post("/rules/:id/revoke", (c) => c.json(rt.actions.rules.revoke(c.req.param("id"))));
-  api.post("/actions/:id/reject", (c) => c.json(rt.actions.reject(c.req.param("id"))));
+  api.post("/actions/:id/reject", async (c) => {
+    const b = DenyBody.safeParse(await c.req.json().catch(() => ({})));
+    return c.json(rt.actions.reject(c.req.param("id"), b.success ? b.data.note : undefined));
+  });
   api.post("/actions/:id/revoke", (c) => c.json(rt.actions.revoke(c.req.param("id"))));
   api.post("/actions/:id/clone", (c) => c.json(rt.actions.clone(c.req.param("id"))));
   api.post("/actions/:id/execute", async (c) =>

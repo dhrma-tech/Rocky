@@ -60,6 +60,9 @@ test("every story passes axe, keeps 44px targets, and makes no third-party reque
               const r = el.getBoundingClientRect();
               if (r.width === 0 && r.height === 0) return false;
               const dense = el.closest(".rk-button--dense, [data-hit44]");
+              // A checkbox or radio inside a 44px label: the label is the target.
+              const label = el.closest("label")?.getBoundingClientRect();
+              if (label && label.height >= 44) return false;
               return !dense && (r.height < 44 || r.width < 24);
             })
             .map((el) => el.outerHTML.slice(0, 80)),

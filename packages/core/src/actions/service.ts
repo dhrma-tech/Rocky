@@ -403,8 +403,10 @@ export class ActionService {
     return this.get(id);
   }
 
-  reject(id: string): ActionRecord {
-    this.transition(id, "draft", "rejected", "action_rejected");
+  /** Deny, with an optional note for Rocky; the note is kept in the audit entry. */
+  reject(id: string, note?: string): ActionRecord {
+    const meta = note?.trim() ? { note: note.trim().slice(0, 500) } : undefined;
+    this.transition(id, "draft", "rejected", "action_rejected", {}, meta);
     return this.get(id);
   }
 
@@ -430,6 +432,7 @@ export class ActionService {
     to: ActionStatus,
     event: string,
     extra: Record<string, null> = {},
+    meta?: Record<string, unknown>,
   ) {
     const r = this.row(id);
     if (r.status !== from)
@@ -445,7 +448,7 @@ export class ActionService {
         .run(to, this.now(), id, from).changes;
       if (n !== 1)
         throw new ActionError("ILLEGAL_TRANSITION", `Cannot go from ${r.status} to ${to}`);
-      this.audit(event, "user", id);
+      this.audit(event, "user", id, meta ? { meta } : {});
     })();
   }
 

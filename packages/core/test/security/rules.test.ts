@@ -301,3 +301,17 @@ describe("preview", () => {
     });
   });
 });
+
+describe("deny", () => {
+  it("keeps an optional note for Rocky in the audit entry; nothing runs", async () => {
+    const w = world();
+    const a = w.propose("test.issue", { repo: "o/r", title: "x" });
+    expect(w.svc.reject(a.id, "  Wrong repo, use o/web.  ").status).toBe("rejected");
+    const row = w.db
+      .prepare("select meta from audit_log where event_type = 'action_rejected'")
+      .get() as { meta: string };
+    expect(JSON.parse(row.meta)).toEqual({ note: "Wrong repo, use o/web." });
+    await new ActionScheduler(w.svc).tick(w.clock.now() + DAY);
+    expect(w.sent).toEqual([]);
+  });
+});

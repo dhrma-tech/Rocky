@@ -298,3 +298,116 @@
   margin: 0;
   color: var(--color-text-2);
 }
+
+/* --- Approval card (UI spec 17): blush-tinted, drawn from structured data. --- */
+.rk-approval {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-approval__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rk-approval__section {
+  padding: var(--space-3);
+  border-radius: var(--radius-menu);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.rk-approval__fields {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.rk-approval__fields > div {
+  display: grid;
+  grid-template-columns: minmax(72px, 120px) 1fr;
+  gap: var(--space-3);
+}
+.rk-approval__fields dt {
+  color: var(--color-text-muted);
+}
+.rk-approval__fields dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rk-approval__body {
+  white-space: pre-wrap;
+}
+.rk-approval__why {
+  margin: 0;
+}
+.rk-approval__strict {
+  padding: var(--space-3);
+  border-radius: var(--radius-menu);
+  background: var(--color-warning-tint);
+  color: var(--color-warning-text);
+}
+.rk-approval__strict ul {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-5);
+}
+.rk-approval__strict-title {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-weight: 600;
+}
+.rk-approval__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  cursor: pointer;
+}
+.rk-approval__check input {
+  width: 20px;
+  height: 20px;
+}
+.rk-approval__payload summary {
+  min-height: var(--hit-min);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-link);
+}
+.rk-approval__payload pre {
+  margin: 0 0 var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  overflow-x: auto;
+}
+.rk-approval__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* "Always allow" sits apart from the main buttons and is never the default. */
+.rk-approval__rule {
+  margin-left: auto;
+}
+.rk-approval__confirm {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-menu);
+  border: 2px solid var(--color-warning-text);
+}
+.rk-approval__ended {
+  margin: 0;
+  color: var(--color-text-2);
+}
+@media (max-width: 599px) {
+  .rk-approval__fields > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .rk-approval__rule {
+    margin-left: 0;
+  }
+}

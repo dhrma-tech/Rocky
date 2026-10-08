@@ -264,7 +264,11 @@ export const api = {
       body: JSON.stringify({ payloadHash, ...(acknowledgeSources ? { acknowledgeSources } : {}) }),
     }),
   executeAction: (id: string) => call<ActionRecord>(`/actions/${id}/execute`, { method: "POST" }),
-  rejectAction: (id: string) => call<ActionRecord>(`/actions/${id}/reject`, { method: "POST" }),
+  rejectAction: (id: string, note?: string) =>
+    call<ActionRecord>(`/actions/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify(note ? { note } : {}),
+    }),
   cloneAction: (id: string) => call<ActionRecord>(`/actions/${id}/clone`, { method: "POST" }),
   audit: (cursor?: number) =>
     call<{ entries: AuditRow[]; nextCursor: number | null }>(
