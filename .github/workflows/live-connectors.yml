@@ -1,0 +1,35 @@
+# Nightly live checks for the connectors that are candidates for "supported" (roadmap A2, M3).
+# Each check runs health plus one sync batch against a dedicated test account. A check whose
+# secrets are missing is skipped, so this stays green until test accounts exist. A connector is
+# labelled "supported" in code and README only after its check passes here repeatedly.
+name: live-connectors
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    # Secrets are not available to forks; don't run there.
+    if: github.repository == 'dhrma-tech/Rocky'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Live connector checks
+        run: node apps/daemon/scripts/live-connectors.ts
+        env:
+          ROCKY_LIVE_GITHUB_TOKEN: ${{ secrets.ROCKY_LIVE_GITHUB_TOKEN }}
+          ROCKY_LIVE_GITHUB_REPO: ${{ secrets.ROCKY_LIVE_GITHUB_REPO }}
+          ROCKY_LIVE_NOTION_TOKEN: ${{ secrets.ROCKY_LIVE_NOTION_TOKEN }}
+          ROCKY_LIVE_GOOGLE_CLIENT_JSON: ${{ secrets.ROCKY_LIVE_GOOGLE_CLIENT_JSON }}
+          ROCKY_LIVE_GOOGLE_REFRESH_TOKEN: ${{ secrets.ROCKY_LIVE_GOOGLE_REFRESH_TOKEN }}

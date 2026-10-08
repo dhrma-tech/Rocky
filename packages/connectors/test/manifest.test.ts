@@ -1,4 +1,6 @@
 // Roadmap I1 + M3: every built-in connector declares the hosts it may reach and an honest tier.
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { builtinConnectors } from "../src/index.ts";
 
@@ -17,6 +19,30 @@ describe("built-in connector manifests", () => {
     const linkOnly = builtinConnectors.filter((c) => c.tier === "link-only");
     expect(linkOnly.map((c) => c.id)).toEqual(["notion-calendar"]);
     expect(linkOnly[0]?.egress?.({} as never)).toEqual([]);
+  });
+
+  it("the README tier table matches the code", () => {
+    const readme = fs.readFileSync(path.resolve(import.meta.dirname, "../../../README.md"), "utf8");
+    const row = (label: string) =>
+      readme
+        .split("\n")
+        .find((l) => l.startsWith(`| ${label} |`))
+        ?.split("|")[2] ?? "";
+    const rows = {
+      supported: row("Supported"),
+      experimental: row("Experimental"),
+      "link-only": row("Link-only"),
+    };
+    for (const c of builtinConnectors) {
+      const tier = c.tier ?? "experimental";
+      // "Notion" is a prefix of "Notion Calendar": match whole comma-separated entries.
+      const names = (r: string) => r.split(/,|\(/).map((x) => x.trim());
+      expect(names(rows[tier]), `${c.displayName} should be listed as ${tier}`).toContain(
+        c.displayName,
+      );
+      for (const other of Object.keys(rows).filter((t) => t !== tier))
+        expect(names(rows[other as keyof typeof rows])).not.toContain(c.displayName);
+    }
   });
 
   it("config-driven hosts come from the user's config", () => {

@@ -2,6 +2,7 @@ import {
   AuthExpired,
   type Connector,
   type DocumentBatch,
+  HttpError,
   type SourceDocument,
 } from "@rocky/connector-sdk";
 import type { Citation } from "@rocky/contracts";
@@ -160,6 +161,27 @@ describe("ConnectorService setup", () => {
 });
 
 describe("sync", () => {
+  // Roadmap A2: failures that need the user, or time, say so in plain words.
+  it("a rate limit and an expired token are reported plainly, with the retry time", async () => {
+    await ready();
+    script = () => new HttpError(429, "https://api.fake/x", "Too Many Requests");
+    await svc.sync("fakehub");
+    const limited = svc.get("fakehub");
+    expect(limited.status).toBe("error");
+    expect(limited.message).toMatch(/^FakeHub is rate limiting Rocky. It tries again in 1 min./);
+    expect(limited.nextSyncAt).toBe(clock + 60_000);
+
+    script = () => new AuthExpired("Token has been expired or revoked.");
+    clock += 61_000;
+    await svc.sync("fakehub");
+    expect(svc.get("fakehub")).toMatchObject({
+      status: "needs_reconnect",
+      message: "Token has been expired or revoked.",
+    });
+    // A connector that needs the user is not retried on a timer.
+    expect(svc.due()).not.toContain("fakehub");
+  });
+
   it("persists documents with their anchors, queues embedding, and stores the cursor and a run", async () => {
     await ready();
     script = () => [{ documents: [doc(1), doc(2)], cursor: 2 }];

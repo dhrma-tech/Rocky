@@ -16,6 +16,28 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { SafeText } from "../components/SafeText.tsx";
 import { Badge, Button, cls, IconButton, Toggle } from "../components/ui.tsx";
+
+const TIER: Record<ConnectorCatalogEntry["tier"], { label: string; help: string }> = {
+  supported: { label: "Supported", help: "Passes a nightly live test against a real account." },
+  experimental: {
+    label: "Experimental",
+    help: "Tested against recorded data only. Expect rough edges with real accounts.",
+  },
+  "link-only": { label: "Link only", help: "Links to your items; no data access of its own." },
+};
+
+function TierBadge({ tier }: { tier: ConnectorCatalogEntry["tier"] }) {
+  const t = TIER[tier];
+  return (
+    <span title={t.help}>
+      <Badge tone={tier === "supported" ? "success" : "neutral"}>
+        {t.label}
+        <span className="sr-only">: {t.help}</span>
+      </Badge>
+    </span>
+  );
+}
+
 import { ImportPanel } from "./ImportPanel.tsx";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -90,6 +112,7 @@ function ConnectorCard({
           </h2>
           <StatusWord status={status} />
         </div>
+        <TierBadge tier={entry.tier} />
       </header>
       <p className="mt-2 line-clamp-2 text-xs text-secondary">{entry.permissions}</p>
       <p className="mt-1 text-xs text-tertiary">
@@ -424,6 +447,12 @@ function ConnectorDrawer({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">{entry.displayName}</h2>
           <StatusWord status={connector?.status ?? "available"} />
+          <p className="mt-2 flex items-center gap-2 text-xs text-secondary">
+            <Badge tone={entry.tier === "supported" ? "success" : "neutral"}>
+              {TIER[entry.tier].label}
+            </Badge>
+            {TIER[entry.tier].help}
+          </p>
         </div>
         <IconButton label="Close" onClick={onClose}>
           <X size={20} aria-hidden />

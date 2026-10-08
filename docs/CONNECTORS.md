@@ -69,6 +69,28 @@ Decisions (Phase 8):
 
 Outlook, Jira/Confluence, Discord bot, Teams, Mixpanel, Amplitude, Stripe, Mercury, HubSpot, Miro, Lucid, Canva, observability tools. No live WhatsApp, Instagram, X or LinkedIn integrations.
 
+## Support tiers and nightly live tests (roadmap A2, M3)
+
+Every connector declares a tier in code (`tier` in its definition), shown on its card and in the README:
+
+- **supported**: passes the nightly live test against a dedicated test account.
+- **experimental**: tested only against recorded, scrubbed fixtures. The default.
+- **link-only**: no data access of its own (Notion Calendar).
+
+Today none is supported. `.github/workflows/live-connectors.yml` runs `node apps/daemon/scripts/live-connectors.ts` nightly: health plus one sync batch for Gmail, Google Calendar, Google Drive, GitHub and Notion, through the same connector host code and egress allowlist as the daemon. A check whose secrets are missing is skipped. Repository secrets (maintainers; use throwaway test accounts, never a personal one):
+
+| Secret | Value |
+|---|---|
+| `ROCKY_LIVE_GITHUB_TOKEN` | Fine-grained PAT with read access to one test repository |
+| `ROCKY_LIVE_GITHUB_REPO` | That repository, `owner/name` |
+| `ROCKY_LIVE_NOTION_TOKEN` | Internal integration token shared with a few test pages |
+| `ROCKY_LIVE_GOOGLE_CLIENT_JSON` | The test project's "Desktop app" client JSON |
+| `ROCKY_LIVE_GOOGLE_REFRESH_TOKEN` | A refresh token for the test Google account with the Gmail, Calendar and Drive read scopes |
+
+Google refresh tokens for an OAuth app in "Testing" status expire after 7 days (see Sources), so the Google checks will start failing weekly unless the test project is moved to production. A connector is relabelled supported only after its check has passed for a sustained period; that is a manual code and README change, enforced to match by `packages/connectors/test/manifest.test.ts`.
+
+Failures a user can act on are shown in plain words on the connector card: an expired or revoked token sets "needs reconnect" and stops retries; a rate limit says which app is limiting Rocky and when it tries again.
+
 ## Sources
 
 - Todoist v2 shutdown: [airbyte issue](https://github.com/airbytehq/airbyte/issues/86899), [n8n community](https://community.n8n.io/t/todoist-api-deprecated/234235)

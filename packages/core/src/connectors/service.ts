@@ -616,9 +616,13 @@ export class ConnectorService {
     } catch (err) {
       sync?.abort();
       const end = this.now();
-      const msg = (err instanceof Error ? err.message : String(err)).slice(0, 2000);
       const failures = (r.consecutive_failures ?? 0) + 1;
       const backoff = Math.min(MAX_BACKOFF_MS, 60_000 * 2 ** (failures - 1));
+      const raw = (err instanceof Error ? err.message : String(err)).slice(0, 2000);
+      // Rate limits say so in plain words, with when Rocky tries again (roadmap A2).
+      const msg = isRateLimit(err)
+        ? `${def.displayName} is rate limiting Rocky. It tries again in ${Math.round(backoff / 60_000)} min. (${raw.slice(0, 300)})`
+        : raw;
       const status = isAuthError(err) ? "auth_expired" : "error";
       this.d.db.transaction(() => {
         this.d.db
@@ -654,6 +658,10 @@ export class ConnectorService {
     }
   }
 }
+
+const isRateLimit = (err: unknown) =>
+  err instanceof HttpError &&
+  (err.status === 429 || (err.status === 403 && /rate limit|secondary rate/i.test(err.body)));
 
 const isAuthError = (err: unknown) =>
   err instanceof AuthExpired ||
