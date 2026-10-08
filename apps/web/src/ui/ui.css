@@ -317,3 +317,185 @@ textarea.rk-input {
 .rk-toast .rk-button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-canvas) 14%, transparent);
 }
+
+/* --- Choice controls: checkbox, radio, segmented. The label is the 44px target. --- */
+.rk-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  cursor: pointer;
+}
+.rk-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-text);
+}
+.rk-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-fieldset legend {
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+}
+.rk-segmented {
+  display: inline-flex;
+  justify-self: start;
+  width: fit-content;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.rk-segmented__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit-min);
+  min-width: var(--hit-min);
+  padding: 0 var(--space-3);
+  color: var(--color-text-2);
+  font-weight: 500;
+  cursor: pointer;
+}
+.rk-segmented__opt + .rk-segmented__opt {
+  border-left: 1px solid var(--color-border);
+}
+.rk-segmented__opt:has(input:checked) {
+  background: var(--color-text);
+  color: var(--color-canvas);
+}
+.rk-segmented__opt:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--focus-width) - 2px);
+}
+
+/* --- Table: sticky header, 44px rows, sortable headers. Becomes a list on phones. --- */
+.rk-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-menu);
+  background: var(--color-surface);
+}
+.rk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.rk-table th,
+.rk-table td {
+  height: var(--table-row);
+  padding: 0 var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--type-small-size);
+}
+.rk-table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rk-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.rk-table tbody tr[aria-selected="true"],
+.rk-table tbody tr:focus-within {
+  background: var(--color-surface-2);
+}
+.rk-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-min);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 599px) {
+  .rk-table thead {
+    position: absolute;
+    left: -9999px;
+  }
+  .rk-table,
+  .rk-table tbody,
+  .rk-table tr,
+  .rk-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .rk-table tr {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .rk-table td {
+    height: auto;
+    border: 0;
+    padding: var(--space-1) var(--space-3);
+  }
+  .rk-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--color-text-muted);
+  }
+}
+
+/* --- Modal: a short decision; radius 28, max 480px. --- */
+.rk-modal {
+  width: min(var(--modal-max), calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-6);
+  border: 0;
+  border-radius: var(--radius-modal);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3), var(--elevation-edge);
+}
+.rk-modal::backdrop {
+  background: var(--color-scrim);
+}
+.rk-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+/* --- Progress: determinate when steps are known; never a bare spinner. --- */
+.rk-progress {
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-progress__bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+.rk-progress__fill {
+  height: 100%;
+  background: var(--color-agent);
+  transition: width var(--duration-ui) var(--ease-standard);
+}
+
+/* --- Avatar: the user is a circle (Rocky is a pebble). --- */
+.rk-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-user-message);
+  color: var(--color-text);
+  font-weight: 600;
+}

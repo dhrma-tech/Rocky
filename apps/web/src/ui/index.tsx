@@ -484,3 +484,310 @@ export function useKeys(handler: (key: string, e: globalThis.KeyboardEvent) => v
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 }
+
+// --- Select (native, for 7 or fewer simple options) ---
+
+export function Select({
+  label,
+  help,
+  value,
+  onChange,
+  options,
+  id: given,
+  disabled,
+}: {
+  label: string;
+  help?: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  id?: string;
+  disabled?: boolean;
+}) {
+  const auto = useId();
+  const id = given ?? auto;
+  return (
+    <FieldFrame id={id} label={label} {...(help ? { help } : {})}>
+      <select
+        id={id}
+        className="rk-input"
+        value={value}
+        disabled={disabled}
+        aria-describedby={help ? `${id}-help` : undefined}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </FieldFrame>
+  );
+}
+
+// --- Checkbox, radio group, segmented ---
+
+export function Checkbox({
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: ReactNode;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="rk-check">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
+    </label>
+  );
+}
+
+export function RadioGroup<T extends string>({
+  legend,
+  value,
+  onChange,
+  options,
+}: {
+  legend: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: ReactNode; help?: string }[];
+}) {
+  const name = useId();
+  return (
+    <fieldset className="rk-fieldset">
+      <legend>{legend}</legend>
+      {options.map((o) => (
+        <label key={o.value} className="rk-check" style={{ alignItems: "flex-start" }}>
+          <input
+            type="radio"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+            style={{ marginTop: 2 }}
+          />
+          <span>
+            {o.label}
+            {o.help && (
+              <span className="rk-field__help" style={{ display: "block" }}>
+                {o.help}
+              </span>
+            )}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+/** One of two to four choices that apply at once. Native radios: arrow keys move between them. */
+export function Segmented<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  const name = useId();
+  return (
+    <fieldset className="rk-segmented">
+      <legend className="sr-only">{label}</legend>
+      {options.map((o) => (
+        <label key={o.value} className="rk-segmented__opt">
+          <input
+            type="radio"
+            className="sr-only"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+          />
+          <span>{o.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+// --- Table ---
+
+export interface Column<T> {
+  key: string;
+  title: string;
+  render: (row: T) => ReactNode;
+  /** A sort value enables sorting by this column. */
+  sort?: (row: T) => string | number;
+}
+
+/** Comparing many records on several attributes. Sortable headers; a list on phones. */
+export function Table<T>({
+  caption,
+  columns,
+  rows,
+  rowKey,
+  initialSort,
+}: {
+  caption: string;
+  columns: Column<T>[];
+  rows: T[];
+  rowKey: (row: T) => string;
+  initialSort?: { key: string; dir: "asc" | "desc" };
+}) {
+  const [sort, setSort] = useState(initialSort ?? null);
+  const col = columns.find((c) => c.key === sort?.key);
+  const sorted = useMemo(() => {
+    if (!col?.sort || !sort) return rows;
+    const f = col.sort;
+    return [...rows].sort((a, b) => {
+      const x = f(a);
+      const y = f(b);
+      const c = x < y ? -1 : x > y ? 1 : 0;
+      return sort.dir === "asc" ? c : -c;
+    });
+  }, [rows, col, sort]);
+  return (
+    <div className="rk-table-wrap">
+      <table className="rk-table">
+        <caption className="sr-only">{caption}</caption>
+        <thead>
+          <tr>
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                scope="col"
+                aria-sort={
+                  sort?.key === c.key
+                    ? sort.dir === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : undefined
+                }
+              >
+                {c.sort ? (
+                  <button
+                    type="button"
+                    className="rk-sort"
+                    onClick={() =>
+                      setSort((s) => ({
+                        key: c.key,
+                        dir: s?.key === c.key && s.dir === "asc" ? "desc" : "asc",
+                      }))
+                    }
+                  >
+                    {c.title}
+                    <span aria-hidden="true">
+                      {sort?.key === c.key ? (sort.dir === "asc" ? "↑" : "↓") : "↕"}
+                    </span>
+                  </button>
+                ) : (
+                  c.title
+                )}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((r) => (
+            <tr key={rowKey(r)}>
+              {columns.map((c) => (
+                <td key={c.key} data-label={c.title}>
+                  {c.render(r)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// --- Modal ---
+
+/** A short decision that blocks progress (confirm delete). Focus trapped; Escape closes. */
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  actions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  actions: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+  return (
+    <dialog ref={ref} className="rk-modal" aria-labelledby={titleId} onClose={onClose}>
+      <h2 id={titleId} className="rk-h2" style={{ marginBottom: "var(--space-3)" }}>
+        {title}
+      </h2>
+      {children}
+      <div className="rk-modal__actions">{actions}</div>
+    </dialog>
+  );
+}
+
+// --- Progress, avatar ---
+
+/** "Step 3 of 7" with a bar; without a total, only words and elapsed time (no spinner). */
+export function Progress({ label, n, of }: { label: string; n: number; of?: number }) {
+  return (
+    <div className="rk-progress">
+      <span className="rk-small">
+        {label}
+        {of ? ` · step ${n} of ${of}` : ""}
+      </span>
+      {of ? (
+        <div
+          className="rk-progress__bar"
+          role="progressbar"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={of}
+          aria-valuenow={n}
+        >
+          <div className="rk-progress__fill" style={{ width: `${Math.round((n / of) * 100)}%` }} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function Avatar({ name, size = 32 }: { name: string; size?: 20 | 24 | 32 | 40 | 64 }) {
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <span
+      className="rk-avatar"
+      style={{ width: size, height: size, fontSize: size * 0.45 }}
+      role="img"
+      aria-label={name}
+    >
+      {initial}
+    </span>
+  );
+}
