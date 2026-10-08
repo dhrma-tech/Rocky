@@ -16,6 +16,7 @@ import { redact } from "../security/redact.ts";
 import { sha256 } from "../store/blobs.ts";
 import type { Db } from "../store/db.ts";
 import { EXECUTORS } from "./internal.ts";
+import { type ProposalFacts, RuleStore } from "./policy.ts";
 import type { ActionRegistry } from "./registry.ts";
 import { ActionError, type PublicActionDefinition } from "./types.ts";
 
@@ -32,6 +33,8 @@ interface Row {
   idempotency_key: string;
   approved_hash: string | null;
   approved_at: number | null;
+  approved_by_rule: string | null;
+  execute_after: number | null;
   result: string | null;
   error: string | null;
   created_at: number;
@@ -49,7 +52,11 @@ export interface ProposeInput {
 
 const hashPayload = (p: unknown) => sha256(canonical(p));
 
+/** Undo window after an approval before the action runs (docs/DECISIONS.md D-014). */
+export const APPROVAL_HOLD_MS = 10_000;
+
 type ActionChange =
+  | "blocked"
   | "proposed"
   | "edited"
   | "approved"
@@ -58,6 +65,7 @@ type ActionChange =
   | "executed"
   | "failed";
 const ACTION_CHANGES: Record<string, ActionChange> = {
+  action_blocked: "blocked",
   action_proposed: "proposed",
   action_edited: "edited",
   action_approved: "approved",
@@ -127,11 +135,14 @@ export class ActionService {
   private readonly db: Db;
   private readonly registry: ActionRegistry;
   private readonly now: () => number;
+  /** Rules and grants (roadmap A4). */
+  readonly rules: RuleStore;
 
   constructor(db: Db, registry: ActionRegistry, opts: { now?: () => number } = {}) {
     this.db = db;
     this.registry = registry;
     this.now = opts.now ?? Date.now;
+    this.rules = new RuleStore(db, registry, { now: this.now });
   }
 
   private def(type: string): PublicActionDefinition {
@@ -271,8 +282,44 @@ export class ActionService {
         payload,
         meta: { type: def.type, origin: input.origin },
       });
+      this.applyRules(id, {
+        connectorId: def.connectorId ?? null,
+        type: def.type,
+        actionClass: this.rules.classOf(def.type, payload),
+        payload,
+        review: provenanceOf(this.db, citations.data).review,
+        origin: input.origin,
+      });
     })();
     return this.get(id);
+  }
+
+  /**
+   * Block: the proposal is recorded as rejected, naming the rule. Allow: approved by the rule with
+   * the payload hash, audited like a click, and held for Undo. Ask or no rule: it stays a draft.
+   */
+  private applyRules(id: string, facts: ProposalFacts): void {
+    const d = this.rules.decide(facts);
+    const now = this.now();
+    if (d.effect === "block") {
+      this.db
+        .prepare("update actions_queue set status = 'rejected', updated_at = ? where id = ?")
+        .run(now, id);
+      this.audit("action_blocked", "system", id, { meta: { ruleId: d.ruleId } });
+      return;
+    }
+    if (d.effect !== "allow") return;
+    const hash = hashPayload(facts.payload);
+    this.db
+      .prepare(
+        `update actions_queue set status = 'approved', approved_hash = ?, approved_at = ?, approved_by_rule = ?,
+           execute_after = ?, updated_at = ? where id = ? and status = 'draft'`,
+      )
+      .run(hash, now, d.ruleId, now + APPROVAL_HOLD_MS, now, id);
+    this.rules.consume(d.ruleId);
+    this.audit("action_approved", "system", id, {
+      meta: { payloadHash: hash, review: facts.review, ruleId: d.ruleId },
+    });
   }
 
   /** Editing keeps the action a draft; the hash changes, so any earlier approval can't apply. */
@@ -303,7 +350,11 @@ export class ActionService {
   approve(
     id: string,
     payloadHash: string,
-    opts: { acknowledgeSources?: boolean } = {},
+    opts: {
+      acknowledgeSources?: boolean;
+      /** Undo window before the daemon runs it; omitted means it runs only by hand (the CLI). */
+      holdMs?: number;
+    } = {},
   ): ActionRecord {
     const r = this.row(id);
     if (r.status !== "draft")
@@ -325,10 +376,17 @@ export class ActionService {
     this.db.transaction(() => {
       const n = this.db
         .prepare(
-          `update actions_queue set status = 'approved', approved_hash = ?, approved_at = ?, updated_at = ?
-           where id = ? and status = 'draft' and payload_hash = ?`,
+          `update actions_queue set status = 'approved', approved_hash = ?, approved_at = ?, execute_after = ?,
+             updated_at = ? where id = ? and status = 'draft' and payload_hash = ?`,
         )
-        .run(payloadHash, this.now(), this.now(), id, payloadHash).changes;
+        .run(
+          payloadHash,
+          this.now(),
+          opts.holdMs === undefined ? null : this.now() + opts.holdMs,
+          this.now(),
+          id,
+          payloadHash,
+        ).changes;
       if (n !== 1) throw new ActionError("HASH_MISMATCH", "The action changed while approving.");
       this.audit("action_approved", "user", id, { meta: { payloadHash, review } });
     })();
@@ -339,6 +397,8 @@ export class ActionService {
     this.transition(id, "approved", "draft", "action_revoked", {
       approved_hash: null,
       approved_at: null,
+      approved_by_rule: null,
+      execute_after: null,
     });
     return this.get(id);
   }
@@ -393,7 +453,19 @@ export class ActionService {
    * Runs an approved action exactly once. The stored payload is re-hashed and re-validated; the
    * status flip to `executing` is a single conditional UPDATE, so concurrent calls can't both run.
    */
-  async execute(id: string): Promise<ActionRecord> {
+  /** Approved actions whose Undo window has passed, oldest first (the daemon runs these). */
+  due(now = this.now()): string[] {
+    return (
+      this.db
+        .prepare(
+          "select id from actions_queue where status = 'approved' and execute_after is not null and execute_after <= ? order by execute_after",
+        )
+        .all(now) as { id: string }[]
+    ).map((r) => r.id);
+  }
+
+  async execute(id: string, opts: { by?: "user" | "schedule" } = {}): Promise<ActionRecord> {
+    const actor = opts.by === "schedule" ? "system" : "user";
     const r = this.row(id);
     if (r.status !== "approved" || !r.approved_hash)
       throw new ActionError(
@@ -426,7 +498,7 @@ export class ActionService {
             "update actions_queue set status = 'executed', result = ?, updated_at = ? where id = ?",
           )
           .run(JSON.stringify(result ?? null), this.now(), id);
-        this.audit("action_executed", "user", id, { payload: result ?? null });
+        this.audit("action_executed", actor, id, { payload: result ?? null });
       })();
     } catch (err) {
       const msg = redact(err instanceof Error ? err.message : String(err)).slice(0, 2000);
@@ -436,7 +508,7 @@ export class ActionService {
             "update actions_queue set status = 'failed', error = ?, updated_at = ? where id = ?",
           )
           .run(msg, this.now(), id);
-        this.audit("action_failed", "user", id, { meta: { error: msg } });
+        this.audit("action_failed", actor, id, { meta: { error: msg } });
       })();
     }
     return this.get(id);
@@ -483,9 +555,17 @@ export class ActionService {
       suspicious,
       provenance,
       review,
+      actionClass: this.rules.classOf(r.action_type, payload),
       description,
       idempotencyKey: r.idempotency_key,
       approvedAt: r.approved_at,
+      approvedBy:
+        r.approved_at === null
+          ? null
+          : r.approved_by_rule
+            ? { kind: "rule", ruleId: r.approved_by_rule }
+            : { kind: "user" },
+      executeAfter: r.execute_after,
       result: r.result === null ? null : (JSON.parse(r.result) as unknown),
       error: r.error,
       createdAt: r.created_at,

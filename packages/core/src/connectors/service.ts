@@ -464,6 +464,7 @@ export class ConnectorService {
           connectorId: kind,
           schema: a.schema,
           risk: a.risk,
+          ...(a.actionClass ? { actionClass: a.actionClass } : {}),
           describe: (p) => a.describe(p),
           execute: async (p, ctx) => {
             const cur = this.d.db

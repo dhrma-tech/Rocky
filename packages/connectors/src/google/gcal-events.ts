@@ -94,6 +94,8 @@ export const eventCreate: ConnectorAction<EventCreate> = {
   title: "Create calendar event",
   schema: EventCreateSchema,
   risk: (p) => (p.attendees.length ? "high" : "medium"),
+  // Guests get the event (and, if notified, an email): that reaches other people.
+  actionClass: (p) => (p.attendees.length || p.notifyAttendees ? "send" : "write"),
   describe: (p) => ({
     target: p.calendarId,
     summary: `New event "${p.summary}" ${whenText(p.start)}${p.attendees.length ? ` with ${p.attendees.length} guest${p.attendees.length === 1 ? "" : "s"}${p.notifyAttendees ? " (invitations are sent)" : " (no invitations sent)"}` : ""}`,
@@ -125,6 +127,7 @@ export const eventPatch: ConnectorAction<EventPatch> = {
   title: "Update calendar event",
   schema: EventPatchSchema,
   risk: (p) => (p.attendees?.length || p.notifyAttendees ? "high" : "medium"),
+  actionClass: (p) => (p.attendees?.length || p.notifyAttendees ? "send" : "write"),
   describe: (p) => ({
     target: p.calendarId,
     summary: `Update event ${p.summary ? `"${p.summary}"` : p.eventId}${p.notifyAttendees ? " (guests are notified)" : ""}`,

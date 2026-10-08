@@ -1,4 +1,4 @@
-import type { Anchor, ConnectorHealth, Risk } from "@rocky/contracts";
+import type { ActionClass, Anchor, ConnectorHealth, Risk } from "@rocky/contracts";
 import type { ZodType } from "zod";
 import type { Http } from "./http.ts";
 
@@ -102,6 +102,8 @@ export interface ConnectorAction<P> {
   title: string;
   schema: ZodType<P>;
   risk: Risk | ((p: P) => Risk);
+  /** What it does outside Rocky: write (default), send (notifies people), spend or delete. Rules can never allow send, spend or delete without asking. */
+  actionClass?: ActionClass | ((p: P) => ActionClass);
   describe(p: P): ActionDescription;
   execute(p: P, ctx: ExecContext): Promise<unknown>;
 }

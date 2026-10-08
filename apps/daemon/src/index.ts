@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
+  ActionScheduler,
   ConnectorScheduler,
   deleteEverything,
   FolderWatcher,
@@ -81,6 +82,9 @@ export async function startDaemon(opts: {
   // Connector syncs run on their own lane; one tick now (catch-up after downtime), then every minute.
   const scheduler = new ConnectorScheduler(rt.connectors);
   scheduler.start();
+  // Approved actions run once their 10 s Undo window passes (docs/DECISIONS.md D-014).
+  const actionScheduler = new ActionScheduler(rt.actions, { log });
+  actionScheduler.start();
   // Notebook rules also pick up documents from imports and watched folders (notebooks.md).
   const notebookTimer = setInterval(() => rt.refreshNotebooks(), 10 * 60_000);
   notebookTimer.unref();
@@ -108,6 +112,7 @@ export async function startDaemon(opts: {
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
       await scheduler.stop();
+      await actionScheduler.stop();
       await watcher.stop();
       await runner.stop();
       rt.close();
@@ -135,6 +140,7 @@ export async function startDaemon(opts: {
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
       await scheduler.stop();
+      await actionScheduler.stop();
       await watcher.stop();
       await runner.stop();
       fs.rmSync(daemonInfoFile(opts.dataDir), { force: true });

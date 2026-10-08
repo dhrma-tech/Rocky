@@ -12,9 +12,12 @@ import {
   type Citation,
   EditRequestSchema,
   ProposeRequestSchema,
+  type RuleCreate,
+  RuleCreateSchema,
   SettingsUpdateSchema,
 } from "@rocky/contracts";
 import {
+  APPROVAL_HOLD_MS,
   addWatchedFolder,
   ask,
   blobPath,
@@ -71,6 +74,7 @@ const STATUS: Record<string, 400 | 403 | 404 | 409> = {
   ILLEGAL_TRANSITION: 409,
   HASH_MISMATCH: 409,
   REVIEW_REQUIRED: 409,
+  INVALID_RULE: 400,
 };
 
 const POLICY_CODES = new Set([
@@ -192,13 +196,26 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
   // The UI sends the hash of the payload it displayed; approval binds to exactly that payload.
   api.post("/actions/:id/approve", async (c) => {
-    const { payloadHash, acknowledgeSources } = await body(c, ApproveRequestSchema);
+    const { payloadHash, acknowledgeSources, holdMs } = await body(c, ApproveRequestSchema);
     return c.json(
       rt.actions.approve(c.req.param("id"), payloadHash, {
         acknowledgeSources: acknowledgeSources === true,
+        // The daemon runs it after the Undo window; "Approve now" sends 0.
+        holdMs: holdMs ?? APPROVAL_HOLD_MS,
       }),
     );
   });
+
+  // --- Rules and grants (roadmap A4) ---
+  api.get("/rules", (c) => c.json({ rules: rt.actions.rules.list() }));
+  api.post("/rules/preview", async (c) =>
+    c.json(rt.actions.rules.preview((await c.req.json().catch(() => null)) as RuleCreate)),
+  );
+  api.post("/rules", async (c) => {
+    const input = await body(c, RuleCreateSchema);
+    return c.json(rt.actions.rules.create(input), 201);
+  });
+  api.post("/rules/:id/revoke", (c) => c.json(rt.actions.rules.revoke(c.req.param("id"))));
   api.post("/actions/:id/reject", (c) => c.json(rt.actions.reject(c.req.param("id"))));
   api.post("/actions/:id/revoke", (c) => c.json(rt.actions.revoke(c.req.param("id"))));
   api.post("/actions/:id/clone", (c) => c.json(rt.actions.clone(c.req.param("id"))));

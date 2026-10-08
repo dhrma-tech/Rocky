@@ -312,6 +312,20 @@ program
   });
 
 program
+  .command("rules")
+  .description("approval rules and time-bound grants: list, preview, add, revoke")
+  .argument("<action>", "list | preview | add | revoke")
+  .argument("[id]", "with revoke: the rule id")
+  .option("--json <rule>", "with preview or add: the rule as JSON")
+  .option("--yes", "with add: save without asking")
+  .action(
+    async (action: string, id: string | undefined, opts: { json?: string; yes?: boolean }) => {
+      const { rulesCommand } = await import("./rules.ts");
+      process.exitCode = await rulesCommand(action, id, { ...opts, dataDir: dataDir() });
+    },
+  );
+
+program
   .command("mcp")
   .description(
     "MCP server with read-only memory tools over stdio (claude mcp add rocky -- rocky mcp)",

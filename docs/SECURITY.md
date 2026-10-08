@@ -33,6 +33,10 @@ Adversarial fixtures live in `packages/core/test/security/fixtures/` and every o
 - A random 256-bit install token is created on first run and stored in the keychain. The UI gets it via an HttpOnly SameSite=Strict cookie set by a one-time localhost bootstrap URL that `rocky open` prints. The CLI reads it from the keychain. `rocky mcp` over stdio needs no token (it runs as you, on your data dir); the daemon's Streamable HTTP endpoint `/api/v1/mcp` requires it like every other API route. `rocky mcp --http --show-token` prints it for an HTTP client, with a warning.
 - `Host` must be `127.0.0.1:<port>` or `localhost:<port>` (DNS-rebinding defense). `Origin` must match on state-changing requests (CSRF defense).
 
+## Rules, grants and the Undo window (roadmap A4)
+
+Rules decide what happens to a proposal before the user sees it: **block** (stored as rejected, audited with the rule), **ask** (the default), or **allow**. Ask first wins: block beats ask beats allow. An allow rule must name one action type, carry at least one condition on the payload (`equals`, `oneOf`, `domainIn`, `lte`) and end within 90 days; there is no blanket "always allow". No rule can allow an action that sends, spends or deletes (a calendar event with guests counts as sending), an action drafted from external text (strict review), or anything not proposed from a user turn or a user-enabled routine. A rule-approved action is approved by its exact payload hash and audited with the rule id, like a click. Every approval, by a person or a rule, waits 10 seconds before the daemon runs it, so Undo still works; "Approve now" skips the wait. Approvals from the CLI run only with `rocky actions run`.
+
 ## Secrets
 
 - Connector tokens, API keys and the OAuth client secret live in the OS keychain via `@napi-rs/keyring`, under service name `rocky`. Never in `.env`, the DB or logs.
@@ -94,5 +98,6 @@ Plugins run in the connector host process with the same OS privileges as you. Th
 | Connector tokens only in the connector host; daemon keychain view refuses them; IPC and a real fork | `connector-host.test.ts`, `boundaries.test.ts` |
 | Egress allowlist per connector, on the SDK client and the global fetch | `connector-host.test.ts`, `packages/connectors/test/manifest.test.ts` |
 | Strict review for proposals from external or flagged text; provenance listed | `untrusted-provenance.test.ts` |
+| Rules: ask first wins; allow needs constraints and an end date; never sends, deletes or strict proposals; hash-bound and audited; 10 s Undo | `rules.test.ts`, `apps/daemon/test/rules.test.ts` |
 | One-time codes and sign-in links removed from mail and chat | `untrusted-provenance.test.ts` |
 | Hidden instructions in PDFs and web pages are flagged | `injection.test.ts`, `untrusted-provenance.test.ts` |

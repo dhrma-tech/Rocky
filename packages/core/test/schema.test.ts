@@ -26,10 +26,11 @@ describe("migration 001", () => {
       "conversations",
       "briefs",
       "events",
+      "action_rules",
     ]) {
       expect(names).toContain(t);
     }
-    expect(db.pragma("user_version", { simple: true })).toBe(6);
+    expect(db.pragma("user_version", { simple: true })).toBe(7);
   });
 
   it("makes audit_log append-only", () => {

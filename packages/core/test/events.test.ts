@@ -18,9 +18,11 @@ import {
 } from "../src/index.ts";
 import { enqueue } from "../src/jobs/queue.ts";
 import { openDb } from "../src/store/db.ts";
-import { migrate, rollback } from "../src/store/migrate.ts";
+import { defaultMigrationsDir, migrate, readMigrations, rollback } from "../src/store/migrate.ts";
 import { memoryDb, tempDir } from "./helpers.ts";
 import { actionsWorld } from "./security/actions-helpers.ts";
+
+const LATEST = readMigrations(defaultMigrationsDir).length;
 
 let db: Db;
 beforeEach(() => {
@@ -56,7 +58,7 @@ describe("event log", () => {
   });
 });
 
-describe("migration 006 is reversible", () => {
+describe("migrations from 006 on are reversible", () => {
   it("rolls back to 005 with a backup, and refuses to go below the first forward-only migration", () => {
     const dir = tempDir();
     const file = path.join(dir, "rocky.db");
@@ -64,22 +66,22 @@ describe("migration 006 is reversible", () => {
     const fileDb = openDb(file);
     try {
       migrate(fileDb, { backupDir: backups });
-      expect(fileDb.pragma("user_version", { simple: true })).toBe(6);
+      expect(fileDb.pragma("user_version", { simple: true })).toBe(LATEST);
       recordEvent(fileDb, { kind: "message", runId: null, role: "user", text: "x" });
       // 005 has no down script: nothing changes.
       expect(() => rollback(fileDb, 4, { backupDir: backups })).toThrow(/no down script/);
-      expect(fileDb.pragma("user_version", { simple: true })).toBe(6);
-      expect(rollback(fileDb, 5, { backupDir: backups })).toEqual({ from: 6, to: 5 });
+      expect(fileDb.pragma("user_version", { simple: true })).toBe(LATEST);
+      expect(rollback(fileDb, 5, { backupDir: backups })).toEqual({ from: LATEST, to: 5 });
       expect(fileDb.pragma("user_version", { simple: true })).toBe(5);
       expect(
         fileDb.prepare("select name from sqlite_master where name = 'events'").get(),
       ).toBeUndefined();
       // The pre-rollback copy still has the event.
-      const copies = fs.readdirSync(backups).filter((f) => f.startsWith("rocky-6-"));
+      const copies = fs.readdirSync(backups).filter((f) => f.startsWith(`rocky-${LATEST}-`));
       expect(copies).toHaveLength(1);
       // And forward again.
       migrate(fileDb, { backupDir: backups });
-      expect(fileDb.pragma("user_version", { simple: true })).toBe(6);
+      expect(fileDb.pragma("user_version", { simple: true })).toBe(LATEST);
     } finally {
       fileDb.close();
       fs.rmSync(dir, { recursive: true, force: true });

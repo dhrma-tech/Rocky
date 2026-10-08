@@ -1,5 +1,7 @@
 export * from "./actions/echo.ts";
+export * from "./actions/policy.ts";
 export * from "./actions/registry.ts";
+export * from "./actions/scheduler.ts";
 export * from "./actions/service.ts";
 export * from "./actions/types.ts";
 export * from "./assistant/ask.ts";

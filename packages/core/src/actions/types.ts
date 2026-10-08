@@ -1,4 +1,4 @@
-import type { ActionDescription, Risk } from "@rocky/contracts";
+import type { ActionClass, ActionDescription, Risk } from "@rocky/contracts";
 import type { ZodType } from "zod";
 
 export interface ExecContext {
@@ -16,6 +16,8 @@ export interface ActionDefinition<P = unknown> {
   schema: ZodType<P>;
   /** Fixed risk, or computed from the payload (e.g. calendar events with attendees are high). */
   risk: Risk | ((p: P) => Risk);
+  /** Defaults to "write". */
+  actionClass?: ActionClass | ((p: P) => ActionClass);
   describe(p: P): ActionDescription;
   execute(p: P, ctx: ExecContext): Promise<unknown>;
 }
