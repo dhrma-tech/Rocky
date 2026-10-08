@@ -36,6 +36,13 @@ function ruleSql(rules: ScopeRules): { sql: string; params: unknown[] } | null {
       or json_extract(d.meta, '$.dataSourceId') in (${marks(ids.length)})))`);
     params.push(...ids, ...ids);
   }
+  for (const f of rules.localFolders ?? []) {
+    // Local files are keyed by absolute path; compare case-insensitively (Windows paths are).
+    const sep = f.includes("\\") ? "\\" : "/";
+    const prefix = f.replace(/[\\/]+$/, "") + sep;
+    any.push("(d.connector_id = 'local-files' and lower(substr(d.external_id, 1, ?)) = lower(?))");
+    params.push(prefix.length, prefix);
+  }
   for (const t of rules.titleMatches ?? []) {
     any.push("instr(lower(d.title), lower(?)) > 0");
     params.push(t);

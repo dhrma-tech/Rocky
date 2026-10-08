@@ -14,6 +14,8 @@ export const ScopeRulesSchema = z
     driveFolderIds: z.array(z.string()).max(50),
     /** With descendants (sub-pages). Data-source ids also work for database rows. */
     notionPageIds: z.array(z.string()).max(50),
+    /** Local folders (absolute paths), recursive: a project's folder (docs/DECISIONS.md D-047). */
+    localFolders: z.array(z.string().min(1).max(1000)).max(20),
     sourceTypes: z.array(SourceTypeSchema).max(20),
     /** Case-insensitive title contains, e.g. a course code "CS201". */
     titleMatches: z.array(z.string().min(2).max(100)).max(20),

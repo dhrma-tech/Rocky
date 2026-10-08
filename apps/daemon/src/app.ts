@@ -48,6 +48,7 @@ import { registerImportRoutes } from "./imports.ts";
 import { registerMemoryRoutes } from "./memory-routes.ts";
 import { registerModelRoutes } from "./model-routes.ts";
 import { registerNotebookRoutes } from "./notebook-routes.ts";
+import { registerProjectRoutes } from "./project-routes.ts";
 import { registerSampleRoutes } from "./sample-routes.ts";
 
 export const VERSION = "0.0.0";
@@ -549,6 +550,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerEventRoutes(api, { rt });
   registerModelRoutes(api, { rt });
   registerMemoryRoutes(api, { rt, body });
+  registerProjectRoutes(api, { rt, body, rewatch: rewatch ?? (async () => {}) });
   registerSampleRoutes(api, { rt, poke: poke ?? (() => {}) });
   registerImportRoutes(api, { rt, poke, body });
 

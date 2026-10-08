@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type Db, migrate, openDb } from "../src/index.ts";
+import { defaultMigrationsDir, readMigrations } from "../src/store/migrate.ts";
 
 let db: Db;
 beforeEach(() => {
@@ -27,10 +28,13 @@ describe("migration 001", () => {
       "briefs",
       "events",
       "action_rules",
+      "projects",
     ]) {
       expect(names).toContain(t);
     }
-    expect(db.pragma("user_version", { simple: true })).toBe(7);
+    expect(db.pragma("user_version", { simple: true })).toBe(
+      readMigrations(defaultMigrationsDir).length,
+    );
   });
 
   it("makes audit_log append-only", () => {
