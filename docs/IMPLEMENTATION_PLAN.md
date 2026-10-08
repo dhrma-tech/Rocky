@@ -195,9 +195,9 @@ Per-screen "Done when" (spec F.3): loading, empty, error and populated states at
 - [x] I1b Connector worker process holding keychain access; daemon never reads connector tokens
 - [x] I1c Egress allowlist for the connector process (in-process guard, D-023)
 - [x] I1d Injection fixtures (PDF, email, web) in `test:security`
-- [ ] M3 Connector tier field (supported/experimental/link-only) in SDK + UI + README
-- [ ] A2 Nightly live smoke workflow (skips without secrets)
-- [ ] M1/X3 Copy changes in README and landing
+- [x] M3 Connector tier field (supported/experimental/link-only) in SDK + UI + README
+- [x] A2 Nightly live smoke workflow (skips without secrets); live passes pending test accounts
+- [x] M1/X3 Copy changes in README and landing (+ X2 copy, comparison page)
 - [ ] EV Typed event union + `/api/v1/events` with seq replay
 - [ ] A4 Policy table + grants (migration 006, reversible, backup first)
 - [ ] U-T1–T5, U-L Tokens from tokens.json, light + dark
