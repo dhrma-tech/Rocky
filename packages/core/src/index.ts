@@ -68,6 +68,7 @@ export * from "./router/policy.ts";
 export * from "./router/prices.ts";
 export * from "./router/router.ts";
 export * from "./runtime.ts";
+export * from "./samples/sample.ts";
 export * from "./secrets/keychain.ts";
 export * from "./security/flagger.ts";
 export * from "./security/redact.ts";

@@ -312,6 +312,15 @@ program
   });
 
 program
+  .command("sample")
+  .description("a small fictional workspace to try Rocky before importing anything")
+  .argument("<action>", "load | remove | tour")
+  .action(async (action: string) => {
+    const { sampleCommand } = await import("./sample.ts");
+    process.exitCode = await sampleCommand(action, { dataDir: dataDir() });
+  });
+
+program
   .command("models")
   .description("local models: what fits this machine, measured speed, and which to use")
   .argument("[action]", "list (default) | bench | use")

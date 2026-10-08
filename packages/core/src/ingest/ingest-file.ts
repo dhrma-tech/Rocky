@@ -30,6 +30,8 @@ export async function ingestFile(
   db: Db,
   blobsDir: string,
   filePath: string,
+  /** Who the document belongs to; local files by default (the sample workspace uses "sample"). */
+  opts: { connectorId?: string; meta?: Record<string, unknown> } = {},
 ): Promise<IngestFileResult> {
   const abs = path.resolve(filePath);
   const parser = parserFor(abs);
@@ -43,6 +45,8 @@ export async function ingestFile(
   const res = upsertDocument(db, {
     parsed,
     externalId: abs,
+    ...(opts.connectorId ? { connectorId: opts.connectorId } : {}),
+    ...(opts.meta ? { meta: opts.meta } : {}),
     uri: `file:///${abs.replace(/\\/g, "/").replace(/^\//, "")}`,
     mime: MIME[path.extname(abs).toLowerCase()] ?? "application/octet-stream",
     blobHash,
