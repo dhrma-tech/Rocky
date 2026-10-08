@@ -853,6 +853,14 @@ section {
   font-size: 24px;
   color: var(--blush-tint);
 }
+.tiles .tier {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--on-dark-2);
+  margin-bottom: auto;
+}
 .tiles span {
   font-size: 13px;
   color: var(--on-dark-2);

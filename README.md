@@ -1,8 +1,8 @@
 # Rocky
 
-A local-first, open-source, always-on AI assistant that remembers your work (meetings, lectures, messages, documents and apps) and answers with verified citations. It acts only after you approve.
+A local-first, open-source memory and approval layer for your work. Rocky remembers your meetings, lectures, messages, documents and apps, answers with verified citations (or says "Not found in your sources"), drafts changes, and waits for your approval before anything is written. It is aimed at students and developers who are comfortable in a terminal; there is no installer yet.
 
-> Status: V1 complete, early software ([docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connected apps and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; opt-in store encryption; and an MCP server, all from the CLI and a local web UI. Website: see [apps/landing](apps/landing).
+> Status: V1 complete, early software ([docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connectors (all experimental, see below) and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; opt-in store encryption; and an MCP server, all from the CLI and a local web UI. Website: see [apps/landing](apps/landing). How it compares with hosted agents, in checkable facts: [docs/ROCKY-VS-CLOUD-AGENTS.md](docs/ROCKY-VS-CLOUD-AGENTS.md).
 
 ## Quickstart (developers)
 
@@ -76,7 +76,17 @@ pnpm rocky import call.m4a --kind meeting --no-wait   # leave the work to the ru
 
 The browser recorder (Chrome or Edge) captures your microphone and a shared tab or the whole screen as two channels, labelled "You" and "Others". Known limitations: no diarization beyond You/Others; system audio needs "Share system audio" (entire screen) or "Share tab audio"; on macOS and Linux system audio support varies (tab audio works); no live captions. Recording laws differ by place; the consent prompt is a reminder, not legal compliance.
 
-Connectors (web UI → Connectors, or the CLI; setup steps in [docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md)):
+Connectors (web UI → Connectors, or the CLI; setup steps in [docs/SETUP-CHECKLIST.md](docs/SETUP-CHECKLIST.md)). Each has an honest support tier: **supported** means it passes a nightly live test against a real account; **experimental** means it is tested only against recorded fixtures; **link-only** means it has no data access of its own.
+
+| Tier | Connectors |
+|---|---|
+| Supported | None yet |
+| Experimental | Gmail, Google Calendar, Google Drive, GitHub, Notion, Slack, Linear, Todoist, Asana, Apple Calendar (CalDAV), PostHog |
+| Link-only | Notion Calendar |
+
+The nightly live tests (`.github/workflows/live-connectors.yml`) need dedicated test accounts; Gmail, Google Calendar, Google Drive, GitHub and Notion are first in line for **supported**.
+
+Connector code and tokens run in a separate connector host process, and each connector can reach only the hosts it declares ([docs/SECURITY.md](docs/SECURITY.md)).
 
 ```sh
 pnpm rocky connectors add github --repos owner/name

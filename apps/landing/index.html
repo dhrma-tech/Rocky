@@ -6,7 +6,7 @@
     <title>Rocky: your work, remembered and cited</title>
     <meta
       name="description"
-      content="Rocky is an open-source, local-first assistant. It remembers your meetings, lectures, messages and documents, answers with sources you can check, and acts only after you approve."
+      content="Rocky is an open-source, local-first memory and approval layer for your work. It remembers your meetings, lectures, messages and documents, answers with sources you can check, drafts changes, and waits for your approval."
     />
     <meta name="theme-color" content="#eaeef4" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -46,7 +46,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" class="star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /></svg>
           <span>GitHub</span><span class="mono" data-stars hidden></span>
         </a>
-        <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+        <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
         <button type="button" class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer" data-menu>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
@@ -61,7 +61,7 @@
         <a href="#privacy">Privacy</a>
         <a href="https://github.com/dhrma-tech/Rocky/tree/main/docs">Docs</a>
         <a href="https://github.com/dhrma-tech/Rocky">GitHub</a>
-        <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+        <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
       </div>
     </header>
 
@@ -80,7 +80,7 @@
             <span class="round" aria-hidden="true">+</span>
             <span class="chip">Everything</span>
             <span class="chip chip-local"><span class="dot" aria-hidden="true"></span>local model</span>
-            <a class="btn btn-primary btn-sm" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+            <a class="btn btn-primary btn-sm" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
           </div>
         </div>
         <fieldset class="samples">
@@ -101,8 +101,9 @@
 
         <p class="descriptor">
           Rocky remembers your meetings, lectures, messages, documents and apps on your own machine.
-          It answers with sources you can check, acts only after you approve, and runs on local models
-          or your own API key.
+          It answers with sources you can check, drafts changes, and waits for your approval. It runs on
+          local models by default; an API key is an optional accelerator. Built for students and
+          developers who are comfortable in a terminal.
         </p>
 
         <div class="install">
@@ -112,7 +113,7 @@
           </button>
         </div>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+          <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
           <a class="btn btn-secondary" href="https://github.com/dhrma-tech/Rocky">Star on GitHub</a>
         </div>
       </section>
@@ -194,25 +195,27 @@
       <!-- 5–6. Connectors and local-first (dark) -->
       <section class="dark" id="connectors" aria-labelledby="connectors-title">
         <div class="wrap">
-          <h2 id="connectors-title">Twelve apps, one memory.</h2>
+          <h2 id="connectors-title">Your apps, one memory.</h2>
           <p class="lede">
             Rocky keeps a local copy of what you connect and syncs it every few minutes. Every
-            connector starts read-only. Tokens stay in your operating system's keychain. See
+            connector starts read-only. Tokens stay in your operating system's keychain, in a separate
+            process from the one that runs models. Every connector is marked experimental until it
+            passes live tests against real accounts. See
             <a href="https://github.com/dhrma-tech/Rocky/blob/main/docs/CONNECTORS-SETUP.md">setup and permissions</a>.
           </p>
           <ul class="tiles">
-            <li><strong>Gmail</strong><span>Reads; drafts after approval; never sends</span></li>
-            <li><strong>Google Calendar</strong><span>Reads; creates events after approval</span></li>
-            <li><strong>Google Drive</strong><span>Reads; creates docs after approval</span></li>
-            <li><strong>Notion</strong><span>Reads pages; writes after approval</span></li>
-            <li><strong>GitHub</strong><span>Reads issues and PRs; creates issues after approval</span></li>
-            <li><strong>Linear</strong><span>Reads; creates issues after approval</span></li>
-            <li><strong>Todoist</strong><span>Reads; adds tasks after approval</span></li>
-            <li><strong>Slack</strong><span>Reads; drafts replies you post</span></li>
-            <li><strong>Apple Calendar</strong><span>Reads; creates events after approval</span></li>
-            <li><strong>Asana</strong><span>Reads; creates tasks after approval</span></li>
-            <li><strong>PostHog</strong><span>Read only</span></li>
-            <li><strong>Notion Calendar</strong><span>Links only, no access of its own</span></li>
+            <li><em class="tier">Experimental</em><strong>Gmail</strong><span>Reads; drafts after approval; never sends</span></li>
+            <li><em class="tier">Experimental</em><strong>Google Calendar</strong><span>Reads; creates events after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Google Drive</strong><span>Reads; creates docs after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Notion</strong><span>Reads pages; writes after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>GitHub</strong><span>Reads issues and PRs; creates issues after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Linear</strong><span>Reads; creates issues after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Todoist</strong><span>Reads; adds tasks after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Slack</strong><span>Reads; drafts replies you post</span></li>
+            <li><em class="tier">Experimental</em><strong>Apple Calendar</strong><span>Reads; creates events after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>Asana</strong><span>Reads; creates tasks after approval</span></li>
+            <li><em class="tier">Experimental</em><strong>PostHog</strong><span>Read only</span></li>
+            <li><em class="tier">Link only</em><strong>Notion Calendar</strong><span>Links only, no access of its own</span></li>
           </ul>
           <p class="more">Also: WhatsApp, Discord, Instagram, X and LinkedIn exports, imported once from a file.</p>
 
@@ -220,7 +223,7 @@
             <h2 id="local-title">Local first, by default.</h2>
             <p class="lede center">
               Your index lives on your machine. Embeddings, transcription and small tasks run locally.
-              Hard questions use your own API key only when you add one.
+              An API key is optional: add one to speed up hard questions, with a monthly budget cap.
             </p>
             <svg class="diagram" viewBox="0 0 760 220" role="img" aria-labelledby="diagram-title">
               <title id="diagram-title">Your apps flow into a local index on your machine, which uses a local model or, if you choose, your own API key.</title>
@@ -245,7 +248,7 @@
                 <span class="arrow-chip" aria-hidden="true">→</span>
               </a>
               <a class="pill-link" href="https://github.com/dhrma-tech/Rocky/blob/main/docs/SECURITY.md#egress-transparency">
-                <span><strong>Bring your own API key</strong><br /><small>Claude for hard questions, with a monthly budget cap.</small></span>
+                <span><strong>Optional: your own API key</strong><br /><small>Faster answers to hard questions, with a monthly budget cap.</small></span>
                 <span class="arrow-chip" aria-hidden="true">→</span>
               </a>
             </div>
@@ -361,16 +364,17 @@
           <p>Free and open source. You pay a provider only if you use your own API key.</p>
         </header>
         <div class="ways-grid">
-          <article class="w-card">
+          <article class="w-card w-recommended">
+            <p class="mono small">Default</p>
             <h3>Local models</h3>
             <p>Everything on your machine through Ollama. Free. Best with 16 GB of RAM.</p>
-            <a class="btn btn-secondary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+            <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
           </article>
-          <article class="w-card w-recommended">
-            <p class="mono small">Recommended</p>
-            <h3>Your API key</h3>
-            <p>Local index and local tasks, with Claude for hard questions. A monthly budget cap is on by default.</p>
-            <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+          <article class="w-card">
+            <p class="mono small">Optional</p>
+            <h3>Add an API key</h3>
+            <p>Local index and local tasks, with Claude to speed up hard questions. A monthly budget cap is on by default.</p>
+            <a class="btn btn-secondary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
           </article>
           <article class="w-card">
             <h3>Build on it</h3>
@@ -425,7 +429,7 @@
         </details>
         <details>
           <summary>How is this different from a cloud assistant?</summary>
-          <p>Your index stays on your machine, every answer cites its source or says it found nothing, and nothing is written to your apps without your approval. It is early software: expect rough edges.</p>
+          <p>Your index stays on your machine, every answer cites its source or says it found nothing, and nothing is written to your apps without your approval. It is early software: expect rough edges. <a href="https://github.com/dhrma-tech/Rocky/blob/main/docs/ROCKY-VS-CLOUD-AGENTS.md">The checkable differences</a>.</p>
         </details>
       </section>
 
@@ -434,7 +438,7 @@
         <h2 id="final-title">Keep your work in one place you own.</h2>
         <p>Open source, local first, and cited from the start.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Download</a>
+          <a class="btn btn-primary" href="https://github.com/dhrma-tech/Rocky#quickstart-developers">Install from GitHub</a>
           <a class="btn btn-secondary" href="https://github.com/dhrma-tech/Rocky">Star on GitHub</a>
         </div>
         <div class="install">
@@ -451,7 +455,7 @@
       <div class="footer-brand">
         <a class="logo" href="#top"><img src="/logo.svg" alt="" width="28" height="28" /><span>Rocky</span></a>
         <p class="tag">Your work, remembered and cited.</p>
-        <p class="small">An open-source, local-first assistant that remembers your work, answers with sources and acts only after you approve.</p>
+        <p class="small">An open-source, local-first memory and approval layer: it remembers your work, answers with sources, drafts, and waits for your approval.</p>
       </div>
       <nav class="footer-cols" aria-label="Footer">
         <div>
