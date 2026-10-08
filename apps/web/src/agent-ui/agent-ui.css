@@ -140,3 +140,161 @@
     border-color: var(--color-agent);
   }
 }
+
+/* --- Receipt: one checkable line; click opens the event. --- */
+.rk-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-text-2);
+  font: inherit;
+  font-size: var(--type-small-size);
+  text-align: left;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.rk-receipt:hover {
+  background: var(--color-surface-2);
+}
+.rk-receipt__icon {
+  color: var(--color-success-text);
+  flex: none;
+}
+.rk-receipt__not {
+  color: var(--color-text-muted);
+}
+
+/* --- Timeline: connected nodes; planned steps outlined; failed step open. --- */
+.rk-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rk-timeline__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+.rk-timeline__step::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--color-border);
+}
+.rk-timeline__step:last-child::before {
+  display: none;
+}
+.rk-timeline__node {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+}
+.rk-timeline__step[data-planned="true"] .rk-timeline__node {
+  border-style: dashed;
+  background: transparent;
+}
+.rk-timeline__step[data-planned="true"] .rk-timeline__text {
+  color: var(--color-text-muted);
+}
+.rk-timeline__fail {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-menu);
+  background: var(--color-error-tint);
+  color: var(--color-error-text);
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* --- Activity (ledger) row: time rail, worker, icon, sentence, result; expands to payload. --- */
+.rk-activity {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.rk-activity__time {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  padding-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.rk-activity__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.rk-activity[data-planned="true"] .rk-activity__sentence {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.rk-activity__sentence {
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rk-activity__worker {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* --- Tool-call block: collapsed name, target, duration; expanded args and output in mono. --- */
+.rk-tool {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-menu);
+  background: var(--color-surface);
+}
+.rk-tool summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  padding: 0 var(--space-3);
+  cursor: pointer;
+}
+.rk-tool pre {
+  margin: 0;
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Task card --- */
+.rk-task {
+  display: grid;
+  gap: var(--space-2);
+}
+.rk-task__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rk-task__title {
+  flex: 1 1 200px;
+  margin: 0;
+}
+.rk-task__line {
+  margin: 0;
+  color: var(--color-text-2);
+}
