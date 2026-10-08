@@ -64,16 +64,24 @@ export type StudyTask = "cards" | "summaries" | "guide" | "mindmap";
 export class ApiError extends Error {
   readonly code: string;
   readonly status: number;
-  constructor(status: number, code: string, message: string) {
+  /** The parsed error body, for errors that carry data (a memory edit conflict sends the current text). */
+  readonly body: Record<string, unknown>;
+  constructor(status: number, code: string, message: string, body: Record<string, unknown> = {}) {
     super(message);
     this.status = status;
     this.code = code;
+    this.body = body;
   }
 }
 
 async function toError(res: Response): Promise<ApiError> {
   const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
-  return new ApiError(res.status, body.code ?? `HTTP_${res.status}`, body.error ?? res.statusText);
+  return new ApiError(
+    res.status,
+    body.code ?? `HTTP_${res.status}`,
+    body.error ?? res.statusText,
+    body as Record<string, unknown>,
+  );
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -579,4 +587,71 @@ export const assistant = {
   refreshStyle: () => call<{ jobId: string }>("/style/refresh", { method: "POST" }),
   sourcePack: (notebookId: string) =>
     call<ActionRecord>(`/notebooks/${notebookId}/source-pack`, { method: "POST" }),
+};
+
+// --- Memory (roadmap A5, UI spec 13) ---
+
+export interface MemoryFact {
+  text: string;
+  provenance:
+    | { by: "user"; at: number }
+    | { by: "source"; doc: string; title: string; quote: string; at: number; run?: string }
+    | null;
+}
+export interface MemoryFileView {
+  path: string;
+  group: "About you" | "Preferences" | "People" | "Projects";
+  title: string;
+  facts: MemoryFact[];
+  hash: string;
+  updatedAt: number;
+}
+
+export const memory = {
+  list: () => call<{ dir: string; files: MemoryFileView[] }>("/memory"),
+  file: (path: string) =>
+    call<{ content: string; hash: string }>(`/memory/file?path=${encodeURIComponent(path)}`),
+  save: (path: string, content: string, baseHash: string) =>
+    call<MemoryFileView>("/memory/file", {
+      method: "PUT",
+      body: JSON.stringify({ path, content, baseHash }),
+    }),
+  fact: (path: string, fact: string) =>
+    call<MemoryFileView>("/memory/fact", { method: "POST", body: JSON.stringify({ path, fact }) }),
+  forget: (path: string, index: number) =>
+    call<MemoryFileView>("/memory/forget", {
+      method: "POST",
+      body: JSON.stringify({ path, index }),
+    }),
+  history: (path: string) =>
+    call<{ versions: { id: string; at: number; message: string }[] }>(
+      `/memory/history?path=${encodeURIComponent(path)}`,
+    ),
+};
+
+// --- Projects (UI spec 12) ---
+
+export interface ProjectView {
+  id: string;
+  name: string;
+  folder: string;
+  notebookId: string | null;
+  folderExists: boolean;
+  documentCount: number;
+  createdAt: number;
+  archivedAt: number | null;
+}
+
+export const projects = {
+  list: () => call<{ projects: ProjectView[] }>("/projects"),
+  get: (id: string) => call<ProjectView>(`/projects/${encodeURIComponent(id)}`),
+  create: (name: string, folder: string) =>
+    call<ProjectView>("/projects", { method: "POST", body: JSON.stringify({ name, folder }) }),
+  update: (id: string, patch: { name?: string; folder?: string }) =>
+    call<ProjectView>(`/projects/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  archive: (id: string) =>
+    call<ProjectView>(`/projects/${encodeURIComponent(id)}/archive`, { method: "POST" }),
 };

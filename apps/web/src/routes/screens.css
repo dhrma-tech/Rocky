@@ -178,3 +178,16 @@
 .rk-run > * {
   min-width: 0;
 }
+
+/* List-then-detail screens: below 900px the detail replaces the list, with a back arrow. */
+.rk-show-narrow {
+  display: none;
+}
+@media (max-width: 899px) {
+  .rk-hide-narrow {
+    display: none;
+  }
+  .rk-show-narrow {
+    display: inline-flex;
+  }
+}

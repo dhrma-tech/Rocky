@@ -56,6 +56,34 @@ const SCREENS: { name: string; url: string; ready: (s: Scenario) => string }[] =
       s === "populated" ? "text=What Rocky tried:" : "h1, [role=alert], [role=status]",
   },
 ];
+SCREENS.push(
+  {
+    name: "memory",
+    url: "/memory",
+    ready: (s) =>
+      s === "populated"
+        ? "text=Learned this week"
+        : s === "empty"
+          ? "text=Nothing remembered yet."
+          : "h1",
+  },
+  {
+    name: "projects",
+    url: "/projects",
+    ready: (s) =>
+      s === "populated"
+        ? "text=This folder moved or was deleted"
+        : s === "empty"
+          ? "text=Pick a folder to start."
+          : "h1",
+  },
+  {
+    name: "project",
+    url: "/projects/p2",
+    ready: (s) =>
+      s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
+  },
+);
 const SCENARIOS: Scenario[] = ["populated", "empty", "loading", "error"];
 
 async function check(page: Page, label: string, problems: string[]) {

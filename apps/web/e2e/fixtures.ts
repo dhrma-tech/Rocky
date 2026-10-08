@@ -226,6 +226,76 @@ const ROUTINES = {
   ],
 };
 
+const MEMORY = {
+  dir: "E:/RockyData/memory",
+  files: [
+    {
+      path: "preferences.md",
+      group: "Preferences",
+      title: "Preferences",
+      facts: [
+        { text: "Short answers first", provenance: { by: "user", at: NOW - 3 * 86_400_000 } },
+        {
+          text: "Prefers annual billing for tools",
+          provenance: {
+            by: "source",
+            doc: "d1",
+            title: "Call with Dana",
+            quote: "we only sign annual",
+            at: NOW - 86_400_000,
+          },
+        },
+      ],
+      hash: "h1",
+      updatedAt: NOW - 86_400_000,
+    },
+    {
+      path: "people/dana.md",
+      group: "People",
+      title: "Dana",
+      facts: [],
+      hash: "h2",
+      updatedAt: NOW - 2 * 86_400_000,
+    },
+  ],
+};
+const MEMORY_DRAFT = action({
+  id: "01JAPPROVAL0000000000000009",
+  type: "memory.add",
+  title: "Remember",
+  connectorId: null,
+  risk: "low",
+  payload: {
+    file: "people/dana.md",
+    fact: "Dana only signs annual contracts",
+    documentId: "d1",
+    quote: "she only signs annual contracts",
+  },
+  description: { target: "people/dana.md", summary: "Dana only signs annual contracts" },
+});
+const PROJECTS = [
+  {
+    id: "p1",
+    name: "Launch",
+    folder: "E:/Work/Launch",
+    notebookId: "n1",
+    folderExists: true,
+    documentCount: 14,
+    createdAt: NOW - 9 * 86_400_000,
+    archivedAt: null,
+  },
+  {
+    id: "p2",
+    name: "Thesis",
+    folder: "E:/Uni/Thesis",
+    notebookId: "n2",
+    folderExists: false,
+    documentCount: 31,
+    createdAt: NOW - 30 * 86_400_000,
+    archivedAt: null,
+  },
+];
+
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
@@ -253,7 +323,7 @@ export async function mockApi(page: Page, scenario: Scenario) {
     const full = scenario === "populated";
     if (path === "/actions" && method === "GET") {
       const status = url.searchParams.get("status");
-      return json(route, { actions: full && status === "draft" ? DRAFTS : [] });
+      return json(route, { actions: full && status === "draft" ? [...DRAFTS, MEMORY_DRAFT] : [] });
     }
     if (path === "/events/page") {
       const events = full ? EVENTS : [];
@@ -265,6 +335,12 @@ export async function mockApi(page: Page, scenario: Scenario) {
       return json(route, full ? HOME : { ...HOME, today: [], dueSoon: [], pendingApprovals: 0 });
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
     if (path === "/recordings/active") return json(route, { recordings: [] });
+    if (path === "/memory") return json(route, full ? MEMORY : { dir: MEMORY.dir, files: [] });
+    if (path === "/memory/file")
+      return json(route, { content: "# Preferences\n\n- Short answers first\n", hash: "h1" });
+    if (path === "/projects") return json(route, { projects: full ? PROJECTS : [] });
+    if (path.startsWith("/projects/"))
+      return json(route, PROJECTS.find((p) => path.endsWith(p.id)) ?? PROJECTS[0]);
     return json(route, {});
   });
 }

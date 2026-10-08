@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
 import {
   BookOpen,
+  Brain,
   CalendarCheck,
+  FolderOpen,
   Hand,
   House,
   ListChecks,
@@ -30,16 +32,27 @@ import "./shell.css";
  */
 
 interface NavItem {
-  to: "/" | "/approvals" | "/tasks" | "/notebooks" | "/commitments" | "/connectors" | "/settings";
+  to:
+    | "/"
+    | "/approvals"
+    | "/projects"
+    | "/tasks"
+    | "/memory"
+    | "/notebooks"
+    | "/commitments"
+    | "/connectors"
+    | "/settings";
   label: string;
   icon: LucideIcon;
 }
 const PRIMARY: NavItem[] = [
   { to: "/", label: "Today", icon: House },
   { to: "/approvals", label: "Approvals", icon: Hand },
+  { to: "/projects", label: "Projects", icon: FolderOpen },
   { to: "/tasks", label: "Tasks", icon: ListChecks },
 ];
 const LIBRARY: NavItem[] = [
+  { to: "/memory", label: "Memory", icon: Brain },
   { to: "/notebooks", label: "Notebooks", icon: BookOpen },
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/connectors", label: "Integrations", icon: Plug },

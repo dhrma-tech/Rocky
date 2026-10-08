@@ -34,6 +34,21 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: "/approvals", component: ApprovalsPage }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/projects",
+    component: lazyRouteComponent(() => import("./routes/ProjectsPage.tsx"), "ProjectsPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/projects/$id",
+    component: lazyRouteComponent(() => import("./routes/ProjectsPage.tsx"), "ProjectPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/memory",
+    component: lazyRouteComponent(() => import("./routes/MemoryPage.tsx"), "MemoryPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/tasks",
     component: lazyRouteComponent(() => import("./routes/TasksPage.tsx"), "TasksPage"),
   }),
