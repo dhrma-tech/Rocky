@@ -200,8 +200,8 @@ Per-screen "Done when" (spec F.3): loading, empty, error and populated states at
 - [x] M1/X3 Copy changes in README and landing (+ X2 copy, comparison page)
 - [x] EV Typed event union + `/api/v1/events` with seq replay (+ reversible migration 006, `rocky db rollback`)
 - [x] A4 Policy table + grants (migration 007, reversible, backup first) + D-014 Undo hold
-- [ ] U-T1–T5, U-L Tokens from tokens.json, light + dark
-- [ ] Ladle + Playwright + axe harness
+- [x] U-T1–T5, U-L Tokens from tokens.json, light + dark (contrast tested)
+- [x] Story catalog (CSF, D-033) + Playwright + axe harness
 - [ ] U-C1, U-C3, U-C4 base components with stories
 - [ ] Agent-ui P1 set: pebble, status chip, receipt, approval card, ledger row, timeline, task card, tool-call block
 - [ ] App shell with new IA
