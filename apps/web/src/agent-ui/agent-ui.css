@@ -242,14 +242,14 @@
   gap: var(--space-2);
   min-width: 0;
 }
-.rk-activity[data-planned="true"] .rk-activity__sentence {
-  color: var(--color-text-muted);
-  font-style: italic;
-}
 .rk-activity__sentence {
   flex: 1 1 240px;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.rk-activity[data-planned="true"] .rk-activity__sentence {
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 .rk-activity__worker {
   color: var(--color-text-muted);
