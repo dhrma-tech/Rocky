@@ -202,7 +202,7 @@ Per-screen "Done when" (spec F.3): loading, empty, error and populated states at
 - [x] A4 Policy table + grants (migration 007, reversible, backup first) + D-014 Undo hold
 - [x] U-T1–T5, U-L Tokens from tokens.json, light + dark (contrast tested)
 - [x] Story catalog (CSF, D-033) + Playwright + axe harness
-- [ ] U-C1, U-C3, U-C4 base components with stories
-- [ ] Agent-ui P1 set: pebble, status chip, receipt, approval card, ledger row, timeline, task card, tool-call block
-- [ ] App shell with new IA
-- [ ] Screen 17 Approvals, 8 Ledger, 7 Run page, 4 Today, 21 error pattern
+- [ ] U-C1, U-C3, U-C4 base components with stories — partial: Button, IconButton + tooltip, Card, Banner, Empty/Error state, Skeleton, Input, Textarea, Switch, Tabs, Drawer, Toast done and tested; Select listbox, Radio, Checkbox, Segmented, Table, List, Avatar, Progress, Modal and the command palette ship with their first screen in P2
+- [x] Agent-ui P1 set: pebble, status chip, receipt, approval card, ledger row, timeline, task card, tool-call block (+ run reducer, rule editor)
+- [x] App shell with new IA (D-018, D-037; mobile tab bar is P3)
+- [x] Screen 17 Approvals, 8 Ledger, 7 Run page, 4 Today, 21 error pattern (+ interim Tasks list)
