@@ -10,6 +10,7 @@ import {
 import { ulid } from "ulid";
 import { z } from "zod";
 import { appendAudit, canonical } from "../audit/append.ts";
+import { recordEvent } from "../events/log.ts";
 import { LOCAL_CONNECTOR } from "../ingest/upsert.ts";
 import { redact } from "../security/redact.ts";
 import { sha256 } from "../store/blobs.ts";
@@ -47,6 +48,24 @@ export interface ProposeInput {
 }
 
 const hashPayload = (p: unknown) => sha256(canonical(p));
+
+type ActionChange =
+  | "proposed"
+  | "edited"
+  | "approved"
+  | "revoked"
+  | "rejected"
+  | "executed"
+  | "failed";
+const ACTION_CHANGES: Record<string, ActionChange> = {
+  action_proposed: "proposed",
+  action_edited: "edited",
+  action_approved: "approved",
+  action_revoked: "revoked",
+  action_rejected: "rejected",
+  action_executed: "executed",
+  action_failed: "failed",
+};
 
 /**
  * Sources the user wrote themselves: local notes and their own recordings. Everything else (mail,
@@ -160,6 +179,48 @@ export class ActionService {
       at: this.now(),
       ...extra,
     });
+    this.emit(eventType, id, extra.meta);
+  }
+
+  /** The UI event for an action transition (typed event stream), in the same transaction. */
+  private emit(eventType: string, id: string, meta?: Record<string, unknown>) {
+    const change = ACTION_CHANGES[eventType];
+    if (!change) return;
+    const a = this.get(id);
+    const at = this.now();
+    recordEvent(this.db, {
+      kind: "approval",
+      runId: id,
+      at,
+      actionId: id,
+      change,
+      title: a.description.summary ? `${a.title}: ${a.description.summary}` : a.title,
+      risk: a.risk,
+      review: a.review,
+    });
+    if (change === "executed")
+      recordEvent(this.db, {
+        kind: "receipt",
+        runId: id,
+        at,
+        tool: a.connectorId ?? "Rocky",
+        verb: a.title,
+        count: 1,
+        unit: "action",
+        // Drafts are the only way Rocky touches mail (non-negotiable #1).
+        ...(a.type.includes("draft") ? { notDone: "not sent" } : {}),
+        subject: { type: "action", id },
+      });
+    if (change === "failed")
+      recordEvent(this.db, {
+        kind: "error",
+        runId: id,
+        at,
+        code: "ACTION_FAILED",
+        message: typeof meta?.error === "string" ? meta.error : "The action failed.",
+        tried: "Ran the approved payload once.",
+        youCan: "Retry it as a new draft, or edit and approve again.",
+      });
   }
 
   propose(input: ProposeInput): ActionRecord {

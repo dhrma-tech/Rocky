@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { ActionRegistry } from "../actions/registry.ts";
 import { appendAudit } from "../audit/append.ts";
 import { deleteData } from "../deletion/service.ts";
+import { recordEvent } from "../events/log.ts";
 import type { SecretStore } from "../secrets/keychain.ts";
 import type { Db } from "../store/db.ts";
 import { ConnectorError } from "./errors.ts";
@@ -540,6 +541,16 @@ export class ConnectorService {
         "insert into connector_runs (id, connector_id, started_at, status) values (?, ?, ?, 'running')",
       )
       .run(runId, id, now);
+    const title = `Syncing ${def.displayName}`;
+    recordEvent(this.d.db, {
+      kind: "status",
+      runId,
+      at: now,
+      state: "background",
+      runKind: "sync",
+      title,
+      line: `Reading ${def.displayName}`,
+    });
     const counts = { added: 0, updated: 0, deleted: 0, full: 0 };
     let sync: HostSyncStream | undefined;
     const config = JSON.parse(r.config) as Record<string, unknown>;
@@ -609,6 +620,26 @@ export class ConnectorService {
           )
           .run(end, end, end + interval, id);
       })();
+      recordEvent(this.d.db, {
+        kind: "receipt",
+        runId,
+        at: end,
+        tool: def.displayName,
+        verb: "synced",
+        count: counts.added + counts.updated,
+        unit: "items",
+        // Syncs only read: nothing in the app changed.
+        notDone: `0 changed in ${def.displayName}`,
+        subject: { type: "connector", id },
+      });
+      recordEvent(this.d.db, {
+        kind: "status",
+        runId,
+        at: end,
+        state: "completed",
+        runKind: "sync",
+        title,
+      });
       if (counts.added + counts.updated + counts.deleted > 0) this.d.onSynced?.(id);
       this.log(
         `[${id}] synced: +${counts.added} ~${counts.updated} -${counts.deleted} (${sync?.requests() ?? 0} requests)`,
@@ -654,6 +685,31 @@ export class ConnectorService {
             id,
           );
       })();
+      recordEvent(this.d.db, {
+        kind: "error",
+        runId,
+        at: end,
+        code:
+          status === "auth_expired"
+            ? "NEEDS_RECONNECT"
+            : isRateLimit(err)
+              ? "RATE_LIMITED"
+              : "SYNC_FAILED",
+        message: msg.slice(0, 500),
+        tried: `Synced ${def.displayName}; kept everything already saved.`,
+        youCan:
+          status === "auth_expired"
+            ? `Reconnect ${def.displayName}.`
+            : `Wait for the automatic retry, or sync ${def.displayName} again.`,
+      });
+      recordEvent(this.d.db, {
+        kind: "status",
+        runId,
+        at: end,
+        state: "failed",
+        runKind: "sync",
+        title,
+      });
       this.log(`[${id}] sync failed (${status}): ${msg}`);
     }
   }

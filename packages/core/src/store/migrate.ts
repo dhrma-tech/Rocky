@@ -65,6 +65,39 @@ export function migrate(db: Db, opts: MigrateOptions = {}): { from: number; to: 
   return { from, to: pending.at(-1)?.version ?? from };
 }
 
+/**
+ * Reverses migrations down to `toVersion` with their `NNN_name.down.sql` scripts (roadmap rule:
+ * migrations from 006 on are reversible). Backs up first, like `migrate`. Refuses when any step
+ * has no down script (001–005 are forward-only), so a rollback never half-applies.
+ */
+export function rollback(
+  db: Db,
+  toVersion: number,
+  opts: MigrateOptions = {},
+): { from: number; to: number } {
+  const dir = opts.dir ?? defaultMigrationsDir;
+  const from = db.pragma("user_version", { simple: true }) as number;
+  if (toVersion >= from) return { from, to: from };
+  const steps: { version: number; sql: string }[] = [];
+  for (let v = from; v > toVersion; v--) {
+    const m = readMigrations(dir).find((x) => x.version === v);
+    const down = m && path.join(dir, m.name.replace(/\.sql$/, ".down.sql"));
+    if (!down || !fs.existsSync(down))
+      throw new Error(`Migration ${v} has no down script; can't roll back below ${v}.`);
+    steps.push({ version: v, sql: fs.readFileSync(down, "utf8") });
+  }
+  if (!db.memory) {
+    if (!opts.backupDir) throw new Error("backupDir is required to roll back a database file");
+    backup(db, opts.backupDir, from, (opts.now ?? Date.now)());
+  }
+  for (const s of steps)
+    db.transaction(() => {
+      db.exec(s.sql);
+      db.pragma(`user_version = ${s.version - 1}`);
+    })();
+  return { from, to: toVersion };
+}
+
 function backup(db: Db, dir: string, version: number, ts: number): void {
   fs.mkdirSync(dir, { recursive: true });
   const target = path.join(dir, `rocky-${version}-${ts}.db`);

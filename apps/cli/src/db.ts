@@ -1,10 +1,14 @@
 import { createInterface } from "node:readline/promises";
 import {
+  dataPaths,
   encryptStore,
   keychainSecrets,
   loadAppConfig,
+  openDb,
   resolveDataDir,
+  rollback,
   storageStatus,
+  storeKey,
 } from "@rocky/core";
 import { daemonClient } from "./commands.ts";
 
@@ -14,9 +18,10 @@ import { daemonClient } from "./commands.ts";
  */
 export async function dbCommand(
   action: string,
-  opts: { dataDir?: string | undefined; yes?: boolean },
+  opts: { dataDir?: string | undefined; yes?: boolean; to?: string },
 ): Promise<number> {
   const { dir } = resolveDataDir({ flag: opts.dataDir });
+  if (action === "rollback") return rollbackCommand(dir, opts);
   if (action === "status") {
     const s = storageStatus(dir, loadAppConfig(dir));
     console.log(
@@ -29,7 +34,7 @@ export async function dbCommand(
     return 0;
   }
   if (action !== "encrypt") {
-    console.error(`Unknown action "${action}". Use: status | encrypt`);
+    console.error(`Unknown action "${action}". Use: status | encrypt | rollback`);
     return 1;
   }
   if (await daemonClient(dir)) {
@@ -59,5 +64,43 @@ export async function dbCommand(
   } catch (err) {
     console.error((err as Error).message);
     return 1;
+  }
+}
+
+/**
+ * `rocky db rollback --to <version>`: reverses schema migrations with their down scripts, after a
+ * backup, for going back to an older Rocky. This version migrates forward again on its next start.
+ */
+async function rollbackCommand(dir: string, opts: { yes?: boolean; to?: string }): Promise<number> {
+  const to = Number(opts.to);
+  if (!Number.isInteger(to) || to < 0) {
+    console.error("Usage: rocky db rollback --to <schema version> [--yes]");
+    return 1;
+  }
+  if (await daemonClient(dir)) {
+    console.error("Stop the daemon first; the store must not be open during a rollback.");
+    return 1;
+  }
+  if (!opts.yes) {
+    console.error(
+      `Re-run with --yes to roll the schema back to version ${to}. A backup is made first.`,
+    );
+    return 1;
+  }
+  const paths = dataPaths(dir);
+  const db = openDb(paths.db, { key: storeKey(loadAppConfig(dir), keychainSecrets(), paths.db) });
+  try {
+    const r = rollback(db, to, { backupDir: paths.backups });
+    console.log(
+      r.from === r.to
+        ? `Nothing to roll back: the schema is at version ${r.from}.`
+        : `Rolled the schema back from ${r.from} to ${r.to}. A backup is in ${paths.backups}.`,
+    );
+    return 0;
+  } catch (err) {
+    console.error((err as Error).message);
+    return 1;
+  } finally {
+    db.close();
   }
 }

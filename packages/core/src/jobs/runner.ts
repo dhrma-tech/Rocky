@@ -1,3 +1,5 @@
+import type { AgentState, RunKind } from "@rocky/contracts";
+import { recordEvent } from "../events/log.ts";
 import type { Db } from "../store/db.ts";
 import { claimNext, completeJob, failJob, type Job, recoverStaleJobs } from "./queue.ts";
 
@@ -74,14 +76,60 @@ export class JobRunner {
 
   private async run(job: Job): Promise<void> {
     const handler = this.handlers[job.type];
+    const view = jobView(job);
+    const status = (state: AgentState, line?: string) => {
+      if (!view) return;
+      recordEvent(this.db, {
+        kind: "status",
+        runId: job.id,
+        state,
+        runKind: view.runKind,
+        title: view.title,
+        ...(line ? { line } : {}),
+      });
+    };
+    status(view?.background ? "background" : "working");
     try {
       if (!handler) throw new Error(`No handler for job type "${job.type}"`);
       await handler(job);
       completeJob(this.db, job.id);
+      status("completed");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      const status = failJob(this.db, job, msg);
-      this.opts.log?.(`job ${job.type} ${job.id} ${status}: ${msg}`);
+      const outcome = failJob(this.db, job, msg);
+      if (view) {
+        recordEvent(this.db, {
+          kind: "error",
+          runId: job.id,
+          code: "JOB_FAILED",
+          message: msg.slice(0, 500),
+          tried: `Attempt ${job.attempts + 1} of ${job.maxAttempts}.`,
+          ...(outcome === "failed" ? { youCan: "Check the log, then run it again." } : {}),
+        });
+        if (outcome === "failed") status("failed");
+        else status("waiting", "Retrying automatically.");
+      }
+      this.opts.log?.(`job ${job.type} ${job.id} ${outcome}: ${msg}`);
     }
+  }
+}
+
+/** How a job shows up in the event stream, or null for jobs too small to show (embedding). */
+function jobView(job: Job): { title: string; runKind: RunKind; background: boolean } | null {
+  switch (job.type) {
+    case "embed_document":
+      return null;
+    case "routine":
+      return { title: "Routine", runKind: "routine", background: true };
+    case "style_profile":
+      return { title: "Learning your writing style", runKind: "job", background: true };
+    case "transcribe_meeting":
+      return { title: "Transcribing a recording", runKind: "job", background: false };
+    case "understand_meeting":
+      return { title: "Extracting decisions and commitments", runKind: "job", background: false };
+    case "study":
+      return { title: "Making study material", runKind: "job", background: false };
+    default:
+      return { title: job.type.replace(/_/g, " "), runKind: "job", background: false };
   }
 }

@@ -24,6 +24,7 @@ import type {
   Decision,
   DraftRequest,
   Entity,
+  EventsPage,
   Hardware,
   HomeSummary,
   JobEvent,
@@ -41,6 +42,7 @@ import type {
   Rating,
   RecordingStart,
   ReviewQueue,
+  RockyEvent,
   Routine,
   RoutineCreate,
   RoutineRun,
@@ -146,6 +148,33 @@ export function watchJob(id: string, onEvent: (e: JobEvent) => void): () => void
   for (const t of ["progress", "done", "failed"]) es.addEventListener(t, handle as EventListener);
   // The server ends the stream when the job finishes; don't let EventSource reconnect forever.
   es.onerror = () => es.close();
+  return () => es.close();
+}
+
+export type StreamState = "live" | "reconnecting";
+
+/**
+ * GET /events (SSE): the typed event stream. EventSource reconnects by itself and sends the last
+ * id it saw, so the daemon replays exactly what was missed ("Connection lost. Reconnecting…").
+ * Events arrive in seq order; duplicates (a replay overlapping what was shown) are dropped here.
+ */
+export function subscribeEvents(
+  after: number,
+  onEvent: (e: RockyEvent) => void,
+  onState: (s: StreamState) => void = () => {},
+): () => void {
+  let last = after;
+  const es = new EventSource(`/api/v1/events?after=${after}`, { withCredentials: true });
+  const handle = (m: MessageEvent<string>) => {
+    const e = JSON.parse(m.data) as RockyEvent;
+    if (e.seq <= last) return;
+    last = e.seq;
+    onEvent(e);
+  };
+  for (const k of ["message", "status", "receipt", "approval", "memory", "error"] as const)
+    es.addEventListener(k, handle as EventListener);
+  es.onopen = () => onState("live");
+  es.onerror = () => onState("reconnecting");
   return () => es.close();
 }
 
@@ -276,6 +305,10 @@ export const api = {
   // --- Connectors (Phase 4) ---
   connectors: () => call<{ connectors: Connector[] }>("/connectors"),
   catalog: () => call<{ catalog: ConnectorCatalogEntry[] }>("/connectors/catalog"),
+  eventsPage: (after = 0, opts: { runId?: string; limit?: number } = {}) =>
+    call<EventsPage>(
+      `/events/page?after=${after}${opts.runId ? `&runId=${encodeURIComponent(opts.runId)}` : ""}${opts.limit ? `&limit=${opts.limit}` : ""}`,
+    ),
   addConnector: (kind: string, config: Record<string, unknown>) =>
     call<Connector>("/connectors", { method: "POST", body: JSON.stringify({ kind, config }) }),
   updateConnector: (id: string, patch: ConnectorUpdate) =>

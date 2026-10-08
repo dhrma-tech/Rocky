@@ -300,10 +300,13 @@ program
 
 program
   .command("db")
-  .description("store encryption (SQLCipher, opt-in): status, or encrypt the existing store")
-  .argument("<action>", "status | encrypt")
-  .option("--yes", "with encrypt: skip the confirmation")
-  .action(async (action: string, opts: { yes?: boolean }) => {
+  .description(
+    "store tools: encryption status, encrypt the store (SQLCipher, opt-in), or roll the schema back",
+  )
+  .argument("<action>", "status | encrypt | rollback")
+  .option("--yes", "with encrypt or rollback: skip the confirmation")
+  .option("--to <version>", "with rollback: the schema version to go back to")
+  .action(async (action: string, opts: { yes?: boolean; to?: string }) => {
     const { dbCommand } = await import("./db.ts");
     process.exitCode = await dbCommand(action, { ...opts, dataDir: dataDir() });
   });
