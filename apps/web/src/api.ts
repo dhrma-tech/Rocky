@@ -655,3 +655,41 @@ export const projects = {
   archive: (id: string) =>
     call<ProjectView>(`/projects/${encodeURIComponent(id)}/archive`, { method: "POST" }),
 };
+
+// --- Settings extras (A8 models, M5 storage) ---
+
+export interface ModelsView {
+  ollama: boolean;
+  error?: string;
+  hardware: { ramGb: number; cuda: boolean; cores: number };
+  current: { small: string | null; medium: string | null };
+  speed: {
+    model: string;
+    tokensPerSecond: number;
+    promptTokensPerSecond: number;
+    firstTokenMs: number;
+    estimatedAnswerSeconds: number;
+    measuredAt: number;
+  } | null;
+  models: {
+    name: string;
+    sizeGb: number;
+    canAnswer: boolean;
+    fit: "fits" | "tight" | "too-big";
+    why: string;
+  }[];
+  small: string | null;
+  medium: string | null;
+  note: string;
+}
+
+export const system = {
+  models: () => call<ModelsView>("/models"),
+  chooseModels: (small: string, medium: string) =>
+    call<{ saved: boolean; restartNeeded: boolean }>("/models/use", {
+      method: "POST",
+      body: JSON.stringify({ small, medium }),
+    }),
+  bench: () => call<NonNullable<ModelsView["speed"]>>("/models/bench", { method: "POST" }),
+  storage: () => call<{ configured: boolean; encrypted: boolean }>("/storage"),
+};

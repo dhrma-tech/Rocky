@@ -83,6 +83,11 @@ SCREENS.push(
     ready: (s) =>
       s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
   },
+  {
+    name: "settings",
+    url: "/settings",
+    ready: () => "text=Search settings",
+  },
 );
 const SCENARIOS: Scenario[] = ["populated", "empty", "loading", "error"];
 
@@ -170,4 +175,41 @@ test("keyboard only: skip link, queue with J/K, and Enter never approves", async
   await page.getByLabel("I checked where this came from").check();
   await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeEnabled();
   expect(strict?.review).toBe("strict");
+});
+
+test("settings: every category passes axe at 360 and 1280", async ({ page }) => {
+  test.setTimeout(3 * 60_000);
+  const problems: string[] = [];
+  await mockApi(page, "populated");
+  for (const width of [360, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const name of [
+      "Permissions and rules",
+      "Model",
+      "Memory",
+      "Privacy and data",
+      "Appearance",
+      "Advanced",
+      "About",
+    ]) {
+      await page.goto("/settings");
+      await page.getByRole("button", { name, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+      await page.waitForTimeout(150);
+      const slug = name.split(" ")[0]?.toLowerCase();
+      await check(page, `settings ${slug} @${width}`, problems);
+      await page.screenshot({
+        path: path.join(SHOTS, `settings-${slug}--${width}.png`),
+        fullPage: true,
+      });
+    }
+  }
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Permissions and rules", exact: true }).click();
+  await expect(page.getByText("Rocky never deletes anything in Gmail.")).toBeVisible();
+  // Safety comes second, right under General.
+  await expect(page.locator("nav[aria-label='Settings categories'] li").nth(1)).toHaveText(
+    "Permissions and rules",
+  );
+  expect(problems).toEqual([]);
 });

@@ -296,6 +296,45 @@ const PROJECTS = [
   },
 ];
 
+const RULES = [
+  {
+    id: "rule1",
+    effect: "block",
+    connectorId: "gmail",
+    actionType: null,
+    actionClass: "delete",
+    constraints: [],
+    expiresAt: null,
+    usesLeft: null,
+    fromActionId: null,
+    note: "",
+    sentence: "Rocky never deletes anything in Gmail.",
+    createdAt: NOW - 5 * 86_400_000,
+    revokedAt: null,
+    active: true,
+  },
+];
+const MODELS = {
+  ollama: true,
+  hardware: { ramGb: 15.7, cuda: false, cores: 8 },
+  current: { small: "qwen3:1.7b", medium: "qwen3:4b" },
+  speed: {
+    model: "qwen3:4b",
+    tokensPerSecond: 8.4,
+    promptTokensPerSecond: 52.5,
+    firstTokenMs: 900,
+    estimatedAnswerSeconds: 105,
+    measuredAt: NOW - 86_400_000,
+  },
+  models: [
+    { name: "qwen3:4b", sizeGb: 2.6, canAnswer: true, fit: "fits", why: "uses 17% of RAM" },
+    { name: "nomic-embed-text", sizeGb: 0.3, canAnswer: false, fit: "fits", why: "" },
+  ],
+  small: "qwen3:1.7b",
+  medium: "qwen3:4b",
+  note: "These fit comfortably in 15.7 GB.",
+};
+
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
@@ -338,6 +377,14 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/memory") return json(route, full ? MEMORY : { dir: MEMORY.dir, files: [] });
     if (path === "/memory/file")
       return json(route, { content: "# Preferences\n\n- Short answers first\n", hash: "h1" });
+    if (path === "/rules") return json(route, { rules: full ? RULES : [] });
+    if (path === "/rules/preview")
+      return json(route, { sentence: "Rocky always asks before any action." });
+    if (path === "/models")
+      return json(route, full ? MODELS : { ...MODELS, models: [], speed: null });
+    if (path === "/storage") return json(route, { configured: true, encrypted: full });
+    if (path === "/usage")
+      return json(route, { month: "2026-10", spentUsd: full ? 1.2 : 0, capUsd: 10, rows: [] });
     if (path === "/projects") return json(route, { projects: full ? PROJECTS : [] });
     if (path.startsWith("/projects/"))
       return json(route, PROJECTS.find((p) => path.endsWith(p.id)) ?? PROJECTS[0]);

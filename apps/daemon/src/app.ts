@@ -32,6 +32,7 @@ import {
   SECRET_NAMES,
   type SecretName,
   saveAppConfig,
+  storageStatus,
   verifyAuditChain,
 } from "@rocky/core";
 import { createRockyMcpHttpHandler } from "@rocky/mcp";
@@ -484,6 +485,8 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   // --- Settings ---
+  // Settings > Privacy (roadmap M5): is the store encrypted, and does the config agree?
+  api.get("/storage", (c) => c.json(storageStatus(rt.dataDir, rt.config)));
   api.get("/settings", (c) =>
     c.json({
       localOnly: rt.config.localOnly,
