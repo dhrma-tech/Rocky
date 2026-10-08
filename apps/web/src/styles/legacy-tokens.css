@@ -1,0 +1,74 @@
+/*
+ * Transition layer (docs/DECISIONS.md D-034): the names screens used under docs/DESIGN.md, each
+ * pointing at a token from @rocky/tokens (the UI spec). Light and dark follow automatically.
+ * Screens move to the spec tokens as they are rebuilt; this file shrinks and then goes away.
+ * Never add a raw colour here.
+ */
+:root {
+  --pal-periwinkle: var(--rocky-periwinkle-200);
+  --pal-blush: var(--rocky-blush-200);
+  --pal-rose: var(--rocky-rose-300);
+  --pal-red: var(--rocky-red-400);
+  --pal-cocoa: var(--color-link);
+
+  --ink: var(--color-text);
+  --ink-2: var(--color-text-2);
+  --ink-3: var(--color-text-muted);
+  --canvas: var(--color-canvas);
+  --raised: var(--color-surface);
+  --sidebar: var(--color-surface-2);
+
+  --bg-page: var(--color-canvas);
+  --bg-sunken: var(--color-surface-2);
+  --bg-sidebar: var(--color-surface-2);
+  --bg-raised: var(--color-surface);
+  --bg-overlay: var(--color-surface);
+  --scrim: var(--color-scrim);
+
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-2);
+  --text-tertiary: var(--color-text-muted);
+  --text-on-accent: var(--color-accent-text-on);
+  --link: var(--color-link);
+  --link-hover: var(--color-link);
+
+  --accent: var(--color-accent);
+  --accent-hover: var(--color-accent-hover);
+  --accent-pressed: var(--color-accent-pressed);
+  --accent-soft: var(--color-user-message);
+  --accent-soft-hover: var(--color-needs-you);
+  --accent-2: var(--rocky-rose-300);
+  --accent-strong: var(--color-link);
+  --focus-ring: var(--color-focus);
+
+  /* Controls get the spec's 3:1 edge (the old #C1C0C4 measured under 2:1). */
+  --border-base: var(--color-border);
+  --border-strong: var(--color-border-strong);
+  --layer-faint: color-mix(in srgb, var(--color-text) 3%, transparent);
+  --layer-subtle: color-mix(in srgb, var(--color-text) 6%, transparent);
+  --layer-strong: color-mix(in srgb, var(--color-text) 10%, transparent);
+
+  --success: var(--color-success-text);
+  --warning: var(--color-warning-text);
+  --danger: var(--color-error-text);
+  --info: var(--color-info-text);
+
+  /* Soft raised material is for decoration only now: controls and cards get flat elevation. */
+  --shadow-raised-sm: var(--shadow-1);
+  --shadow-raised-md: var(--shadow-2);
+  --shadow-raised-lg: var(--shadow-3);
+  --shadow-inset-sm: none;
+  --shadow-float: var(--shadow-2);
+  --composer-glow: 0 0 0 2px var(--color-focus);
+  --card-glow: radial-gradient(circle at top right, var(--color-rocky-message), transparent 70%);
+
+  --ease-out: var(--ease-standard);
+  --ease-ui: var(--ease-standard);
+  --dur-fast: var(--duration-micro);
+  --dur-base: var(--duration-ui);
+  --dur-panel: var(--duration-panel);
+  --dur-flip: var(--duration-ui);
+
+  --font-display: var(--font-serif);
+  --font-answer: var(--font-sans);
+}

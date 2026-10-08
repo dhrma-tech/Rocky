@@ -1,0 +1,133 @@
+/* Button (UI spec "Controls and inputs"): 44px, radius 12, weight 600; one primary per view. */
+.rk-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--button-height);
+  min-width: var(--hit-min);
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--button-radius);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-micro) var(--ease-standard),
+    border-color var(--duration-micro) var(--ease-standard);
+}
+
+.rk-button--primary {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+.rk-button--primary:hover:not(:disabled) {
+  background: var(--button-primary-bg-hover);
+}
+.rk-button--primary:active:not(:disabled) {
+  background: var(--button-primary-bg-pressed);
+}
+
+.rk-button--secondary {
+  background: var(--button-secondary-bg);
+  border-color: var(--button-secondary-border);
+  color: var(--color-text);
+}
+.rk-button--secondary:hover:not(:disabled),
+.rk-button--tertiary:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+.rk-button--secondary:active:not(:disabled),
+.rk-button--tertiary:active:not(:disabled) {
+  background: var(--color-border);
+}
+
+.rk-button--tertiary {
+  background: transparent;
+  color: var(--color-text);
+}
+
+/* Destructive confirms only. */
+.rk-button--danger {
+  background: var(--button-danger-bg);
+  color: var(--button-danger-text);
+}
+.rk-button--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--button-danger-bg) 88%, var(--color-text));
+}
+
+/* Dense (inside tables): 36px tall, still a 44px hit area. */
+.rk-button--dense {
+  height: var(--control-height-dense);
+  padding: 0 var(--space-3);
+  font-size: var(--type-small-size);
+}
+.rk-button--dense::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--control-height-dense) - var(--hit-min)) / 2) 0;
+}
+
+.rk-button--icon {
+  width: var(--button-height);
+  padding: 0;
+}
+.rk-button--icon.rk-button--dense {
+  width: var(--control-height-dense);
+  min-width: var(--control-height-dense);
+}
+.rk-button--icon.rk-button--dense::before {
+  inset: calc((var(--control-height-dense) - var(--hit-min)) / 2);
+}
+
+.rk-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.rk-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* Tooltip for icon-only buttons: hover and keyboard focus, after 500ms, 12px text. */
+.rk-tip {
+  position: relative;
+  display: inline-flex;
+}
+.rk-tip__text {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + var(--space-2));
+  translate: -50% 0;
+  z-index: 20;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--color-text);
+  color: var(--color-canvas);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-micro) var(--ease-standard);
+}
+.rk-tip--bottom .rk-tip__text {
+  bottom: auto;
+  top: calc(100% + var(--space-2));
+}
+.rk-tip--right .rk-tip__text {
+  bottom: auto;
+  left: calc(100% + var(--space-2));
+  top: 50%;
+  translate: 0 -50%;
+}
+.rk-tip:hover .rk-tip__text,
+.rk-tip:focus-within .rk-tip__text {
+  opacity: 1;
+  transition-delay: 500ms;
+}

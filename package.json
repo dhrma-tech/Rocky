@@ -18,7 +18,9 @@
     "build:web": "pnpm --filter @rocky/web build",
     "dev:web": "pnpm --filter @rocky/web dev",
     "dev": "pnpm --parallel --filter @rocky/daemon --filter @rocky/web dev",
-    "build:landing": "pnpm --filter @rocky/landing build"
+    "build:landing": "pnpm --filter @rocky/landing build",
+    "tokens": "node packages/tokens/src/build.ts",
+    "test:e2e": "pnpm --filter @rocky/web test:e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

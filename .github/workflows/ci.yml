@@ -51,3 +51,24 @@ jobs:
         working-directory: ${{ runner.temp }}/fresh
       - run: node scripts/fresh-clone.ts
         working-directory: ${{ runner.temp }}/fresh
+
+  # UI spec "Final frontend blueprint": every component story passes axe in light and dark, keeps
+  # 44px targets and makes no third-party request. Screenshots are uploaded for review.
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @rocky/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: apps/web/e2e/screenshots
+          if-no-files-found: ignore
