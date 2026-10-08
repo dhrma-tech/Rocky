@@ -1,6 +1,6 @@
 # CLAUDE.md — Rocky
 
-Local-first, open-source, always-on AI assistant. One daemon, one SQLite memory, five modules (Capture, Memory, Assistant, Notebooks, Actions). The plan is in `docs/PLAN.md`; specs are in `docs/specs/`. All UI work (`apps/web`, `apps/landing`) follows `docs/DESIGN.md`: semantic tokens only, no colors outside its palette.
+Local-first, open-source, always-on AI assistant. One daemon, one SQLite memory, five modules (Capture, Memory, Assistant, Notebooks, Actions). The plan is in `docs/PLAN.md`; specs are in `docs/specs/`. All UI work (`apps/web`, `apps/landing`) follows `docs/Rocky UI UX Specification.md`: semantic tokens only, no colors outside its palette (`docs/DESIGN.md` is history). Product and backend work follows `docs/Rocky Improvement Roadmap.md`. Plan, decisions and progress: `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISIONS.md`, `docs/PROGRESS.md`.
 
 ## Communication rules (every reply)
 
