@@ -81,6 +81,10 @@ export async function serverDelayMs(res: Response, now = Date.now()): Promise<nu
   return null;
 }
 
+/** An error that retrying cannot fix, e.g. the connector host refusing an undeclared host. */
+const isPermanent = (err: unknown) =>
+  typeof err === "object" && err !== null && (err as { permanent?: unknown }).permanent === true;
+
 const retryable = (res: Response) =>
   res.status === 429 ||
   res.status >= 500 ||
@@ -123,8 +127,8 @@ export function createHttp(opts: HttpOptions = {}): Http {
           res = await doFetch(url, init);
         } catch (err) {
           release();
-          // Network errors retry like 5xx, unless cancelled.
-          if (init.signal?.aborted || attempt >= max) throw err;
+          // Network errors retry like 5xx, unless cancelled or marked permanent (a refused host).
+          if (init.signal?.aborted || attempt >= max || isPermanent(err)) throw err;
           await sleep(
             Math.min(cap, base * 2 ** (attempt - 1)) * random(),
             init.signal ?? undefined,

@@ -122,6 +122,8 @@ async function* listCalendar(
 
 export const gcal: Connector<GcalConfig, GcalCursor> = {
   id: "gcal",
+  tier: "experimental",
+  egress: () => ["www.googleapis.com"],
   displayName: "Google Calendar",
   permissions: "Reads events; creates or updates events after approval",
   configSchema: GcalConfigSchema,

@@ -121,13 +121,13 @@ beforeEach(() => {
 });
 afterEach(() => db.close());
 
-const ready = () => {
+const ready = async () => {
   svc.add("fakehub", { repos: ["o/r"] });
-  svc.setSecret("fakehub", "token", "good");
+  await svc.setSecret("fakehub", "token", "good");
 };
 
 describe("ConnectorService setup", () => {
-  it("validates config, rejects duplicates, and needs its secret before it is connected", () => {
+  it("validates config, rejects duplicates, and needs its secret before it is connected", async () => {
     expect(() => svc.add("fakehub", { repos: [] })).toThrow(/repos/);
     expect(() => svc.add("nope")).toThrow(/Unknown connector/);
     svc.add("fakehub", { repos: ["o/r"] });
@@ -136,15 +136,15 @@ describe("ConnectorService setup", () => {
       status: "not_configured",
       message: "Add the access token.",
     });
-    svc.setSecret("fakehub", "token", "good");
+    await svc.setSecret("fakehub", "token", "good");
     expect(svc.get("fakehub").status).toBe("connected");
-    expect(() => svc.setSecret("fakehub", "password", "x")).toThrow(/no secret "password"/);
+    await expect(svc.setSecret("fakehub", "password", "x")).rejects.toThrow(/no secret "password"/);
   });
 
-  it("scopes secrets per connector and keeps them out of the catalog", () => {
-    svc.setSecret("othernote", "token", "notion-secret");
-    ready();
-    expect(svc.scopedSecrets("fakehub").get("token")).toBe("good");
+  it("scopes secrets per connector and keeps them out of the catalog", async () => {
+    await svc.setSecret("othernote", "token", "notion-secret");
+    await ready();
+    expect(secrets.get("fakehub.token")).toBe("good");
     expect(secrets.list().sort()).toEqual(["fakehub.token", "othernote.token"]);
     const cat = svc.catalog().find((c) => c.kind === "fakehub");
     expect(cat?.secrets).toEqual([{ name: "token", label: "access token", stored: true }]);
@@ -153,7 +153,7 @@ describe("ConnectorService setup", () => {
 
   it("health test reports bad credentials as needing reconnect", async () => {
     svc.add("fakehub", { repos: ["o/r"] });
-    svc.setSecret("fakehub", "token", "revoked");
+    await svc.setSecret("fakehub", "token", "revoked");
     expect(await svc.test("fakehub")).toMatchObject({ status: "auth_expired" });
     expect(svc.get("fakehub").status).toBe("needs_reconnect");
   });
@@ -161,7 +161,7 @@ describe("ConnectorService setup", () => {
 
 describe("sync", () => {
   it("persists documents with their anchors, queues embedding, and stores the cursor and a run", async () => {
-    ready();
+    await ready();
     script = () => [{ documents: [doc(1), doc(2)], cursor: 2 }];
     await svc.sync("fakehub");
     const docs = db
@@ -189,7 +189,7 @@ describe("sync", () => {
   });
 
   it("applies deltas and tombstones on the next sync", async () => {
-    ready();
+    await ready();
     script = () => [{ documents: [doc(1), doc(2)], cursor: 2 }];
     await svc.sync("fakehub");
     script = (cursor) => {
@@ -204,7 +204,7 @@ describe("sync", () => {
   });
 
   it("keeps the last committed cursor when a sync dies mid-way, then backs off", async () => {
-    ready();
+    await ready();
     script = () => [
       { documents: [doc(1)], cursor: 1 },
       { documents: [{ ...doc(9), externalId: "boom" }], cursor: 2 },
@@ -225,7 +225,7 @@ describe("sync", () => {
   });
 
   it("marks an expired sign-in as needing reconnect and stops scheduling it", async () => {
-    ready();
+    await ready();
     script = () => new AuthExpired("token revoked");
     await svc.sync("fakehub");
     expect(svc.get("fakehub")).toMatchObject({
@@ -237,7 +237,7 @@ describe("sync", () => {
   });
 
   it("runs one sync per connector: concurrent calls share it, another process's lock is respected", async () => {
-    ready();
+    await ready();
     let calls = 0;
     script = () => {
       calls++;
@@ -251,7 +251,7 @@ describe("sync", () => {
   });
 
   it("scheduler: one catch-up sync after a long gap, nothing for connectors not set up", async () => {
-    ready();
+    await ready();
     svc.add("othernote", {});
     let calls = 0;
     script = () => {
@@ -269,10 +269,10 @@ describe("sync", () => {
   });
 
   it("disconnect with purge removes its documents and its secrets", async () => {
-    ready();
+    await ready();
     script = () => [{ documents: [doc(1)], cursor: 1 }];
     await svc.sync("fakehub");
-    expect(svc.remove("fakehub", { purge: true })).toEqual({ purged: 1 });
+    expect(await svc.remove("fakehub", { purge: true })).toEqual({ purged: 1 });
     expect(db.prepare("select count(*) n from documents").get()).toEqual({ n: 0 });
     expect(secrets.list()).toEqual([]);
     expect(svc.list()).toEqual([]);
@@ -297,7 +297,7 @@ describe("connector actions", () => {
   };
 
   it("run only through ActionService, with http and the connector's own secrets", async () => {
-    ready();
+    await ready();
     script = () => [{ documents: [doc(1)], cursor: 1 }];
     await svc.sync("fakehub");
     const service = new ActionService(db, actions);
@@ -308,7 +308,10 @@ describe("connector actions", () => {
       citations: [cite()],
     });
     expect(executed).toEqual([]);
-    service.approve(a.id, a.payloadHash);
+    // Cites a synced GitHub issue: external text, so approval needs the acknowledgement (I1).
+    expect(a.review).toBe("strict");
+    expect(() => service.approve(a.id, a.payloadHash)).toThrow(/someone else may have written/);
+    service.approve(a.id, a.payloadHash, { acknowledgeSources: true });
     expect((await service.execute(a.id)).status).toBe("executed");
     expect(executed).toEqual([
       { payload: { title: "Ship it" }, token: "good", key: a.idempotencyKey },
@@ -322,7 +325,7 @@ describe("connector actions", () => {
       origin: "user_turn",
       citations: [cite()],
     });
-    service.approve(b.id, b.payloadHash);
+    service.approve(b.id, b.payloadHash, { acknowledgeSources: true });
     expect(await service.execute(b.id)).toMatchObject({
       status: "failed",
       error: expect.stringMatching(/read-only/),
@@ -332,7 +335,7 @@ describe("connector actions", () => {
 
 describe("full sweep", () => {
   it("deletes documents missing from a sweep's presence list", async () => {
-    ready();
+    await ready();
     script = () => [{ documents: [doc(1), doc(2), doc(3)], cursor: 1 }];
     await svc.sync("fakehub");
     script = () => [{ documents: [], presentExternalIds: ["issue-1", "issue-3"], cursor: 2 }];

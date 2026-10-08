@@ -125,11 +125,25 @@ export interface Connector<Cfg = unknown, Cur = unknown> {
   oauth?: OAuthSpec;
   defaultIntervalMin: number;
   readOnlyCapable?: boolean;
+  /**
+   * Hosts this connector may reach with this config (exact names, "*.example.com" for
+   * subdomains, or a URL whose host is taken). Requests to
+   * anything else are refused in the connector host (roadmap I1). The OAuth token URL is added
+   * automatically. A connector that declares none gets no network at all.
+   */
+  egress?(config: Cfg): string[];
+  /**
+   * Honest support level (roadmap M3): "supported" only once its nightly live test passes,
+   * "link-only" when it holds no data access of its own. Defaults to "experimental".
+   */
+  tier?: ConnectorTier;
   sync(ctx: SyncContext<Cfg>, cursor: Cur | undefined): AsyncIterable<DocumentBatch<Cur>>;
   health(ctx: HealthContext<Cfg>): Promise<ConnectorHealth>;
   // biome-ignore lint/suspicious/noExplicitAny: each action has its own payload type.
   actions?(): ConnectorAction<any>[];
 }
+
+export type ConnectorTier = "supported" | "experimental" | "link-only";
 
 /** Thrown when stored credentials are rejected (revoked token, Google invalid_grant). */
 export class AuthExpired extends Error {

@@ -1,15 +1,4 @@
-import {
-  AuthExpired,
-  type Connector,
-  createHttp,
-  type Http,
-  HttpError,
-  type LoopbackSession,
-  NotConfigured,
-  refreshAccessToken,
-  type ScopedSecrets,
-  startLoopbackAuth,
-} from "@rocky/connector-sdk";
+import { AuthExpired, type Connector, HttpError, NotConfigured } from "@rocky/connector-sdk";
 import type {
   ConnectorCatalogEntry,
   ConnectorHealth,
@@ -22,34 +11,27 @@ import { z } from "zod";
 import type { ActionRegistry } from "../actions/registry.ts";
 import { appendAudit } from "../audit/append.ts";
 import { deleteData } from "../deletion/service.ts";
-import { CONNECTOR_SECRET_RE, type SecretName, type SecretStore } from "../secrets/keychain.ts";
+import type { SecretStore } from "../secrets/keychain.ts";
 import type { Db } from "../store/db.ts";
+import { ConnectorError } from "./errors.ts";
+import { type ConnectorHost, type HostSyncStream, InProcessConnectorHost } from "./host.ts";
 import { persistSourceDocuments, prepareSourceDocuments } from "./persist.ts";
 
+export { ConnectorError };
+
 /**
- * ConnectorService (connectors.md "Runtime guarantees"): owns connector rows, scoped secrets,
- * Google sign-in, and syncs. A sync persists each batch and its cursor in one transaction, so a
+ * ConnectorService (connectors.md "Runtime guarantees"): owns connector rows, Google sign-in
+ * bookkeeping, and syncs. A sync persists each batch and its cursor in one transaction, so a
  * crash re-fetches at most one batch. One sync per connector at a time (lock in connector_state).
  * Syncs run on their own lane, never in the job queue, so a long backfill never blocks embedding.
+ * Connector code that needs credentials or the network runs in the ConnectorHost (roadmap I1):
+ * in the daemon that is a separate process, and this service never sees a token.
  */
-
-export class ConnectorError extends Error {
-  readonly code: "NOT_FOUND" | "BAD_REQUEST" | "ILLEGAL_TRANSITION";
-  constructor(code: ConnectorError["code"], message: string) {
-    super(message);
-    this.code = code;
-  }
-}
 
 const LOCK_MS = 30 * 60_000;
 const MAX_BACKOFF_MS = 6 * 3600_000;
 const DEFAULT_BACKFILL_DAYS = 90;
 const BackfillSchema = z.object({ backfillDays: z.number().int().min(1).max(3650).optional() });
-
-/** Google's downloaded "Desktop app" client JSON. */
-const ClientJsonSchema = z.object({
-  installed: z.object({ client_id: z.string().min(1), client_secret: z.string().min(1) }),
-});
 
 export class ConnectorRegistry {
   private readonly defs = new Map<string, { def: Connector; plugin: boolean }>();
@@ -91,10 +73,13 @@ interface Row {
 
 export interface ConnectorServiceDeps {
   db: Db;
-  secrets: SecretStore;
   registry: ConnectorRegistry;
   actions: ActionRegistry;
   blobsDir: string;
+  /** Where connector code runs. Without one, an in-process host is built from `secrets`. */
+  host?: ConnectorHost;
+  /** Only for the in-process host (tests, tools without a daemon). */
+  secrets?: SecretStore;
   fetch?: typeof fetch;
   log?: (msg: string) => void;
   now?: () => number;
@@ -107,12 +92,22 @@ export interface ConnectorServiceDeps {
 export class ConnectorService {
   private readonly d: ConnectorServiceDeps;
   private readonly running = new Map<string, Promise<void>>();
-  private readonly tokens = new Map<string, { token: string; expiresAt: number }>();
-  private readonly oauth = new Map<string, LoopbackSession>();
   private readonly registeredActions = new Set<string>();
+  readonly host: ConnectorHost;
 
   constructor(deps: ConnectorServiceDeps) {
     this.d = deps;
+    if (deps.host) this.host = deps.host;
+    else {
+      if (!deps.secrets) throw new Error("ConnectorService needs a host or a secret store");
+      this.host = new InProcessConnectorHost({
+        registry: deps.registry,
+        secrets: deps.secrets,
+        ...(deps.fetch ? { fetch: deps.fetch } : {}),
+        ...(deps.log ? { log: deps.log } : {}),
+        ...(deps.now ? { now: deps.now } : {}),
+      });
+    }
   }
 
   private now() {
@@ -135,27 +130,11 @@ export class ConnectorService {
     return def.oauth?.group ?? def.id;
   }
 
-  /** The connector sees only its own names; anything else throws. */
-  scopedSecrets(kind: string): ScopedSecrets {
-    const def = this.def(kind);
-    const prefix = this.prefix(def);
-    const key = (name: string): SecretName => {
-      const k = `${prefix}.${name}`;
-      if (!CONNECTOR_SECRET_RE.test(k))
-        throw new ConnectorError("BAD_REQUEST", `Invalid secret name ${name}`);
-      return k as SecretName;
-    };
-    return {
-      get: (name) => this.d.secrets.get(key(name)),
-      set: (name, value) => this.d.secrets.set(key(name), value),
-    };
-  }
-
-  setSecret(kind: string, name: string, value: string): void {
+  async setSecret(kind: string, name: string, value: string): Promise<void> {
     const def = this.def(kind);
     if (!def.secrets.some((s) => s.name === name))
       throw new ConnectorError("BAD_REQUEST", `${def.displayName} has no secret "${name}"`);
-    this.scopedSecrets(kind).set(name, value);
+    await this.host.setSecret(kind, name, value);
     appendAudit(this.d.db, {
       eventType: "connector_secret_set",
       actor: "user",
@@ -166,76 +145,19 @@ export class ConnectorService {
   }
 
   /** Imports the Google client JSON (Desktop app) into the group's keychain entry. */
-  setOAuthClient(group: string, json: string): void {
-    const parsed = ClientJsonSchema.safeParse(
-      (() => {
-        try {
-          return JSON.parse(json);
-        } catch {
-          return null;
-        }
-      })(),
-    );
-    if (!parsed.success)
-      throw new ConnectorError(
-        "BAD_REQUEST",
-        'Not a Google "Desktop app" client file: expected {"installed": {"client_id", "client_secret"}}.',
-      );
+  async setOAuthClient(group: string, json: string): Promise<void> {
     if (!this.d.registry.list().some((c) => c.oauth?.group === group))
       throw new ConnectorError("NOT_FOUND", `No connector uses sign-in group "${group}"`);
-    this.d.secrets.set(`${group}.client` as SecretName, JSON.stringify(parsed.data.installed));
-  }
-
-  private http(kind: string): Http {
-    return createHttp({
-      ...(this.d.fetch ? { fetch: this.d.fetch } : {}),
-      log: (m) => this.log(`[${kind}] ${m}`),
-      concurrency: 4,
-    });
-  }
-
-  private oauthClient(group: string): { client_id: string; client_secret: string } | null {
-    const raw = this.d.secrets.get(`${group}.client` as SecretName);
-    return raw ? (JSON.parse(raw) as { client_id: string; client_secret: string }) : null;
-  }
-
-  /** A fresh access token for an OAuth connector; cached until a minute before expiry. */
-  private accessToken(def: Connector): (() => Promise<string>) | undefined {
-    const spec = def.oauth;
-    if (!spec) return undefined;
-    return async () => {
-      const cached = this.tokens.get(spec.group);
-      if (cached && cached.expiresAt - 60_000 > this.now()) return cached.token;
-      const client = this.oauthClient(spec.group);
-      const refresh = this.d.secrets.get(`${spec.group}.refresh` as SecretName);
-      if (!client || !refresh)
-        throw new AuthExpired(
-          `${def.displayName} is not signed in. Connect it on the Connectors page.`,
-        );
-      const t = await refreshAccessToken({
-        clientId: client.client_id,
-        clientSecret: client.client_secret,
-        refreshToken: refresh,
-        tokenUrl: spec.tokenUrl,
-        ...(this.d.fetch ? { fetch: this.d.fetch } : {}),
-      });
-      this.tokens.set(spec.group, { token: t.accessToken, expiresAt: t.expiresAt });
-      return t.accessToken;
-    };
+    await this.host.setOAuthClient(group, json);
   }
 
   /** Missing setup, if any: a required secret, the OAuth client file, or the sign-in. */
   private missingSetup(def: Connector): string | null {
-    if (def.oauth) {
-      if (!this.oauthClient(def.oauth.group))
-        return "Import the Google client file to set up sign-in.";
-      if (!this.d.secrets.has(`${def.oauth.group}.refresh` as SecretName))
-        return "Sign in with Google.";
-      return null;
+    try {
+      return this.host.setup(def.id).missing;
+    } catch (err) {
+      return err instanceof Error ? err.message : String(err);
     }
-    const s = this.scopedSecrets(def.id);
-    const missing = def.secrets.find((x) => !s.get(x.name));
-    return missing ? `Add the ${missing.label}.` : null;
   }
 
   // --- Google sign-in ---
@@ -246,9 +168,6 @@ export class ConnectorService {
     const spec = def.oauth;
     if (!spec)
       throw new ConnectorError("BAD_REQUEST", `${def.displayName} doesn't use browser sign-in`);
-    const client = this.oauthClient(spec.group);
-    if (!client) throw new ConnectorError("BAD_REQUEST", "Import the Google client file first.");
-    this.oauth.get(spec.group)?.close();
     const added = new Set(this.rows().map((r) => r.kind));
     const scopes = [
       ...new Set(
@@ -258,24 +177,9 @@ export class ConnectorService {
           .flatMap((c) => c.oauth?.scopes ?? []),
       ),
     ];
-    const session = await startLoopbackAuth({
-      clientId: client.client_id,
-      clientSecret: client.client_secret,
-      scopes,
-      authUrl: spec.authUrl,
-      tokenUrl: spec.tokenUrl,
-      ...(this.d.fetch ? { fetch: this.d.fetch } : {}),
-    });
-    this.oauth.set(spec.group, session);
-    session.done
-      .then((t) => {
-        // Google returns a refresh token on consent; keep the old one if this grant had none.
-        if (t.refresh_token)
-          this.d.secrets.set(`${spec.group}.refresh` as SecretName, t.refresh_token);
-        this.tokens.set(spec.group, {
-          token: t.access_token,
-          expiresAt: this.now() + t.expires_in * 1000,
-        });
+    const { authUrl, done } = await this.host.startOAuth(kind, scopes);
+    done
+      .then(() => {
         appendAudit(this.d.db, {
           eventType: "connector_signed_in",
           actor: "user",
@@ -292,9 +196,8 @@ export class ConnectorService {
               .run(this.now(), r.id);
           }
       })
-      .catch((err: unknown) => this.log(`[${spec.group}] sign-in failed: ${String(err)}`))
-      .finally(() => this.oauth.delete(spec.group));
-    return { authUrl: session.authUrl };
+      .catch((err: unknown) => this.log(`[${spec.group}] sign-in failed: ${String(err)}`));
+    return { authUrl };
   }
 
   // --- rows and views ---
@@ -347,6 +250,7 @@ export class ConnectorService {
       readOnly: r.read_only === 1,
       config: JSON.parse(r.config) as Record<string, unknown>,
       ...this.status(r, def),
+      tier: def?.tier ?? "experimental",
       intervalMin: r.interval_min ?? def?.defaultIntervalMin ?? 15,
       lastSyncAt: r.last_sync_at,
       lastSuccessAt: r.last_success_at,
@@ -369,17 +273,23 @@ export class ConnectorService {
 
   catalog(): ConnectorCatalogEntry[] {
     return this.d.registry.list().map((def) => {
-      const s = this.scopedSecrets(def.id);
+      let stored: Record<string, boolean> = {};
+      try {
+        stored = this.host.setup(def.id).stored;
+      } catch {
+        // reported by status()
+      }
       return {
         kind: def.id,
         displayName: def.displayName,
         permissions: def.permissions,
         configSchema: z.toJSONSchema(def.configSchema, { unrepresentable: "any" }),
-        secrets: def.secrets.map((x) => ({ ...x, stored: s.get(x.name) !== null })),
+        secrets: def.secrets.map((x) => ({ ...x, stored: stored[x.name] ?? false })),
         oauthGroup: def.oauth?.group ?? null,
         actions: (def.actions?.() ?? []).map((a) => ({ type: a.type, title: a.title })),
         defaultIntervalMin: def.defaultIntervalMin,
         plugin: this.d.registry.isPlugin(def.id),
+        tier: def.tier ?? "experimental",
       };
     });
   }
@@ -486,7 +396,7 @@ export class ConnectorService {
    * Disconnects. With `purge`, every document it synced goes through the DeletionService. Its
    * secrets are removed unless another connector shares them (the Google group).
    */
-  remove(id: string, opts: { purge?: boolean } = {}): { purged: number } {
+  async remove(id: string, opts: { purge?: boolean } = {}): Promise<{ purged: number }> {
     const r = this.row(id);
     const def = this.d.registry.get(r.kind);
     let purged = 0;
@@ -505,10 +415,7 @@ export class ConnectorService {
         const other = this.d.registry.get(x.kind);
         return other && this.prefix(other) === prefix;
       });
-      if (!shared)
-        for (const name of this.d.secrets.list())
-          if (name.startsWith(`${prefix}.`)) this.d.secrets.delete(name as SecretName);
-      if (!shared) this.tokens.delete(prefix);
+      if (!shared) await this.host.deleteSecrets(prefix);
     }
     return { purged };
   }
@@ -521,13 +428,7 @@ export class ConnectorService {
     if (missing) h = { status: "error", message: missing };
     else
       try {
-        const token = this.accessToken(def);
-        h = await def.health({
-          config: JSON.parse(r.config),
-          http: this.http(def.id),
-          secrets: this.scopedSecrets(def.id),
-          ...(token ? { accessToken: token } : {}),
-        });
+        h = await this.host.health(def.id, JSON.parse(r.config));
       } catch (err) {
         h = {
           status: isAuthError(err) ? "auth_expired" : "error",
@@ -545,8 +446,9 @@ export class ConnectorService {
   // --- actions ---
 
   /**
-   * Registers each added connector's actions with the ActionRegistry. The executor gets http and
-   * this connector's secrets; it still only ever runs through ActionService.execute.
+   * Registers each added connector's actions with the ActionRegistry. Schema, risk and describe
+   * run here (pure code); the executor runs in the connector host, which holds the credentials.
+   * It still only ever runs through ActionService.execute.
    */
   registerActions(): void {
     for (const r of this.rows()) {
@@ -569,14 +471,13 @@ export class ConnectorService {
             if (!cur?.enabled)
               throw new Error(`${def?.displayName ?? kind} is disconnected or disabled`);
             if (cur.read_only) throw new Error(`${def?.displayName ?? kind} is read-only`);
-            const token = def ? this.accessToken(def) : undefined;
-            return a.execute(p, {
-              ...ctx,
-              config: JSON.parse(cur.config) as unknown,
-              http: this.http(kind),
-              secrets: this.scopedSecrets(kind),
-              ...(token ? { accessToken: token } : {}),
-            });
+            return this.host.execute(
+              kind,
+              a.type,
+              p,
+              { idempotencyKey: ctx.idempotencyKey, config: JSON.parse(cur.config) as unknown },
+              ctx.signal,
+            );
           },
         });
       }
@@ -640,27 +541,19 @@ export class ConnectorService {
       )
       .run(runId, id, now);
     const counts = { added: 0, updated: 0, deleted: 0, full: 0 };
-    const http = this.http(def.id);
+    let sync: HostSyncStream | undefined;
     const config = JSON.parse(r.config) as Record<string, unknown>;
     const backfill = BackfillSchema.catch({}).parse(config).backfillDays ?? DEFAULT_BACKFILL_DAYS;
-    const controller = new AbortController();
     try {
       const missing = this.missingSetup(def);
       if (missing) throw new NotConfigured(missing);
       const cursor = r.cursor ? (JSON.parse(r.cursor) as unknown) : undefined;
-      const token = this.accessToken(def);
-      for await (const batch of def.sync(
-        {
-          config,
-          http,
-          secrets: this.scopedSecrets(def.id),
-          log: (m) => this.log(`[${id}] ${m}`),
-          signal: controller.signal,
-          since: now - backfill * 86_400_000,
-          ...(token ? { accessToken: token } : {}),
-        },
-        cursor,
-      )) {
+      const stream = this.host.sync(
+        { kind: def.id, config, cursor: cursor ?? null, since: now - backfill * 86_400_000 },
+        (m) => this.log(`[${id}] ${m}`),
+      );
+      sync = stream;
+      for await (const batch of stream.batches) {
         if (batch.fullResync) counts.full = 1;
         // Fetch and parse outside the transaction (network, CPU); persist the batch atomically.
         const prepared = await prepareSourceDocuments(batch.documents, (ext, err) =>
@@ -704,7 +597,7 @@ export class ConnectorService {
             counts.added,
             counts.updated,
             counts.deleted,
-            http.requests,
+            sync?.requests() ?? 0,
             counts.full,
             runId,
           );
@@ -718,10 +611,10 @@ export class ConnectorService {
       })();
       if (counts.added + counts.updated + counts.deleted > 0) this.d.onSynced?.(id);
       this.log(
-        `[${id}] synced: +${counts.added} ~${counts.updated} -${counts.deleted} (${http.requests} requests)`,
+        `[${id}] synced: +${counts.added} ~${counts.updated} -${counts.deleted} (${sync?.requests() ?? 0} requests)`,
       );
     } catch (err) {
-      controller.abort();
+      sync?.abort();
       const end = this.now();
       const msg = (err instanceof Error ? err.message : String(err)).slice(0, 2000);
       const failures = (r.consecutive_failures ?? 0) + 1;
@@ -732,7 +625,15 @@ export class ConnectorService {
           .prepare(
             "update connector_runs set status = 'error', finished_at = ?, error = ?, requests = ?, added = ?, updated = ?, deleted = ? where id = ?",
           )
-          .run(end, msg, http.requests, counts.added, counts.updated, counts.deleted, runId);
+          .run(
+            end,
+            msg,
+            sync?.requests() ?? 0,
+            counts.added,
+            counts.updated,
+            counts.deleted,
+            runId,
+          );
         this.d.db
           .prepare(
             `update connector_state set last_sync_at = ?, last_error = ?, consecutive_failures = ?, backoff_until = ?,

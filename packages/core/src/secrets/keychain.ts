@@ -41,6 +41,62 @@ export function keychainSecrets(service = SECRET_SERVICE): SecretStore {
   };
 }
 
+const isConnectorName = (name: string) => name.includes(".");
+
+/**
+ * The daemon's view of the keychain (roadmap I1): its own secrets (model keys, daemon token,
+ * DB key) only. Connector tokens can be listed and deleted ("delete everything") but never read
+ * or written here; that happens in the connector host process.
+ */
+export function coreOnlySecrets(store: SecretStore): SecretStore {
+  const guard = (name: string) => {
+    if (isConnectorName(name))
+      throw new Error(`Connector secret ${name} is only readable in the connector host`);
+  };
+  return {
+    get: (name) => {
+      guard(name);
+      return store.get(name);
+    },
+    set: (name, value) => {
+      guard(name);
+      return store.set(name, value);
+    },
+    has: (name) => {
+      guard(name);
+      return store.has(name);
+    },
+    delete: (name) => store.delete(name),
+    list: () => store.list(),
+  };
+}
+
+/** The connector host's view: connector secrets only, never the model keys or the DB key. */
+export function connectorOnlySecrets(store: SecretStore): SecretStore {
+  const guard = (name: string) => {
+    if (!isConnectorName(name)) throw new Error(`The connector host may not use secret ${name}`);
+  };
+  return {
+    get: (name) => {
+      guard(name);
+      return store.get(name);
+    },
+    set: (name, value) => {
+      guard(name);
+      return store.set(name, value);
+    },
+    has: (name) => {
+      guard(name);
+      return store.has(name);
+    },
+    delete: (name) => {
+      guard(name);
+      return store.delete(name);
+    },
+    list: () => store.list().filter(isConnectorName),
+  };
+}
+
 /** In-memory store for tests and for running without a keychain. */
 export function memorySecrets(initial: Partial<Record<string, string>> = {}): SecretStore {
   const m = new Map<string, string>(

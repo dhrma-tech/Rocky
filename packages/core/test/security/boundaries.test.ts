@@ -68,4 +68,25 @@ describe("package boundaries", () => {
         offenders(path.join(pkgs, root), /from\s+["']@rocky\/core["']|packages\/core\//),
       ).toEqual([]);
   });
+
+  // Roadmap I1: only the connector host handles OAuth tokens and connector-scoped secrets.
+  it("token refresh, browser sign-in and the connector keychain view live only in the connector host", () => {
+    const allowed = new Set([
+      path.join("core", "src", "connectors", "host.ts"),
+      path.join("core", "src", "secrets", "keychain.ts"),
+      path.join("core", "src", "index.ts"),
+      path.join("connector-sdk", "src", "oauth.ts"),
+      path.join("connector-sdk", "src", "index.ts"),
+    ]);
+    const apps = path.resolve(pkgs, "../apps");
+    const hits = [
+      ...offenders(pkgs, /\b(refreshAccessToken|startLoopbackAuth|connectorOnlySecrets)\b/),
+      ...[...files(apps)]
+        .filter((f) =>
+          /\b(refreshAccessToken|startLoopbackAuth|connectorOnlySecrets)\b/.test(code(f)),
+        )
+        .map((f) => path.relative(pkgs, f)),
+    ].filter((f) => !allowed.has(f) && !f.includes(`${path.sep}test${path.sep}`));
+    expect(hits).toEqual([path.join("..", "apps", "daemon", "src", "connector-host.ts")]);
+  });
 });

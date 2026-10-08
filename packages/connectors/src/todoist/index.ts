@@ -218,6 +218,8 @@ const taskClose: ConnectorAction<TaskClose> = {
 
 export const todoist: Connector<TodoistConfig, TodoistCursor> = {
   id: "todoist",
+  tier: "experimental",
+  egress: () => ["api.todoist.com"],
   displayName: "Todoist",
   permissions: "Reads tasks and projects; adds and completes tasks after approval",
   configSchema: TodoistConfigSchema,

@@ -135,6 +135,8 @@ export function fileToDocument(
 
 export const gdrive: Connector<GdriveConfig, GdriveCursor> = {
   id: "gdrive",
+  tier: "experimental",
+  egress: () => ["www.googleapis.com"],
   displayName: "Google Drive",
   permissions:
     "Reads Docs, Slides and PDFs; writes source packs into its own folder after approval",

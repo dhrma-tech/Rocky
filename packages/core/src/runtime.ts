@@ -13,6 +13,12 @@ import { TRANSCRIBE_JOB } from "./capture/recordings.ts";
 import { transcribeMeeting, UNDERSTAND_JOB } from "./capture/transcribe-job.ts";
 import { loadAppConfig } from "./config/load.ts";
 import { type DataPaths, dataPaths } from "./config/paths.ts";
+import {
+  type ConnectorHost,
+  InProcessConnectorHost,
+  UnavailableConnectorHost,
+} from "./connectors/host.ts";
+import { forkConnectorHost } from "./connectors/host-ipc.ts";
 import { ConnectorRegistry, ConnectorService } from "./connectors/service.ts";
 import { EMBED_JOB, embedDocument } from "./ingest/embed-job.ts";
 import { type JobHandler, JobRunner } from "./jobs/runner.ts";
@@ -23,7 +29,7 @@ import { ProviderGate } from "./router/gate.ts";
 import { loadPolicy } from "./router/policy.ts";
 import { loadPrices } from "./router/prices.ts";
 import { Router } from "./router/router.ts";
-import { keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
+import { coreOnlySecrets, keychainSecrets, type SecretStore } from "./secrets/keychain.ts";
 import { type Db, openDb } from "./store/db.ts";
 import { storeKey } from "./store/encryption.ts";
 import { migrate } from "./store/migrate.ts";
@@ -67,6 +73,12 @@ export interface OpenRuntimeOptions {
   /** Forces local-only for this runtime on top of the config setting. */
   localOnly?: boolean;
   secrets?: SecretStore;
+  /**
+   * Where connector code runs (roadmap I1). "process" forks the host entry, which alone holds
+   * connector tokens. "in-process" is for tests and needs `secrets`. Default: in-process when
+   * `secrets` is given (tests), otherwise none (commands that never touch connectors).
+   */
+  connectors?: { kind: "process"; entry: string } | { kind: "in-process" } | { kind: "none" };
   fetch?: typeof fetch;
   hardware?: Hardware;
   /** Test seam for whisper-cli and ffmpeg. */
@@ -79,7 +91,10 @@ export interface OpenRuntimeOptions {
 export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   const paths = dataPaths(opts.dataDir);
   const config = loadAppConfig(opts.dataDir);
-  const secrets = opts.secrets ?? keychainSecrets();
+  const rawSecrets = opts.secrets ?? keychainSecrets();
+  const connectorMode = opts.connectors ?? { kind: opts.secrets ? "in-process" : "none" };
+  // Outside tests, this process never reads or writes a connector token.
+  const secrets = connectorMode.kind === "in-process" ? rawSecrets : coreOnlySecrets(rawSecrets);
   const dbFile = opts.dbFile ?? paths.db;
   const db = openDb(dbFile, { key: storeKey(config, secrets, dbFile) });
   migrate(db, { backupDir: paths.backups });
@@ -128,14 +143,25 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     refreshTimer.unref?.();
   };
   const connectorRegistry = new ConnectorRegistry();
+  const connectorHost: ConnectorHost =
+    connectorMode.kind === "process"
+      ? forkConnectorHost(connectorMode.entry, ["--data-dir", opts.dataDir], (m) =>
+          console.error(m),
+        )
+      : connectorMode.kind === "in-process"
+        ? new InProcessConnectorHost({
+            registry: connectorRegistry,
+            secrets: rawSecrets,
+            ...(opts.fetch ? { fetch: opts.fetch } : {}),
+          })
+        : new UnavailableConnectorHost();
   const connectors = new ConnectorService({
     db,
-    secrets,
+    host: connectorHost,
     registry: connectorRegistry,
     actions: registry,
     blobsDir: paths.blobs,
     onSynced: refreshNotebooks,
-    ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
   const jobHandlers: Record<string, JobHandler> = {
     [EMBED_JOB]: async (job) => {
@@ -194,6 +220,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => {
       if (refreshTimer) clearTimeout(refreshTimer);
+      void connectorHost.close();
       db.close();
     },
   };

@@ -137,6 +137,8 @@ export function snapshotDocument(
 
 export const posthog: Connector<PosthogConfig, PosthogCursor> = {
   id: "posthog",
+  tier: "experimental",
+  egress: (c) => [c.host],
   displayName: "PostHog",
   permissions: "Reads saved insights once a day as dated snapshots; never writes",
   configSchema: PosthogConfigSchema,

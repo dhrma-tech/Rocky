@@ -199,6 +199,8 @@ const issueCreate: ConnectorAction<IssueCreate> = {
 
 export const github: Connector<GithubConfig, GithubCursor> = {
   id: "github",
+  tier: "experimental",
+  egress: () => ["api.github.com"],
   displayName: "GitHub",
   permissions: "Reads issues and pull requests; creates issues after approval",
   configSchema: GithubConfigSchema,

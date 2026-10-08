@@ -93,6 +93,8 @@ export default {
   configSchema: z.object({ url: z.url() }),    // validates the config; the catalog exposes it as JSON Schema
   secrets: [],                                 // e.g. [{ name: "token", label: "API token" }]
   defaultIntervalMin: 60,
+  egress: (config) => [config.url],            // hosts it may reach; everything else is refused
+  tier: "experimental",                        // "supported" only once a live test passes
 
   async *sync(ctx, cursor) {
     // ctx.http: rate-limited fetch with retries. ctx.secrets: this connector's keys only.
@@ -108,6 +110,8 @@ export default {
   },
 };
 ```
+
+Connector code runs in a separate connector host process that holds the keychain; the process that runs models never sees your tokens. `egress` lists the hosts your connector may contact (a host, `*.domain`, or a URL from config); requests anywhere else fail with `CONNECTOR_EGRESS_BLOCKED`. A connector without `egress` gets no network.
 
 **3. Documents.** Each `SourceDocument` has a stable `externalId`, a `sourceType` (see `SourceTypeSchema` in `packages/contracts/src/memory.ts`), `title`, `uri`, timestamps, `mime` and a body. Split the body into **units** with anchors (`{ kind: "message", messageId }`, `{ kind: "row", rowId }`, …): chunks never cross a unit, and a citation opens its unit's anchor. Rocky persists each batch, and only then stores its cursor, so a crash re-fetches at most one batch. Re-sending unchanged content costs nothing. Report deletions with `deletedExternalIds`, or send `presentExternalIds` on a full sweep.
 

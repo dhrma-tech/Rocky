@@ -260,6 +260,8 @@ async function* search(
 
 export const notion: Connector<NotionConfig, NotionCursor> = {
   id: "notion",
+  tier: "experimental",
+  egress: () => ["api.notion.com"],
   displayName: "Notion",
   permissions:
     "Reads pages and database rows shared with the integration; creates or updates them after approval",

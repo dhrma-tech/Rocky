@@ -222,6 +222,8 @@ const draftReply: ConnectorAction<Draft> = {
 
 export const slackConnector: Connector<SlackConfig, SlackCursor> = {
   id: "slack",
+  tier: "experimental",
+  egress: () => ["slack.com"],
   displayName: "Slack",
   permissions: "Reads channels the bot is in (recent history); drafts replies you post yourself",
   configSchema: SlackConfigSchema,

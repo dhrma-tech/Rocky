@@ -192,6 +192,8 @@ async function* fullSync(ctx: GoogleCtx & { config: GmailConfig }, resync: boole
 
 export const gmail: Connector<GmailConfig, GmailCursor> = {
   id: "gmail",
+  tier: "experimental",
+  egress: () => ["gmail.googleapis.com", "www.googleapis.com"],
   displayName: "Gmail",
   permissions: "Reads mail (last 90 days by default); creates drafts after approval; never sends",
   configSchema: GmailConfigSchema,

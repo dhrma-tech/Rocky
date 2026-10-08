@@ -49,6 +49,10 @@ export const SecretSpecSchema = z.object({
   stored: z.boolean(),
 });
 
+/** Honest support level (roadmap M3). "supported" only once the nightly live test passes. */
+export const ConnectorTierSchema = z.enum(["supported", "experimental", "link-only"]);
+export type ConnectorTier = z.infer<typeof ConnectorTierSchema>;
+
 export const ConnectorCatalogEntrySchema = z.object({
   kind: z.string(),
   displayName: z.string(),
@@ -61,6 +65,7 @@ export const ConnectorCatalogEntrySchema = z.object({
   actions: z.array(z.object({ type: z.string(), title: z.string() })),
   defaultIntervalMin: z.number().int(),
   plugin: z.boolean(),
+  tier: ConnectorTierSchema,
 });
 export type ConnectorCatalogEntry = z.infer<typeof ConnectorCatalogEntrySchema>;
 
@@ -73,6 +78,7 @@ export const ConnectorSchema = z.object({
   config: z.record(z.string(), z.unknown()),
   status: ConnectorStatusSchema,
   message: z.string().nullable(),
+  tier: ConnectorTierSchema,
   intervalMin: z.number().int(),
   lastSyncAt: z.number().int().nullable(),
   lastSuccessAt: z.number().int().nullable(),

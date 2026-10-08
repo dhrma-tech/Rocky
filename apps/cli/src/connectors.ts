@@ -12,9 +12,13 @@ async function withRuntime<T>(
   dataDir: string | undefined,
   fn: (rt: Runtime) => Promise<T>,
 ): Promise<T> {
-  const { registerConnectors } = await import("@rocky/daemon");
+  const { CONNECTOR_HOST_ENTRY, registerConnectors } = await import("@rocky/daemon");
   const { dir } = resolveDataDir({ flag: dataDir });
-  const rt = await openRuntime({ dataDir: dir });
+  // Connector tokens stay in the forked connector host (roadmap I1).
+  const rt = await openRuntime({
+    dataDir: dir,
+    connectors: { kind: "process", entry: CONNECTOR_HOST_ENTRY },
+  });
   try {
     await registerConnectors(rt, (m) => console.error(m));
     return await fn(rt);
@@ -94,7 +98,7 @@ export async function connectorsCommand(
       }
       case "secret": {
         if (!first || !second) throw new Error("Usage: rocky connectors secret <kind> <name>");
-        rt.connectors.setSecret(
+        await rt.connectors.setSecret(
           first,
           second,
           await readSecret(`${first} ${second} (input hidden): `),
@@ -104,7 +108,7 @@ export async function connectorsCommand(
       }
       case "google-client": {
         if (!first) throw new Error("Usage: rocky connectors google-client <client_secret_….json>");
-        rt.connectors.setOAuthClient("google-oauth", fs.readFileSync(first, "utf8"));
+        await rt.connectors.setOAuthClient("google-oauth", fs.readFileSync(first, "utf8"));
         console.log(
           "Google client stored in the OS keychain. You can delete the downloaded file now.",
         );
@@ -146,7 +150,7 @@ export async function connectorsCommand(
       }
       case "remove": {
         if (!first) throw new Error("Usage: rocky connectors remove <id> [--purge]");
-        const r = rt.connectors.remove(first, { purge: Boolean(opts.purge) });
+        const r = await rt.connectors.remove(first, { purge: Boolean(opts.purge) });
         console.log(
           opts.purge
             ? `Removed, and deleted ${r.purged} synced document(s).`

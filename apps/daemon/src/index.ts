@@ -15,11 +15,11 @@ import {
 } from "@rocky/core";
 import { createApp } from "./app.ts";
 import { Auth, newToken } from "./auth.ts";
-import { registerConnectors } from "./connectors.ts";
+import { CONNECTOR_HOST_ENTRY, registerConnectors } from "./connectors.ts";
 
 export { createApp } from "./app.ts";
 export { Auth, newToken } from "./auth.ts";
-export { registerConnectors } from "./connectors.ts";
+export { CONNECTOR_HOST_ENTRY, registerConnectors } from "./connectors.ts";
 export { deleteArchiveImport, importArchive, listArchiveImports } from "./imports.ts";
 
 /** Built UI from apps/web (Phase 1 web shell); absent until `pnpm --filter @rocky/web build`. */
@@ -56,7 +56,14 @@ export async function startDaemon(opts: {
   setup?: (rt: Runtime) => void;
 }): Promise<RunningDaemon> {
   const log = redactingLogger(opts.log ?? ((m) => console.error(m)));
-  const rt = await openRuntime({ ...opts.runtime, dataDir: opts.dataDir });
+  // Connector code and its tokens live in a separate process (roadmap I1); test seams that pass
+  // their own secrets run connectors in-process instead.
+  const connectors =
+    opts.runtime?.connectors ??
+    (opts.runtime?.secrets
+      ? ({ kind: "in-process" } as const)
+      : ({ kind: "process", entry: CONNECTOR_HOST_ENTRY } as const));
+  const rt = await openRuntime({ ...opts.runtime, connectors, dataDir: opts.dataDir });
   opts.setup?.(rt);
   await registerConnectors(rt, log);
   const port = opts.port ?? rt.config.daemon.port;

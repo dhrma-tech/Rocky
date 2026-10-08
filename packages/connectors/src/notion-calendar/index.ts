@@ -16,6 +16,8 @@ export type NotionCalendarConfig = z.infer<typeof NotionCalendarConfigSchema>;
 
 export const notionCalendar: Connector<NotionCalendarConfig, Record<string, never>> = {
   id: "notion-calendar",
+  tier: "link-only",
+  egress: () => [],
   displayName: "Notion Calendar",
   permissions: "No access of its own: adds Open in Notion Calendar links to Google Calendar events",
   configSchema: NotionCalendarConfigSchema,

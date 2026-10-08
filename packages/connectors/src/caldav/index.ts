@@ -156,8 +156,19 @@ const eventCreate: ConnectorAction<EventCreate> = {
   },
 };
 
+/**
+ * CalDAV servers hand out calendar homes on sibling hosts (iCloud: caldav.icloud.com sends
+ * p42-caldav.icloud.com), so the parent domain of the server is allowed too when it has one.
+ */
+export function serverHosts(serverUrl: string): string[] {
+  const labels = new URL(serverUrl).hostname.split(".");
+  return labels.length >= 3 ? [serverUrl, `*.${labels.slice(1).join(".")}`] : [serverUrl];
+}
+
 export const caldav: Connector<CaldavConfig, CaldavCursor> = {
   id: "caldav",
+  tier: "experimental",
+  egress: (c) => serverHosts(c.serverUrl),
   displayName: "Apple Calendar",
   permissions: "Reads iCloud calendar events; creates events (without guests) after approval",
   configSchema: CaldavConfigSchema,

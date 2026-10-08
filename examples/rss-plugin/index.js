@@ -26,6 +26,8 @@ const rss = {
   configSchema: z.object({ url: z.url() }),
   secrets: [],
   defaultIntervalMin: 60,
+  // The only host this plugin may reach: the feed's own. Anything else is refused.
+  egress: (config) => [config.url],
 
   // Yield batches of normalized documents. The core persists each batch, then stores `cursor`.
   async *sync(ctx, cursor) {

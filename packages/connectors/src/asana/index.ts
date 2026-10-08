@@ -201,6 +201,8 @@ const taskUpdate: ConnectorAction<TaskUpdate> = {
 
 export const asana: Connector<AsanaConfig, AsanaCursor> = {
   id: "asana",
+  tier: "experimental",
+  egress: () => ["app.asana.com"],
   displayName: "Asana",
   permissions:
     "Reads tasks in chosen projects (or assigned to you); creates and updates tasks after approval",

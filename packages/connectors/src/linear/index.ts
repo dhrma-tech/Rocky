@@ -279,6 +279,8 @@ const issueUpdate: ConnectorAction<IssueUpdate> = {
 
 export const linear: Connector<LinearConfig, LinearCursor> = {
   id: "linear",
+  tier: "experimental",
+  egress: () => ["api.linear.app"],
   displayName: "Linear",
   permissions: "Reads issues and comments; creates and updates issues after approval",
   configSchema: LinearConfigSchema,
