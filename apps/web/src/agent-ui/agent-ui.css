@@ -1,0 +1,142 @@
+/* Rocky's own components (UI spec "What to build yourself"). Semantic tokens only. */
+
+/* --- Status chip: 24px pill, caption type, tint fill, icon plus word. Never colour alone. --- */
+.rk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--chip-height);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rk-chip svg {
+  flex: none;
+}
+.rk-chip--info {
+  background: var(--color-info-tint);
+  color: var(--color-info-text);
+}
+.rk-chip--warning {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-text);
+}
+.rk-chip--success {
+  background: var(--color-success-tint);
+  color: var(--color-success-text);
+}
+.rk-chip--error {
+  background: var(--color-error-tint);
+  color: var(--color-error-text);
+}
+.rk-chip--neutral {
+  background: var(--color-neutral-tint);
+  color: var(--color-neutral-text);
+}
+/* "Needs you" is about the user: blush-tinted, with the warning text colour. */
+.rk-chip--needs-you {
+  background: var(--color-needs-you);
+  color: var(--color-warning-text);
+}
+
+/* 8px dot beside text, only inside dense rows. */
+.rk-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+/* --- Pebble: a soft, slightly irregular stone in the identity colour, carrying state. --- */
+.rk-pebble {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  color: var(--pebble-fill, var(--rocky-swatch-periwinkle));
+}
+.rk-pebble__stone {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  /* Soft material is allowed here: the pebble is decoration, never a control. */
+  filter: drop-shadow(1px 1px 1.5px color-mix(in srgb, var(--color-text) 18%, transparent));
+}
+.rk-pebble__ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  border: 2px solid transparent;
+  pointer-events: none;
+}
+.rk-pebble__mark {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 45%;
+  min-width: 12px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+.rk-pebble__mark svg {
+  width: 80%;
+  height: 80%;
+}
+
+/* Working: breathes slowly on a 2.4s loop (transform and opacity only). */
+.rk-pebble[data-mode^="breathing"] .rk-pebble__stone {
+  color: var(--pebble-fill, var(--rocky-swatch-periwinkle));
+  animation: rk-breathe var(--duration-breath) var(--ease-standard) infinite;
+}
+.rk-pebble[data-mode^="breathing"] .rk-pebble__ring {
+  border-color: color-mix(in srgb, var(--color-agent) 45%, transparent);
+}
+/* Needs you: stops breathing; a blush outline ring. */
+.rk-pebble[data-mode="needs-you"] .rk-pebble__ring {
+  border-color: var(--rocky-rose-300);
+}
+.rk-pebble[data-mode="dimmed"] {
+  opacity: 0.55;
+}
+.rk-pebble[data-mode="done"] .rk-pebble__mark {
+  color: var(--color-success-text);
+}
+.rk-pebble[data-mode="failed"] .rk-pebble__mark {
+  color: var(--color-error-text);
+}
+.rk-pebble[data-mode="learned"] .rk-pebble__mark,
+.rk-pebble[data-mode="breathing-globe"] .rk-pebble__mark,
+.rk-pebble[data-mode="breathing-tool"] .rk-pebble__mark {
+  color: var(--color-agent);
+}
+
+@keyframes rk-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.94);
+    opacity: 0.82;
+  }
+}
+
+/* Reduced motion: the breathing pebble becomes a static ring; the chip still says the word. */
+@media (prefers-reduced-motion: reduce) {
+  .rk-pebble[data-mode^="breathing"] .rk-pebble__stone {
+    animation: none;
+  }
+  .rk-pebble[data-mode^="breathing"] .rk-pebble__ring {
+    border-color: var(--color-agent);
+  }
+}

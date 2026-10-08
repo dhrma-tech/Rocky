@@ -1,0 +1,319 @@
+/* Base components (UI spec "Design-system component spec"). Semantic and component tokens only. */
+
+/* --- Card: surface, hairline, radius 20, shadow-1. No card inside a card more than once. --- */
+.rk-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow), var(--elevation-edge);
+  padding: var(--card-padding);
+}
+.rk-card--tint {
+  background: var(--color-needs-you);
+}
+
+/* --- Headings: serif for page titles and empty states only. --- */
+.rk-title {
+  margin: 0;
+  font-family: var(--type-title-font);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  font-weight: var(--type-title-weight);
+}
+.rk-display {
+  margin: 0;
+  font-family: var(--type-display-font);
+  font-size: var(--type-display-size);
+  line-height: var(--type-display-line);
+  font-weight: var(--type-display-weight);
+}
+.rk-h2 {
+  margin: 0;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+  font-weight: var(--type-h2-weight);
+}
+.rk-h3 {
+  margin: 0;
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-line);
+  font-weight: var(--type-h3-weight);
+}
+.rk-small {
+  font-size: var(--type-small-size);
+  line-height: var(--type-small-line);
+}
+.rk-muted {
+  color: var(--color-text-muted);
+}
+.rk-mono {
+  font-family: var(--font-mono);
+  font-size: var(--type-mono-size);
+  line-height: var(--type-mono-line);
+}
+
+/* --- Banner: icon plus text; dismissible only when informational. --- */
+.rk-banner {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-menu);
+  border: 1px solid transparent;
+}
+.rk-banner__body {
+  flex: 1;
+  min-width: 0;
+}
+.rk-banner__title {
+  font-weight: 600;
+}
+.rk-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.rk-banner--info {
+  background: var(--color-info-tint);
+  color: var(--color-info-text);
+}
+.rk-banner--success {
+  background: var(--color-success-tint);
+  color: var(--color-success-text);
+}
+.rk-banner--warning {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-text);
+}
+.rk-banner--error {
+  background: var(--color-error-tint);
+  color: var(--color-error-text);
+}
+.rk-banner > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* --- Empty and error states (UI spec 21, 22). --- */
+.rk-state {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  max-width: 560px;
+  padding: var(--space-8) 0;
+}
+.rk-state__details {
+  width: 100%;
+}
+.rk-state__details summary {
+  cursor: pointer;
+  min-height: var(--hit-min);
+  display: flex;
+  align-items: center;
+  color: var(--color-link);
+}
+.rk-state__details pre {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* --- Skeleton: real row heights, a 1.2s fade between two tones; still under reduced motion. --- */
+.rk-skeleton {
+  display: block;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  animation: rk-skeleton 1.2s var(--ease-standard) infinite alternate;
+}
+@keyframes rk-skeleton {
+  from {
+    background: var(--color-surface-2);
+  }
+  to {
+    background: var(--color-border);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rk-skeleton {
+    animation: none;
+  }
+}
+
+/* --- Fields: visible label above, helper below, error with icon and text. --- */
+.rk-field {
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-field__label {
+  font-weight: 500;
+}
+.rk-field__help {
+  font-size: var(--type-small-size);
+  line-height: var(--type-small-line);
+  color: var(--color-text-muted);
+}
+.rk-field__error {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  font-size: var(--type-small-size);
+  color: var(--color-error-text);
+}
+.rk-input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-control);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font: inherit;
+  box-sizing: border-box;
+}
+textarea.rk-input {
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+.rk-input[aria-invalid="true"] {
+  border-color: var(--color-error-text);
+}
+.rk-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --- Switch: applies immediately; 44px target. --- */
+.rk-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.rk-switch__track {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  transition: background-color var(--duration-micro) var(--ease-standard);
+}
+.rk-switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-muted);
+  transition: transform var(--duration-micro) var(--ease-standard);
+}
+.rk-switch[aria-checked="true"] .rk-switch__track {
+  background: var(--color-accent);
+  border-color: var(--color-accent-pressed);
+}
+.rk-switch[aria-checked="true"] .rk-switch__thumb {
+  transform: translateX(16px);
+  background: var(--color-accent-text-on);
+}
+
+/* --- Tabs: underlined, 44px, arrow keys; panels stay mounted. --- */
+.rk-tabs__list {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+.rk-tab {
+  min-height: var(--hit-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rk-tab[aria-selected="true"] {
+  color: var(--color-text);
+  border-bottom-color: var(--color-text);
+}
+
+/* --- Drawer: 560px from the right; a full-screen sheet below 600px. --- */
+.rk-drawer {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(var(--drawer), 100vw);
+  max-width: 100vw;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: var(--radius-modal) 0 0 var(--radius-modal);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3), var(--elevation-edge);
+}
+.rk-drawer::backdrop {
+  background: var(--color-scrim);
+}
+.rk-drawer__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.rk-drawer__body {
+  padding: var(--space-4);
+  overflow: auto;
+}
+@media (max-width: 599px) {
+  .rk-drawer {
+    width: 100vw;
+    border-radius: 0;
+  }
+}
+
+/* --- Toast: bottom left, stacked, polite; always Undo for reversible actions. --- */
+.rk-toasts {
+  position: fixed;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 50;
+  display: grid;
+  gap: var(--space-2);
+  max-width: min(420px, calc(100vw - 2 * var(--space-4)));
+}
+.rk-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-menu);
+  background: var(--color-text);
+  color: var(--color-canvas);
+  box-shadow: var(--shadow-2);
+}
+.rk-toast__text {
+  flex: 1;
+}
+.rk-toast .rk-button {
+  color: var(--color-canvas);
+  background: transparent;
+}
+.rk-toast .rk-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-canvas) 14%, transparent);
+}
