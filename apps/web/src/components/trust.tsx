@@ -9,18 +9,18 @@ export function LocalBadge({ localOnly }: { localOnly: boolean | undefined }) {
   return (
     <Link
       to="/settings"
-      className={cls(
-        "inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium no-underline",
-        localOnly ? "bg-accent-soft text-primary" : "bg-layer-subtle text-warning",
-      )}
+      className="rk-boundary"
       title={
         localOnly
           ? "Every model call stays on this machine."
           : "Some tasks may call an API model. Turn on local-only mode in Settings to keep everything on this machine."
       }
     >
-      {localOnly ? <ShieldCheck size={14} aria-hidden /> : <ArrowUpRight size={14} aria-hidden />}
-      {localOnly ? "Local only" : "Data leaves device"}
+      {/* The boundary is a chip (icon, word, tint); the link around it is the 44px target. */}
+      <span className={`rk-chip rk-chip--${localOnly ? "success" : "warning"}`}>
+        {localOnly ? <ShieldCheck size={14} aria-hidden /> : <ArrowUpRight size={14} aria-hidden />}
+        {localOnly ? "Local only" : "Data can leave this device"}
+      </span>
     </Link>
   );
 }

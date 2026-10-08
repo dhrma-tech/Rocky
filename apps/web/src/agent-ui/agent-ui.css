@@ -303,6 +303,11 @@
 .rk-approval {
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+}
+.rk-approval > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .rk-approval__head {
   display: flex;
@@ -410,4 +415,23 @@
   .rk-approval__rule {
     margin-left: 0;
   }
+}
+
+/* A selectable timeline step. */
+.rk-step-btn {
+  width: calc(100% + 2 * var(--space-2));
+  padding: var(--space-2);
+  margin: calc(-1 * var(--space-2));
+  min-height: var(--hit-min);
+  display: block;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rk-step-btn[aria-current="true"] {
+  background: var(--color-surface-2);
 }

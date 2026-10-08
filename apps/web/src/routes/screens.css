@@ -1,0 +1,180 @@
+/* Screen layouts (UI spec screens 4, 7, 8, 17). Semantic tokens only. */
+
+/* Queue and detail side by side; stacked below 900px. */
+.rk-split {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .rk-split {
+    grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  }
+}
+
+.rk-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-queue__row {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--list-row);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-menu);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rk-queue__row:hover {
+  background: var(--color-surface-2);
+}
+.rk-queue__row[aria-current="true"] {
+  background: var(--color-needs-you);
+  border-color: var(--color-border);
+}
+.rk-queue__sentence {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.rk-queue__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Today: main column (760) plus a 320 side column; one column below 900px. */
+.rk-today {
+  display: grid;
+  gap: var(--space-8);
+  max-width: calc(var(--layout-dashboard-main) + var(--layout-dashboard-side) + var(--space-8));
+  margin: 0 auto;
+}
+@media (min-width: 900px) {
+  .rk-today {
+    grid-template-columns: minmax(0, var(--layout-dashboard-main)) var(--layout-dashboard-side);
+  }
+}
+.rk-section {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+.rk-section__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.rk-section__head > h2 {
+  flex: 1;
+}
+.rk-composer {
+  display: flex;
+  gap: var(--space-2);
+  align-items: end;
+  margin-bottom: var(--space-8);
+}
+.rk-composer > .rk-field {
+  flex: 1;
+}
+.rk-side-col {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.rk-finished summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-min);
+  cursor: pointer;
+}
+.rk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* Ledger: filters on top, the list in a scroll box, the payload in a drawer. */
+.rk-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.rk-filter {
+  min-height: var(--hit-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-small-size);
+  cursor: pointer;
+}
+.rk-filter[aria-pressed="true"] {
+  background: var(--color-text);
+  color: var(--color-canvas);
+  border-color: var(--color-text);
+}
+.rk-ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(100dvh - 260px);
+  min-height: 320px;
+  overflow-y: auto;
+}
+.rk-ledger .rk-activity:focus-within,
+.rk-ledger .rk-activity[aria-current="true"] {
+  background: var(--color-surface-2);
+}
+.rk-row-open {
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font: inherit;
+  font-size: var(--type-small-size);
+  min-height: var(--hit-min);
+  cursor: pointer;
+}
+
+/* Run page: timeline and the selected step's detail. */
+.rk-run {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .rk-run {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  }
+}
+.rk-detail pre {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Grid children may shrink below their content's width (long words wrap instead of overflowing). */
+.rk-split > *,
+.rk-today > *,
+.rk-run > * {
+  min-width: 0;
+}

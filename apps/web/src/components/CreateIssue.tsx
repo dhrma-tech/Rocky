@@ -63,7 +63,7 @@ export function CreateIssueButton({ question, result }: { question: string; resu
                 Close
               </Button>
               <Link
-                to="/actions"
+                to="/approvals"
                 className="inline-flex min-h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-on-accent no-underline"
               >
                 Review in Actions

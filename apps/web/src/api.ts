@@ -1,5 +1,6 @@
 import type {
   ActionRecord,
+  ActionRule,
   ActionStatus,
   ArchiveImportResult,
   ArchiveImportRow,
@@ -47,6 +48,8 @@ import type {
   RoutineCreate,
   RoutineRun,
   RoutineUpdate,
+  RuleCreate,
+  RulePreview,
   ScopeRules,
   SettingsUpdate,
   StudyGuide,
@@ -166,6 +169,8 @@ export function subscribeEvents(
   let last = after;
   const es = new EventSource(`/api/v1/events?after=${after}`, { withCredentials: true });
   const handle = (m: MessageEvent<string>) => {
+    // The browser also fires a data-less "error" when the connection drops; our "error" kind has data.
+    if (typeof m.data !== "string") return;
     const e = JSON.parse(m.data) as RockyEvent;
     if (e.seq <= last) return;
     last = e.seq;
@@ -258,11 +263,24 @@ export const api = {
     call<{ actions: ActionRecord[] }>(`/actions${status ? `?status=${status}` : ""}`),
   editAction: (id: string, payload: unknown) =>
     call<ActionRecord>(`/actions/${id}`, { method: "PATCH", body: JSON.stringify({ payload }) }),
-  approveAction: (id: string, payloadHash: string, acknowledgeSources = false) =>
+  /** holdMs: the Undo window before the daemon runs it (10 s by default; 0 = "Run now"). */
+  approveAction: (id: string, payloadHash: string, acknowledgeSources = false, holdMs?: number) =>
     call<ActionRecord>(`/actions/${id}/approve`, {
       method: "POST",
-      body: JSON.stringify({ payloadHash, ...(acknowledgeSources ? { acknowledgeSources } : {}) }),
+      body: JSON.stringify({
+        payloadHash,
+        ...(acknowledgeSources ? { acknowledgeSources } : {}),
+        ...(holdMs === undefined ? {} : { holdMs }),
+      }),
     }),
+  /** Undo during the hold: the action goes back to a draft. */
+  revokeAction: (id: string) => call<ActionRecord>(`/actions/${id}/revoke`, { method: "POST" }),
+  rules: () => call<{ rules: ActionRule[] }>("/rules"),
+  previewRule: (r: RuleCreate) =>
+    call<RulePreview>("/rules/preview", { method: "POST", body: JSON.stringify(r) }),
+  createRule: (r: RuleCreate) =>
+    call<ActionRule>("/rules", { method: "POST", body: JSON.stringify(r) }),
+  revokeRule: (id: string) => call<ActionRule>(`/rules/${id}/revoke`, { method: "POST" }),
   executeAction: (id: string) => call<ActionRecord>(`/actions/${id}/execute`, { method: "POST" }),
   rejectAction: (id: string, note?: string) =>
     call<ActionRecord>(`/actions/${id}/reject`, {
@@ -309,6 +327,7 @@ export const api = {
   // --- Connectors (Phase 4) ---
   connectors: () => call<{ connectors: Connector[] }>("/connectors"),
   catalog: () => call<{ catalog: ConnectorCatalogEntry[] }>("/connectors/catalog"),
+  recentEvents: (n = 500) => call<EventsPage>(`/events/page?tail=${n}`),
   eventsPage: (after = 0, opts: { runId?: string; limit?: number } = {}) =>
     call<EventsPage>(
       `/events/page?after=${after}${opts.runId ? `&runId=${encodeURIComponent(opts.runId)}` : ""}${opts.limit ? `&limit=${opts.limit}` : ""}`,

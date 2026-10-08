@@ -63,7 +63,7 @@ export function MakeTasks({ documentId }: { documentId: string }) {
             ) : (
               <>
                 {run.data.proposed.length} proposal{run.data.proposed.length === 1 ? "" : "s"}{" "}
-                added. <Link to="/actions">Review them in Actions</Link>
+                added. <Link to="/approvals">Review them in Approvals</Link>
               </>
             )}
           </p>

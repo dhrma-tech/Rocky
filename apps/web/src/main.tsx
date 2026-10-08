@@ -5,16 +5,17 @@ import {
   createRouter,
   lazyRouteComponent,
   RouterProvider,
+  redirect,
 } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ActionsPage } from "./routes/ActionsPage.tsx";
+import { ApprovalsPage } from "./routes/ApprovalsPage.tsx";
 import { AskPage } from "./routes/AskPage.tsx";
 import { CommitmentsPage } from "./routes/CommitmentsPage.tsx";
-import { HomePage } from "./routes/HomePage.tsx";
 import { MeetingDetailPage } from "./routes/MeetingDetailPage.tsx";
 import { MeetingsPage } from "./routes/MeetingsPage.tsx";
 import { NotebooksPage } from "./routes/NotebooksPage.tsx";
+import { TodayPage } from "./routes/TodayPage.tsx";
 import { Shell } from "./Shell.tsx";
 // Self-hosted fonts (no runtime third-party request). Latin subsets cover the UI strings.
 import "@fontsource-variable/inter/wght.css";
@@ -29,7 +30,23 @@ applyTheme();
 const rootRoute = createRootRoute({ component: Shell });
 // Less-used screens (lazyRouteComponent) load on first visit, keeping the first download small.
 const routeTree = rootRoute.addChildren([
-  createRoute({ getParentRoute: () => rootRoute, path: "/", component: HomePage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/", component: TodayPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/approvals", component: ApprovalsPage }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/tasks",
+    component: lazyRouteComponent(() => import("./routes/TasksPage.tsx"), "TasksPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/ledger",
+    component: lazyRouteComponent(() => import("./routes/LedgerPage.tsx"), "LedgerPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/runs/$id",
+    component: lazyRouteComponent(() => import("./routes/RunPage.tsx"), "RunPage"),
+  }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/ask",
@@ -69,7 +86,14 @@ const routeTree = rootRoute.addChildren([
     path: "/commitments",
     component: CommitmentsPage,
   }),
-  createRoute({ getParentRoute: () => rootRoute, path: "/actions", component: ActionsPage }),
+  // The old Actions page became Approvals (UI spec 17) and the ledger.
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/actions",
+    beforeLoad: () => {
+      throw redirect({ to: "/approvals" });
+    },
+  }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/connectors",

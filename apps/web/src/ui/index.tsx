@@ -463,3 +463,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 export const useToast = () => useContext(ToastCtx);
+
+// --- Page shortcuts ---
+
+/**
+ * Single-key shortcuts for a page (J/K and friends). Ignored while typing in a field or with a
+ * modifier held, so they never fight the browser or a form.
+ */
+export function useKeys(handler: (key: string, e: globalThis.KeyboardEvent) => void) {
+  const ref = useRef(handler);
+  ref.current = handler;
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      ref.current(e.key, e);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+}

@@ -36,10 +36,19 @@ export function Receipt({
 }
 
 /** One run's steps in order; planned steps outlined; a failed step opens with three lines. */
-export function Timeline({ steps }: { steps: StepView[] }) {
+export function Timeline({
+  steps,
+  selected,
+  onSelect,
+}: {
+  steps: StepView[];
+  /** With onSelect, each step is a button that shows its detail. */
+  selected?: number;
+  onSelect?: (index: number) => void;
+}) {
   return (
     <ol className="rk-timeline">
-      {steps.map((s) => {
+      {steps.map((s, i) => {
         const Icon = STATUS[s.state].icon;
         return (
           <li key={s.seq} className="rk-timeline__step" data-planned={s.planned}>
@@ -52,12 +61,28 @@ export function Timeline({ steps }: { steps: StepView[] }) {
               <Icon size={14} strokeWidth={2} aria-hidden />
             </span>
             <div>
-              <span className="rk-timeline__text">
-                <span className="sr-only">
-                  {s.planned ? "Planned: " : `${STATUS[s.state].word}: `}
-                </span>
-                {s.sentence}
-              </span>
+              {(() => {
+                const text = (
+                  <span className="rk-timeline__text">
+                    <span className="sr-only">
+                      {s.planned ? "Planned: " : `${STATUS[s.state].word}: `}
+                    </span>
+                    {s.sentence}
+                  </span>
+                );
+                return onSelect ? (
+                  <button
+                    type="button"
+                    className="rk-step-btn"
+                    aria-current={i === selected ? "true" : undefined}
+                    onClick={() => onSelect(i)}
+                  >
+                    {text}
+                  </button>
+                ) : (
+                  text
+                );
+              })()}
               {s.error && (
                 <section className="rk-timeline__fail" aria-label="What went wrong">
                   <span>

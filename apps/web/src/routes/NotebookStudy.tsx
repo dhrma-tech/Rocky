@@ -493,7 +493,7 @@ function SourcePack({ notebookId }: { notebookId: string }) {
         </Button>
         {pack.isSuccess && (
           <span className="text-sm">
-            Waiting for your approval in <Link to="/actions">Actions</Link>.
+            Waiting for your approval in <Link to="/approvals">Approvals</Link>.
           </span>
         )}
       </div>
