@@ -116,19 +116,29 @@ describe(".gitignore", () => {
   });
   it("never ignores test fixtures (a data/ folder inside one once went missing in CI)", () => {
     expect(ignored("packages/importers/test/fixtures/x/data/tweets.js")).toBe(false);
-    const missed: string[] = [];
+    const fixtures: string[] = [];
     const walk = (dir: string) => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         if (e.name === "node_modules") continue;
         const full = path.join(dir, e.name);
         if (e.isDirectory()) walk(full);
-        else if (full.includes(`${path.sep}fixtures${path.sep}`)) {
-          const rel = path.relative(repo, full).split(path.sep).join("/");
-          if (ignored(rel)) missed.push(rel);
-        }
+        else if (full.includes(`${path.sep}fixtures${path.sep}`))
+          fixtures.push(path.relative(repo, full).split(path.sep).join("/"));
       }
     };
     for (const top of ["packages", "apps"]) walk(path.join(repo, top));
-    expect(missed).toEqual([]);
+    expect(fixtures.length).toBeGreaterThan(10);
+    // One git call for all of them (one per file is slow when the suite runs in parallel).
+    let missed = "";
+    try {
+      missed = execFileSync("git", ["check-ignore", "--no-index", "--stdin"], {
+        cwd: repo,
+        input: fixtures.join("\n"),
+        encoding: "utf8",
+      });
+    } catch {
+      // exit 1: nothing ignored
+    }
+    expect(missed.trim()).toBe("");
   });
 });

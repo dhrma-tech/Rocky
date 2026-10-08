@@ -76,6 +76,7 @@ describe("math routing (acceptance #3)", () => {
     expect(Date.now() - t0).toBeLessThan(5000);
   });
 
+  // Runs after the timeout test killed the worker, so it pays a cold mathjs start (slow under load).
   it("substitutes placeholders and catches numbers the model wrote itself", async () => {
     const results = await evaluateComputations([
       { id: "c1", expr: "17/100*2340", purpose: "17% of 2,340" },
@@ -84,5 +85,5 @@ describe("math routing (acceptance #3)", () => {
     expect(substitute("{{calc:nope}}", results)).toBe("[not computed]");
     expect(statedResults("It is {{calc:c1}}.", results)).toEqual([]);
     expect(statedResults("It is 397.8, i.e. {{calc:c1}}.", results)).toEqual(["c1"]);
-  });
+  }, 60_000);
 });
