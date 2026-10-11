@@ -1,0 +1,21 @@
+{
+  "name": "@rocky/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Rocky desktop app: a window around the local daemon (roadmap A1)",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "electron .",
+    "stage": "node scripts/stage.ts",
+    "dist": "node scripts/dist.ts"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
+  "dependencies": {
+    "@rocky/cli": "workspace:*"
+  }
+}

@@ -30,3 +30,23 @@ export function dataPaths(dataDir: string) {
   };
 }
 export type DataPaths = ReturnType<typeof dataPaths>;
+
+/**
+ * Files Rocky ships beside its code: config, samples, templates and the built web UI. From a
+ * checkout they sit at the repo root (and apps/web/dist); the installed desktop app sets
+ * ROCKY_HOME to the folder it copied them into (roadmap A1, D-050).
+ */
+export function shippedDir(
+  name: "config" | "samples" | "templates" | "web",
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const rel = {
+    config: "config",
+    samples: "samples/workspace",
+    templates: "templates",
+    web: "web",
+  };
+  if (env.ROCKY_HOME) return path.join(env.ROCKY_HOME, rel[name]);
+  const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  return name === "web" ? path.join(repo, "apps", "web", "dist") : path.join(repo, rel[name]);
+}

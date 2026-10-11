@@ -4,6 +4,10 @@ on:
     branches: [main]
   pull_request:
 
+# Tests never start the desktop app; its Electron download (~110 MB) only runs in release.yml.
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
 jobs:
   test:
     strategy:

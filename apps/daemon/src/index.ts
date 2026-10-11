@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
   ActionScheduler,
@@ -14,6 +13,7 @@ import {
   openRuntime,
   type Runtime,
   redactingLogger,
+  shippedDir,
 } from "@rocky/core";
 import { createApp } from "./app.ts";
 import { Auth, newToken } from "./auth.ts";
@@ -25,7 +25,7 @@ export { CONNECTOR_HOST_ENTRY, registerConnectors } from "./connectors.ts";
 export { deleteArchiveImport, importArchive, listArchiveImports } from "./imports.ts";
 
 /** Built UI from apps/web (Phase 1 web shell); absent until `pnpm --filter @rocky/web build`. */
-const defaultWebDir = fileURLToPath(new URL("../../web/dist/", import.meta.url));
+const defaultWebDir = shippedDir("web");
 
 /** `<dataDir>/daemon.json` tells the CLI where the running daemon listens. */
 export const daemonInfoFile = (dataDir: string) => path.join(dataDir, "daemon.json");

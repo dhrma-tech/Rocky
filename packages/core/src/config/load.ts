@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   type AppConfig,
   AppConfigSchema,
@@ -8,7 +7,7 @@ import {
   LocationFileSchema,
 } from "@rocky/contracts";
 import YAML from "yaml";
-import { appDataRoot, dataPaths } from "./paths.ts";
+import { appDataRoot, dataPaths, shippedDir } from "./paths.ts";
 
 export interface ResolveDataDirInput {
   flag?: string | undefined;
@@ -48,7 +47,7 @@ export function saveAppConfig(dataDir: string, config: AppConfig): void {
 }
 
 /** Repo-level `config/` directory (model IDs and prices live here, never in code). */
-export const repoConfigDir = fileURLToPath(new URL("../../../../config/", import.meta.url));
+export const repoConfigDir = shippedDir("config");
 
 type Plain = Record<string, unknown>;
 const isPlain = (v: unknown): v is Plain =>

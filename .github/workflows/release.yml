@@ -1,0 +1,63 @@
+name: release
+# Desktop installers (roadmap A1, D-050) for Windows, macOS and Linux, unsigned for now
+# (docs/INSTALL.md). A tag v* makes a draft release with them; a manual run only uploads them
+# as workflow artifacts.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build the installer
+        run: pnpm --filter @rocky/desktop dist
+        env:
+          ROCKY_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: The packed app runs the CLI and loads SQLite and sqlite-vec
+        run: node apps/desktop/scripts/check-bundle.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rocky-${{ matrix.os }}
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+          if-no-files-found: error
+
+  draft-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+      - name: Draft a release with the installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd installers && sha256sum * > SHA256SUMS.txt)
+          gh release create "${{ github.ref_name }}" installers/* \
+            --repo "${{ github.repository }}" --draft --title "Rocky ${{ github.ref_name }}" \
+            --notes "Unsigned builds: see docs/INSTALL.md for the one-time OS prompts. SHA256SUMS.txt lists checksums."

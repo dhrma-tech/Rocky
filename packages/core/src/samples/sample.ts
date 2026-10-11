@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { appendAudit } from "../audit/append.ts";
+import { shippedDir } from "../config/paths.ts";
 import { deleteData } from "../deletion/service.ts";
 import { ingestFile } from "../ingest/ingest-file.ts";
 import type { Db } from "../store/db.ts";
@@ -13,7 +13,7 @@ import type { Db } from "../store/db.ts";
  */
 
 export const SAMPLE_CONNECTOR = "sample";
-export const SAMPLE_DIR = fileURLToPath(new URL("../../../../samples/workspace/", import.meta.url));
+export const SAMPLE_DIR = shippedDir("samples");
 
 /** The guided tour: what to ask, and what a good answer cites. The last one has no answer. */
 export const SAMPLE_TOUR: { question: string; expect: string }[] = [

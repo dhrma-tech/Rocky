@@ -7,6 +7,7 @@
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
     "scripts/**/*.ts",
+    "packaging/*.ts",
     "vitest.config.ts"
   ],
   "exclude": ["apps/web", "apps/landing"]

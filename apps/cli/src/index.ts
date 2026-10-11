@@ -437,4 +437,6 @@ watchCmd
     process.exitCode = await watchCommand("remove", folder, { dataDir: dataDir() });
   });
 
-await program.parseAsync();
+// Always Node-style argv: under the desktop app (ELECTRON_RUN_AS_NODE) commander would otherwise
+// guess an Electron app layout and read the script path as a command.
+await program.parseAsync(process.argv, { from: "node" });

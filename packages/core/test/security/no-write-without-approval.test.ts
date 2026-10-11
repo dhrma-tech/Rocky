@@ -105,7 +105,8 @@ describe("no write without approval", () => {
     // Prune dependency and build folders while walking; enumerating them is far too slow.
     function* walk(dir: string): Generator<string> {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (e.name === "node_modules" || e.name === "dist" || e.name.startsWith(".")) continue;
+        // stage/: the desktop app's packaging copy of these same sources.
+        if (["node_modules", "dist", "stage"].includes(e.name) || e.name.startsWith(".")) continue;
         const full = path.join(dir, e.name);
         if (e.isDirectory()) yield* walk(full);
         else if (/\.tsx?$/.test(e.name)) yield full;

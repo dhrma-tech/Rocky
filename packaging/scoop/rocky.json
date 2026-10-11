@@ -1,0 +1,19 @@
+{
+  "version": "{{VERSION}}",
+  "description": "Local-first memory and approval layer. Remembers, cites, drafts and waits for your approval.",
+  "homepage": "https://github.com/dhrma-tech/Rocky",
+  "license": "Apache-2.0",
+  "url": "https://github.com/dhrma-tech/Rocky/releases/download/v{{VERSION}}/Rocky-Setup-{{VERSION}}.exe#/dl.7z",
+  "hash": "{{SHA256:Rocky-Setup-{{VERSION}}.exe}}",
+  "architecture": {
+    "64bit": {
+      "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+    }
+  },
+  "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+  "shortcuts": [["Rocky.exe", "Rocky"]],
+  "checkver": { "github": "https://github.com/dhrma-tech/Rocky" },
+  "autoupdate": {
+    "url": "https://github.com/dhrma-tech/Rocky/releases/download/v$version/Rocky-Setup-$version.exe#/dl.7z"
+  }
+}

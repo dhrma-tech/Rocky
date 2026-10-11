@@ -7,7 +7,8 @@ const pkgs = path.resolve(import.meta.dirname, "../../..");
 
 function* files(dir: string): Generator<string> {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+    // Build output (apps/web/dist, the desktop app's stage/ and dist/) holds copies, not sources.
+    if (["node_modules", "dist", "stage"].includes(e.name) || e.name.startsWith(".")) continue;
     const full = path.join(dir, e.name);
     if (e.isDirectory()) yield* files(full);
     else if (/\.(ts|tsx|mts)$/.test(e.name)) yield full;

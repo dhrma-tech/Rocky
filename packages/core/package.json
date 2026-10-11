@@ -8,9 +8,13 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.71",
+    "@ai-sdk/google": "4.0.87",
+    "@ai-sdk/openai-compatible": "3.0.62",
     "@napi-rs/keyring": "2.1.0",
     "@rocky/connector-sdk": "workspace:*",
     "@rocky/contracts": "workspace:*",
+    "ai": "7.0.127",
     "better-sqlite3": "13.0.3",
     "chokidar": "5.0.0",
     "chrono-node": "2.10.2",
@@ -25,11 +29,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@ai-sdk/anthropic": "4.0.71",
-    "@ai-sdk/google": "4.0.87",
-    "@ai-sdk/openai-compatible": "3.0.62",
-    "@types/better-sqlite3": "^9.6.0",
-    "ai": "7.0.127"
+    "@types/better-sqlite3": "^9.6.0"
   },
   "optionalDependencies": {
     "better-sqlite3-multiple-ciphers": "13.0.3"

@@ -1,0 +1,46 @@
+# Desktop installers (roadmap A1, D-050). Built by .github/workflows/release.yml on each OS.
+# Unsigned for now: see docs/INSTALL.md for the one-time OS prompts.
+# Run through scripts/dist.ts (`pnpm dist`), with stage/ as the project dir: electron-builder collects dependencies from
+# the project dir's package.json, and stage/package.json has none. Paths below are relative to it.
+appId: dev.rocky.desktop
+productName: Rocky
+electronVersion: 44.7.0
+directories:
+  # Only package.json: electron-builder would otherwise re-collect node_modules itself and put
+  # Rocky's .ts packages under node_modules, where Node won't strip types. The real app is
+  # copied in as plain files by extraResources below.
+  app: shell
+  output: ../dist
+# The daemon runs .ts files on Electron's Node and loads native modules from disk; keep them
+# as plain files rather than inside an asar archive.
+asar: false
+# Native modules ship N-API prebuilds that load on any Node ABI; never compile at build time.
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+# The app itself (with node_modules) is copied in by scripts/dist.ts between packing and the
+# installer step: extraResources always leaves node_modules out.
+extraResources:
+  - from: home
+    to: home
+files:
+  - package.json
+  - apps/desktop/src/**
+win:
+  target: nsis
+nsis:
+  include: installer.nsh
+  artifactName: Rocky-Setup-${version}.exe
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target: dmg
+  artifactName: Rocky-${version}-${arch}.${ext}
+  category: public.app-category.productivity
+linux:
+  target: [AppImage, deb]
+  artifactName: Rocky-${version}-${arch}.${ext}
+  category: Utility
+  maintainer: Rocky contributors
+publish: null

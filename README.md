@@ -1,6 +1,6 @@
 # Rocky
 
-A local-first, open-source memory and approval layer for your work. Rocky remembers your meetings, lectures, messages, documents and apps, answers with verified citations (or says "Not found in your sources"), drafts changes, and waits for your approval before anything is written. It is aimed at students and developers who are comfortable in a terminal; there is no installer yet.
+A local-first, open-source memory and approval layer for your work. Rocky remembers your meetings, lectures, messages, documents and apps, answers with verified citations (or says "Not found in your sources"), drafts changes, and waits for your approval before anything is written. It is aimed at students and developers. A desktop app for Windows, macOS and Linux is built from this repo ([docs/INSTALL.md](docs/INSTALL.md); unsigned, and so far tried by hand only on Windows); developers can also run it from a checkout (Quickstart below).
 
 > Status: V1 complete, early software ([docs/PLAN.md](docs/PLAN.md)). Verified Ask over local files, 12 connectors (all experimental, see below) and imported chat exports; meeting and lecture capture with extracted commitments; notebooks and study; routines and briefs; the approval queue and audit log; opt-in store encryption; and an MCP server, all from the CLI and a local web UI. Website: see [apps/landing](apps/landing). How it compares with hosted agents, in checkable facts: [docs/ROCKY-VS-CLOUD-AGENTS.md](docs/ROCKY-VS-CLOUD-AGENTS.md).
 

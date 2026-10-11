@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   type AnswerSentence,
   type PathInfo,
@@ -16,6 +15,7 @@ import { Cron } from "croner";
 import { ulid } from "ulid";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
+import { shippedDir } from "../config/paths.ts";
 import { recordEvent } from "../events/log.ts";
 import { enqueue, type Job } from "../jobs/queue.ts";
 import type { JobHandler } from "../jobs/runner.ts";
@@ -36,7 +36,7 @@ const DAY = 86_400_000;
 const MAX_CHUNKS = 16;
 
 /** Shipped packs; `<dataDir>/templates` files with the same path win. */
-export const repoTemplatesDir = fileURLToPath(new URL("../../../../templates/", import.meta.url));
+export const repoTemplatesDir = shippedDir("templates");
 
 const TemplateRoutineSchema = z.object({
   name: z.string().min(1),

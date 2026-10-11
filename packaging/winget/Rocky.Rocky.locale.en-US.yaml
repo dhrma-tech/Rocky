@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+PackageIdentifier: Rocky.Rocky
+PackageVersion: "{{VERSION}}"
+PackageLocale: en-US
+Publisher: Rocky contributors
+PackageName: Rocky
+License: Apache-2.0
+PackageUrl: https://github.com/dhrma-tech/Rocky
+ShortDescription: Local-first memory and approval layer. Remembers, cites, drafts and waits for your approval.
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0
