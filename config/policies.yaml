@@ -29,6 +29,8 @@ tasks:
   style: { primary: local:medium, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_300s] }
   # Memory suggestions (roadmap A5): local first; every fact must quote its source exactly.
   memory_suggest: { primary: local:medium, fallback: api:cheap, escalate_on: [json_invalid_x2, timeout_300s] }
+  # Onboarding "Test connection" (UI spec 3): one tiny call that checks the API key; never local.
+  key_test: { primary: api:cheap, local_allowed: false, max_tokens: 8 }
 models:
   api:strong: anthropic/claude-sonnet-5-5
   api:cheap: anthropic/claude-haiku-4-5

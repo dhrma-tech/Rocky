@@ -1,0 +1,129 @@
+/* Onboarding (UI spec 3): a centred 560px column, one decision per step. */
+.rk-onb {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-12);
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-5);
+}
+.rk-onb__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--hit-min);
+}
+.rk-onb__step {
+  display: grid;
+  gap: var(--space-4);
+}
+.rk-onb__consequence {
+  margin: 0;
+  color: var(--color-text-2);
+}
+.rk-onb__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.rk-onb__actions .rk-button--primary {
+  margin-left: auto;
+}
+.rk-onb__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.rk-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.rk-swatches legend {
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+}
+.rk-swatch {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--hit-min);
+  height: var(--hit-min);
+  cursor: pointer;
+}
+.rk-swatch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.rk-swatch__dot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-strong);
+  background: var(--swatch);
+}
+.rk-swatch input:checked + .rk-swatch__dot {
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-text);
+}
+.rk-swatch input:focus-visible + .rk-swatch__dot {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: 4px;
+}
+.rk-onb__live {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-info-tint);
+  color: var(--color-info-text);
+}
+.rk-starters {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rk-starter {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  cursor: pointer;
+}
+.rk-starter:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.rk-starter input {
+  margin-top: 4px;
+}
+.rk-starter:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+@media (max-width: 599px) {
+  .rk-onb {
+    padding-bottom: calc(var(--space-12) + var(--hit-min));
+  }
+  /* Sticky bottom action bar on phones. */
+  .rk-onb__actions {
+    position: sticky;
+    bottom: 0;
+    padding: var(--space-3) 0;
+    background: var(--color-canvas);
+    border-top: 1px solid var(--color-border);
+  }
+}

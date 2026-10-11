@@ -693,3 +693,53 @@ export const system = {
   bench: () => call<NonNullable<ModelsView["speed"]>>("/models/bench", { method: "POST" }),
   storage: () => call<{ configured: boolean; encrypted: boolean }>("/storage"),
 };
+
+// --- Onboarding (UI spec 3) and the sample workspace (A9) ---
+
+export type Swatch = "periwinkle" | "rose" | "sage" | "butter" | "lilac" | "peach";
+export type BoundaryPreset = "ask-everything" | "read-only";
+
+export interface OnboardingView {
+  step: 1 | 2 | 3 | 4;
+  name: string;
+  swatch: Swatch;
+  preset: BoundaryPreset;
+  readOnlyRuleId: string | null;
+  completedAt: number | null;
+  firstRun: boolean;
+}
+
+export type KeyTestResult =
+  | { ok: true; model: string; ms: number }
+  | {
+      ok: false;
+      reason:
+        | "no-key"
+        | "key-invalid"
+        | "host-unreachable"
+        | "model-missing"
+        | "local-only"
+        | "budget"
+        | "other";
+      message: string;
+    };
+
+export const onboarding = {
+  get: () => call<OnboardingView>("/onboarding"),
+  save: (patch: {
+    step?: number;
+    name?: string;
+    swatch?: Swatch;
+    preset?: BoundaryPreset;
+    complete?: true;
+  }) => call<OnboardingView>("/onboarding", { method: "PATCH", body: JSON.stringify(patch) }),
+  testKey: () => call<KeyTestResult>("/onboarding/test-key", { method: "POST" }),
+  watchFolder: (path: string) =>
+    call<{ folder: { id: string; path: string } }>("/watched-folders", {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    }),
+  sample: () => call<{ loaded: boolean; tour: { question: string; expect: string }[] }>("/sample"),
+  loadSample: () => call<{ documents: number }>("/sample", { method: "POST" }),
+  suggestions: () => call<{ questions: string[] }>("/suggestions"),
+};

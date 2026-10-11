@@ -49,6 +49,7 @@ import { registerImportRoutes } from "./imports.ts";
 import { registerMemoryRoutes } from "./memory-routes.ts";
 import { registerModelRoutes } from "./model-routes.ts";
 import { registerNotebookRoutes } from "./notebook-routes.ts";
+import { registerOnboardingRoutes } from "./onboarding-routes.ts";
 import { registerProjectRoutes } from "./project-routes.ts";
 import { registerSampleRoutes } from "./sample-routes.ts";
 
@@ -555,6 +556,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerMemoryRoutes(api, { rt, body });
   registerProjectRoutes(api, { rt, body, rewatch: rewatch ?? (async () => {}) });
   registerSampleRoutes(api, { rt, poke: poke ?? (() => {}) });
+  registerOnboardingRoutes(api, { rt, body });
   registerImportRoutes(api, { rt, poke, body });
 
   // MCP over Streamable HTTP (PLAN §4.10): the same read-only tools as `rocky mcp`, behind the

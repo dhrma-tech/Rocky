@@ -22,7 +22,7 @@ Manual checks for the owner: run `pnpm dev` with the daemon; approve a draft and
 
 ## Current phase
 
-P1 (`feat/p1-trust-foundations`) complete; waiting for the owner's go-ahead before P2.
+P2 in progress on `main` (see "P2 status" below).
 
 ## Known limits
 
@@ -32,7 +32,7 @@ P1 (`feat/p1-trust-foundations`) complete; waiting for the owner's go-ahead befo
 
 ## P2 status (2026-10-08, paused: daily limit)
 
-Shipped on `feat/p2-installable-daily`: I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, Projects, Memory and Settings screens (spec 18: rules second, models, privacy, appearance), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
+Shipped (now on `main`, D-049): I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, Projects, Memory and Settings screens (spec 18: rules second, models, privacy, appearance), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
 Verified at pause: typecheck, lint, 686 unit tests, web build, Settings Playwright + axe at 360/768/1280.
-Left in P2: A1 installer (needs owner choice: Tauri vs Electron), screens Onboarding, Chat/workspace, Background, Files, Profile, Help, Task creation, Task history; Integrations restyle; command palette.
+Left in P2: A1 installer (needs owner choice: Tauri vs Electron), screens Chat/workspace, Background, Files, Profile, Help, Task creation, Task history; Integrations restyle; command palette.
 Open: routing default after A8 numbers; possible `rocky/db-key` keychain entry from a test run; flaky brief test (~1 in 6); macOS/Linux autostart unverified.

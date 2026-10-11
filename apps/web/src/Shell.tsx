@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen,
   Brain,
@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { LiveProvider, useLive, useOverallState } from "./agent-ui/live.tsx";
 import { Pebble } from "./agent-ui/Pebble.tsx";
 import { StatusChip } from "./agent-ui/StatusChip.tsx";
-import { ApiError, api } from "./api.ts";
+import { ApiError, api, onboarding, type Swatch } from "./api.ts";
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
 import { Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
@@ -61,7 +61,27 @@ const FOOTER: NavItem[] = [{ to: "/settings", label: "Settings", icon: Settings 
 
 export function Shell() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings, retry: false });
+  const setup = useQuery({
+    queryKey: ["onboarding"],
+    queryFn: onboarding.get,
+    enabled: settings.isSuccess,
+  });
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const firstRun = setup.data?.firstRun === true;
+  // A fresh install starts in onboarding (UI spec 3); an install with data never does.
+  useEffect(() => {
+    if (firstRun && path !== "/welcome") void navigate({ to: "/welcome", replace: true });
+  }, [firstRun, path, navigate]);
+
   if (settings.error instanceof ApiError && settings.error.status === 401) return <SignedOut />;
+  // Onboarding is a centred column without the sidebar.
+  if (path === "/welcome")
+    return (
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
+    );
   return (
     <ToastProvider>
       <LiveProvider enabled={settings.isSuccess}>
@@ -70,6 +90,8 @@ export function Shell() {
           localOnly={settings.data?.localOnly}
           retry={() => void settings.refetch()}
           lastSeen={settings.dataUpdatedAt}
+          name={setup.data?.name ?? "Rocky"}
+          swatch={setup.data?.swatch ?? "periwinkle"}
         />
       </LiveProvider>
     </ToastProvider>
@@ -81,11 +103,15 @@ function ShellFrame({
   localOnly,
   retry,
   lastSeen,
+  name,
+  swatch,
 }: {
   engineDown: boolean;
   localOnly: boolean | undefined;
   retry: () => void;
   lastSeen: number;
+  name: string;
+  swatch: Swatch;
 }) {
   // Phones start with the icon rail so the page keeps its width; the tab bar comes in P3.
   const [rail, setRail] = useState(() => window.matchMedia("(max-width: 899px)").matches);
@@ -149,10 +175,15 @@ function ShellFrame({
       </a>
       <nav aria-label="Main" className="rk-side" data-rail={rail}>
         <div className="rk-side__top">
-          <Pebble state={state} size={rail ? 32 : 40} label={rail ? "Rocky" : undefined} />
+          <Pebble
+            state={state}
+            size={rail ? 32 : 40}
+            swatch={swatch}
+            label={rail ? name : undefined}
+          />
           {!rail && (
             <div className="rk-side__status">
-              <strong>Rocky</strong>
+              <strong>{name}</strong>
               {state ? (
                 <StatusChip state={state} />
               ) : (

@@ -29,10 +29,10 @@ Status: **exists** (meets the acceptance text), **partial** (some of it is there
 
 | Phase | Branch | Scope (in order) |
 | --- | --- | --- |
-| P1 Trust and foundations | `feat/p1-trust-foundations` | I1, M3/A2 tiers (A2 live tests need user accounts), M1 copy, typed event stream, tokens (spec), base components, Ladle + Playwright + axe harness, app shell, status system, receipt, M2 approval card + queue, A4 rules + grants, A10 ledger + run page, Today |
-| P2 Installable and daily use | `feat/p2-installable-daily` | A1, I3, M5, A8, A9; Onboarding, Chat/workspace, A5 + Memory, A6 + Background, Settings + rules, Projects, Files, Profile, Help, Task creation, Task history |
-| P3 Reach and proactive | `feat/p3-reach-proactive` | A3 PWA + Telegram, Notifications, mobile layout, A7, M4 + X2, A11 + browser snapshot viewer |
-| P4 Differentiate and prove | `feat/p4-differentiate` | D1, D2, D3, D4, D6, D7/M6, I2, I4, I5, I6, I7; landing rebuilt from app components |
+| P1 Trust and foundations | `main` (was `feat/p1-trust-foundations`) | I1, M3/A2 tiers (A2 live tests need user accounts), M1 copy, typed event stream, tokens (spec), base components, Ladle + Playwright + axe harness, app shell, status system, receipt, M2 approval card + queue, A4 rules + grants, A10 ledger + run page, Today |
+| P2 Installable and daily use | `main` | A1, I3, M5, A8, A9; Onboarding, Chat/workspace, A5 + Memory, A6 + Background, Settings + rules, Projects, Files, Profile, Help, Task creation, Task history |
+| P3 Reach and proactive | `main` | A3 PWA + Telegram, Notifications, mobile layout, A7, M4 + X2, A11 + browser snapshot viewer |
+| P4 Differentiate and prove | `main` | D1, D2, D3, D4, D6, D7/M6, I2, I4, I5, I6, I7; landing rebuilt from app components |
 
 ## Roadmap items
 
@@ -134,7 +134,7 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | — | App shell | partial | `Shell.tsx` (different IA) | P1 | M |
 | 1 | Landing | partial (DESIGN.md §4 version) | `apps/landing` | P4 | M |
 | 2 | Sign-up / unlock | **n/a** (no passcode/lock in engine; D-004) | — | — | — |
-| 3 | Onboarding | missing | — | P2 | M |
+| 3 | Onboarding | done (D-048) | `OnboardingPage.tsx` | P2 | M |
 | 4 | Today | partial | `HomePage.tsx` | P1 | M |
 | 5 | Chat + workspace | partial | `AskPage.tsx` | P2 | L |
 | 6 | Task creation drawer | missing | — | P2 | M |
