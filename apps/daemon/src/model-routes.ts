@@ -1,15 +1,18 @@
 import {
   benchModel,
+  chooseStarter,
   listLocalModels,
   loadPolicy,
   loadSpeedProfile,
   type Runtime,
   recommendModels,
   saveSpeedProfile,
+  setupStarterModel,
   updateUserYaml,
 } from "@rocky/core";
 import type { Hono } from "hono";
 import { z } from "zod";
+import { type ErrorBody, sse } from "./assistant-routes.ts";
 
 /** Settings > Model and onboarding step 2 (roadmap A8): what is installed, what fits, how fast. */
 
@@ -19,7 +22,10 @@ const UseBody = z
 const strip = (s: string | undefined) =>
   s?.replace(/^ollama\//, "").replace(/:latest$/, "") ?? null;
 
-export function registerModelRoutes(api: Hono, { rt }: { rt: Runtime }): void {
+export function registerModelRoutes(
+  api: Hono,
+  { rt, errorBody }: { rt: Runtime; errorBody: ErrorBody },
+): void {
   api.get("/models", async (c) => {
     const policy = loadPolicy(rt.dataDir);
     const current = {
@@ -27,6 +33,9 @@ export function registerModelRoutes(api: Hono, { rt }: { rt: Runtime }): void {
       medium: strip(policy.models["local:medium"]),
     };
     const speed = loadSpeedProfile(rt.dataDir);
+    // What a first-run download would fetch on this machine (roadmap A1).
+    const s = chooseStarter(policy, rt.hardware);
+    const starter = s ? { pull: s.pull, use: s.use } : null;
     try {
       const installed = await listLocalModels(rt.config.ollama.baseUrl);
       return c.json({
@@ -34,6 +43,7 @@ export function registerModelRoutes(api: Hono, { rt }: { rt: Runtime }): void {
         hardware: rt.hardware,
         current,
         speed,
+        starter,
         ...recommendModels(rt.hardware, installed),
       });
     } catch (err) {
@@ -43,6 +53,7 @@ export function registerModelRoutes(api: Hono, { rt }: { rt: Runtime }): void {
         hardware: rt.hardware,
         current,
         speed,
+        starter,
         models: [],
         small: null,
         medium: null,
@@ -65,8 +76,24 @@ export function registerModelRoutes(api: Hono, { rt }: { rt: Runtime }): void {
         "local:medium": `ollama/${b.data.medium}`,
       },
     });
-    return c.json({ saved: true, restartNeeded: true });
+    rt.reloadPolicy();
+    return c.json({ saved: true, restartNeeded: false });
   });
+
+  // First run (roadmap A1): download the starter model for this machine, with progress.
+  api.post("/models/pull", (c) =>
+    sse(c, errorBody, async (send) => {
+      const r = await setupStarterModel({
+        dataDir: rt.dataDir,
+        baseUrl: rt.config.ollama.baseUrl,
+        policy: loadPolicy(rt.dataDir),
+        hardware: rt.hardware,
+        onProgress: (p) => send({ type: "progress", ...p }),
+      });
+      rt.reloadPolicy();
+      return r;
+    }),
+  );
 
   api.post("/models/bench", async (c) => {
     const model = strip(loadPolicy(rt.dataDir).models["local:medium"]);

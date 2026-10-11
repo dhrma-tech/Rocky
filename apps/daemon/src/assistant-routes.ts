@@ -33,7 +33,7 @@ import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 
 type Body = <T>(c: { req: { json(): Promise<unknown> } }, schema: z.ZodType<T>) => Promise<T>;
-type ErrorBody = (err: unknown) => { error: string; code: string };
+export type ErrorBody = (err: unknown) => { error: string; code: string };
 
 /**
  * Runs `work` as an SSE stream: progress events while it runs, then `done` with the result, or

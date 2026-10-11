@@ -26,7 +26,7 @@ const NO_LOCAL = {
 /** Stateful /onboarding on top of the shared mocks; returns the PATCH bodies it saw. */
 async function mockOnboarding(
   page: Page,
-  opts: { local?: boolean; keyTest?: unknown } = {},
+  opts: { local?: boolean | "ollama-empty"; keyTest?: unknown } = {},
 ): Promise<Record<string, unknown>[]> {
   const patches: Record<string, unknown>[] = [];
   let state: Record<string, unknown> = {
@@ -54,6 +54,20 @@ async function mockOnboarding(
     if (p === "/onboarding/test-key")
       return json(route, opts.keyTest ?? { ok: true, model: "claude-haiku-4-5", ms: 800 });
     if (p === "/models" && opts.local === false) return json(route, NO_LOCAL);
+    if (p === "/models" && opts.local === "ollama-empty")
+      return json(route, {
+        ...NO_LOCAL,
+        ollama: true,
+        starter: { pull: "qwen3.5:4b", use: "rocky-qwen3.5-4b-16k" },
+      });
+    if (p === "/models/pull")
+      return route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body:
+          'event: progress\ndata: {"model":"qwen3.5:4b","status":"pulling","total":100,"completed":50}\n\n' +
+          'event: done\ndata: {"result":{"model":"rocky-qwen3.5-4b-16k"}}\n\n',
+      });
     if (p === "/sample")
       return json(route, {
         loaded: false,
@@ -155,7 +169,7 @@ test("no local model: the API key leads, and a failed test names the cause and k
   });
   await page.goto("/welcome");
   await page.getByRole("button", { name: "Skip for now" }).click();
-  await expect(page.getByText("No local model found.")).toBeVisible();
+  await expect(page.getByText("Ollama isn't running on this computer.")).toBeVisible();
   const key = page.getByLabel(/Anthropic API key/);
   await key.fill("sk-wrong");
   await page.getByRole("button", { name: "Test connection" }).click();
@@ -178,4 +192,13 @@ test("a folder that isn't there keeps the step and says why", async ({ page }) =
   await continueBtn(page).click();
   await expect(page.getByText("Not a folder: C:\\nope")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choose what Rocky may touch" })).toBeVisible();
+});
+
+test("Ollama with no model: download the one sized for this computer", async ({ page }) => {
+  await mockOnboarding(page, { local: "ollama-empty" });
+  await page.goto("/welcome");
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page.getByText(/Rocky suggests/)).toBeVisible();
+  await page.getByRole("button", { name: "Download qwen3.5:4b" }).click();
+  await expect(page.getByText("Rocky now answers with rocky-qwen3.5-4b-16k.")).toBeVisible();
 });

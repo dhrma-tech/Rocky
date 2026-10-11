@@ -552,7 +552,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerEventRoutes(api, { rt });
-  registerModelRoutes(api, { rt });
+  registerModelRoutes(api, { rt, errorBody });
   registerMemoryRoutes(api, { rt, body });
   registerProjectRoutes(api, { rt, body, rewatch: rewatch ?? (async () => {}) });
   registerSampleRoutes(api, { rt, poke: poke ?? (() => {}) });

@@ -45,9 +45,16 @@ models:
 model_options:
   ollama/rocky-qwen3.5-4b-16k: { reasoning_effort: none }
   ollama/qwen3.5:4b: { reasoning_effort: none }
+  ollama/rocky-qwen3.5-2b-16k: { reasoning_effort: none }
 # Derived Ollama models, created by `rocky doctor --fix`. Ollama loads models with a 4096-token
 # context and silently drops the start of longer prompts (measured: prompts are cut to about
 # num_ctx / 2). Its OpenAI-compatible endpoint ignores a per-request num_ctx, so the context is
 # baked into a derived model instead. Measured 2026-10-06: ~43 prompt tokens/s on this CPU.
 ollama_models:
   rocky-qwen3.5-4b-16k: { from: "qwen3.5:4b", num_ctx: 16384 }
+# First-run download (roadmap A1, D-051): the first entry whose min_ram_gb this machine meets.
+# Tags checked on ollama.com/library/qwen3.5 on 2026-10-11. `use` is created from `pull` with
+# num_ctx, like ollama_models above, and becomes local:small and local:medium.
+starter_models:
+  - { min_ram_gb: 12, pull: "qwen3.5:4b", use: rocky-qwen3.5-4b-16k, num_ctx: 16384 }
+  - { min_ram_gb: 0, pull: "qwen3.5:2b", use: rocky-qwen3.5-2b-16k, num_ctx: 16384 }

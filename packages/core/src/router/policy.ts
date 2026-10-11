@@ -21,6 +21,17 @@ export const PolicyFileSchema = z.object({
   ollama_models: z
     .record(z.string(), z.object({ from: z.string(), num_ctx: z.number().int().min(2048) }))
     .default({}),
+  /** First-run download (roadmap A1): the first entry whose min_ram_gb the machine meets. */
+  starter_models: z
+    .array(
+      z.object({
+        min_ram_gb: z.number().nonnegative(),
+        pull: z.string().min(1),
+        use: z.string().min(1),
+        num_ctx: z.number().int().min(2048),
+      }),
+    )
+    .default([]),
 });
 export type PolicyFile = z.infer<typeof PolicyFileSchema>;
 

@@ -346,7 +346,7 @@ function Model({ stored, cap }: { stored: Record<string, boolean>; cap: number }
     mutationFn: (m: { small: string; medium: string }) => system.chooseModels(m.small, m.medium),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["models"] });
-      toast({ text: "Saved. Restart the daemon to use the new models." });
+      toast({ text: "Saved. Rocky uses them from the next question." });
     },
   });
   const bench = useMutation({

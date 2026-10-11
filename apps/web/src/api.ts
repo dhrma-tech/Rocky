@@ -681,6 +681,15 @@ export interface ModelsView {
   small: string | null;
   medium: string | null;
   note: string;
+  /** What a first-run download would fetch on this machine (roadmap A1). */
+  starter: { pull: string; use: string } | null;
+}
+
+export interface PullProgress {
+  model: string;
+  status: string;
+  completed?: number;
+  total?: number;
 }
 
 export const system = {
@@ -691,6 +700,10 @@ export const system = {
       body: JSON.stringify({ small, medium }),
     }),
   bench: () => call<NonNullable<ModelsView["speed"]>>("/models/bench", { method: "POST" }),
+  pullStarter: (onProgress: (p: PullProgress) => void) =>
+    postStream<{ model: string }>("/models/pull", {}, (e) => {
+      if (e.type === "progress") onProgress(e as unknown as PullProgress);
+    }),
   storage: () => call<{ configured: boolean; encrypted: boolean }>("/storage"),
 };
 

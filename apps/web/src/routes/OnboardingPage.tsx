@@ -9,6 +9,7 @@ import {
   type KeyTestResult,
   type OnboardingView,
   onboarding,
+  type PullProgress,
   type Swatch,
   system,
 } from "../api.ts";
@@ -295,22 +296,7 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
           }
         />
       )}
-      {m && !hasLocal && (
-        <Banner tone="info" title="No local model found.">
-          {m.ollama
-            ? "Ollama is running but has no model that can answer yet."
-            : "Ollama isn't running on this computer."}{" "}
-          To stay fully local, follow{" "}
-          <a
-            href="https://github.com/dhrma-tech/Rocky#quickstart-developers"
-            target="_blank"
-            rel="noreferrer"
-          >
-            the setup guide
-          </a>
-          , then run <code className="rk-mono">rocky doctor --fix</code>.
-        </Banner>
-      )}
+      {m && !hasLocal && <NoLocalModel ollama={m.ollama} starter={m.starter} />}
       {picked === "api" && (
         <Card>
           <form
@@ -390,6 +376,80 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
         </p>
       )}
     </div>
+  );
+}
+
+/** No answer model yet: download the one sized for this machine, or say how to get Ollama. */
+function NoLocalModel({
+  ollama,
+  starter,
+}: {
+  ollama: boolean;
+  starter: { pull: string; use: string } | null;
+}) {
+  const qc = useQueryClient();
+  const [progress, setProgress] = useState<PullProgress | null>(null);
+  const pull = useMutation({
+    mutationFn: () => system.pullStarter(setProgress),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["models"] }),
+  });
+  if (!ollama)
+    return (
+      <Banner tone="info" title="Ollama isn't running on this computer.">
+        Rocky runs local models through Ollama. Install it from{" "}
+        <a href="https://ollama.com/download" target="_blank" rel="noreferrer">
+          ollama.com/download
+        </a>
+        , start it, then come back to this step. Or use an API key below.
+      </Banner>
+    );
+  const pct =
+    progress?.total && progress.completed !== undefined
+      ? Math.round((progress.completed / progress.total) * 100)
+      : null;
+  return (
+    <Card>
+      <h2 className="rk-h3">No local model yet</h2>
+      {starter ? (
+        <>
+          <p className="rk-small">
+            For this computer's memory Rocky suggests <strong>{starter.pull}</strong>. Ollama
+            downloads it once (a few GB); after that nothing leaves this computer.
+          </p>
+          <div aria-live="polite">
+            {pull.isPending && (
+              <Progress
+                label={`${progress?.model ?? starter.pull}: ${progress?.status ?? "starting"}${pct === null ? "" : ` (${pct}%)`}`}
+                n={pct ?? 0}
+                of={pct === null ? undefined : 100}
+              />
+            )}
+            {pull.isSuccess && (
+              <Banner tone="success" title="Downloaded.">
+                Rocky now answers with {pull.data.model}.
+              </Banner>
+            )}
+            {pull.error && (
+              <Banner tone="error" title="The download stopped.">
+                {pull.error.message} Try again: Ollama resumes where it left off.
+              </Banner>
+            )}
+          </div>
+          {!pull.isSuccess && (
+            <div>
+              <Button
+                onClick={() => pull.mutate()}
+                loading={pull.isPending ? "Downloading…" : false}
+              >
+                Download {starter.pull}
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="rk-small">No starter model is set for this computer in policies.yaml.</p>
+      )}
+    </Card>
   );
 }
 

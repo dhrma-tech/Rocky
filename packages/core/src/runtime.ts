@@ -65,6 +65,8 @@ export interface Runtime {
   refreshNotebooks(): void;
   /** Runs every queued job (embedding) to completion. The daemon runs them in the background instead. */
   drainJobs(log?: (msg: string) => void): Promise<number>;
+  /** Re-reads policies.yaml (the model choice changed); the next model call uses it. */
+  reloadPolicy(): void;
   close(): void;
 }
 
@@ -108,7 +110,8 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   migrate(db, { backupDir: paths.backups });
 
   const hardware = opts.hardware ?? (await detectHardware());
-  const policy = loadPolicy(opts.dataDir);
+  // Re-read by reloadPolicy() after the model choice changes (Settings, onboarding), no restart.
+  let policy = loadPolicy(opts.dataDir);
   const prices = loadPrices(opts.dataDir);
   const localOnly = () => config.localOnly || Boolean(opts.localOnly);
   const gate = new ProviderGate(db, {
@@ -232,6 +235,9 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
       return queueDueRoutines(db, now, router.chain("routine", {})[0]?.local ?? true);
     },
     refreshNotebooks,
+    reloadPolicy: () => {
+      policy = loadPolicy(opts.dataDir);
+    },
     drainJobs: (log) => new JobRunner(db, jobHandlers, log ? { log } : {}).drain(),
     close: () => {
       if (refreshTimer) clearTimeout(refreshTimer);

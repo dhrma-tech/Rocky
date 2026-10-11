@@ -127,3 +127,7 @@
     border-top: 1px solid var(--color-border);
   }
 }
+/* Step headings take focus for screen readers when the step changes; no ring for that. */
+.rk-onb h1[tabindex="-1"]:focus {
+  outline: none;
+}
