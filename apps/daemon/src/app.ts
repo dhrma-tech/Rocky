@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -14,19 +15,26 @@ import {
   ProposeRequestSchema,
   type RuleCreate,
   RuleCreateSchema,
+  ScopeSchema,
   SettingsUpdateSchema,
 } from "@rocky/contracts";
 import {
   APPROVAL_HOLD_MS,
   addWatchedFolder,
+  appendTurn,
   ask,
   blobPath,
+  createConversation,
+  deleteConversation,
   deleteData,
   deleteDocument,
+  getConversation,
   ingestPath,
+  listConversations,
   listWatchedFolders,
   meetingSegments,
   type Runtime,
+  recordEvent,
   redact,
   removeWatchedFolder,
   SECRET_NAMES,
@@ -143,6 +151,8 @@ export interface AppDeps {
 
 /** Deny with an optional note for Rocky (UI spec 17). */
 const DenyBody = z.object({ note: z.string().max(500).optional() });
+const AskBody = AskRequestSchema.extend({ conversationId: z.string().max(40).optional() });
+const ConversationBody = z.object({ scope: ScopeSchema.optional() }).strict();
 
 export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }: AppDeps): Hono {
   const app = new Hono();
@@ -296,26 +306,85 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   // --- Ask (SSE) ---
+  // With a conversationId the verified answer is saved to that chat (UI spec 5). Every ask is a
+  // run in the ledger: thinking, working, then a receipt or an error. Events carry the question
+  // (the user's words) and counts, never answer text, so deleting a source leaves nothing behind.
   api.post("/ask", async (c) => {
-    const parsed = AskRequestSchema.safeParse(await c.req.json().catch(() => null));
+    const parsed = AskBody.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success)
       return c.json({ error: z.prettifyError(parsed.error), code: "BAD_REQUEST" }, 400);
+    const { conversationId, ...req } = parsed.data;
+    if (conversationId && !getConversation(rt.db, conversationId))
+      return c.json({ error: "No such conversation.", code: "NOT_FOUND" }, 404);
+    const runId = `ask:${randomUUID()}`;
+    const title = `Ask: ${req.question.length > 60 ? `${req.question.slice(0, 59)}…` : req.question}`;
+    const status = (state: "thinking" | "working" | "completed" | "failed", line?: string) =>
+      recordEvent(rt.db, {
+        kind: "status",
+        runId,
+        state,
+        runKind: "ask",
+        title,
+        ...(line ? { line } : {}),
+      });
     return streamSSE(c, async (stream) => {
       let chain = Promise.resolve();
+      let drafting = false;
       const send = (e: AskEvent) => {
+        if (e.type === "draft_sentence" && !drafting) {
+          drafting = true;
+          status("working", "Checking each statement against its source");
+        }
         const { type, ...data } = e;
         chain = chain.then(() => stream.writeSSE({ event: type, data: JSON.stringify(data) }));
       };
+      status("thinking", "Searching your sources");
       try {
-        await ask({ db: rt.db, router: rt.router, embedder: rt.embedder }, parsed.data, send);
-      } catch (err) {
-        chain = chain.then(() =>
-          stream.writeSSE({ event: "error", data: JSON.stringify(errorBody(err)) }),
+        const result = await ask(
+          { db: rt.db, router: rt.router, embedder: rt.embedder },
+          req,
+          send,
         );
+        if (conversationId) appendTurn(rt.db, conversationId, req.question, result);
+        const sources = new Set([
+          ...result.answer.flatMap((x) => x.citations.map((ci) => ci.documentId)),
+          ...result.closestMatches.map((m) => m.documentId),
+        ]).size;
+        recordEvent(rt.db, {
+          kind: "receipt",
+          runId,
+          tool: "Ask",
+          verb: result.notFound ? "found nothing in" : "cited",
+          count: sources,
+          unit: sources === 1 ? "source" : "sources",
+          notDone: "0 changed",
+        });
+        status("completed");
+      } catch (err) {
+        const body = errorBody(err);
+        recordEvent(rt.db, { kind: "error", runId, code: body.code, message: body.error });
+        status("failed");
+        chain = chain.then(() => stream.writeSSE({ event: "error", data: JSON.stringify(body) }));
       }
       await chain;
     });
   });
+
+  // --- Conversations (UI spec 5) ---
+  api.get("/conversations", (c) => c.json({ conversations: listConversations(rt.db) }));
+  api.post("/conversations", async (c) => {
+    const b = await body(c, ConversationBody);
+    return c.json({ id: createConversation(rt.db, b.scope ?? {}) }, 201);
+  });
+  api.get("/conversations/:id", (c) => {
+    const conv = getConversation(rt.db, c.req.param("id"));
+    return conv ? c.json(conv) : c.json({ error: "No such conversation.", code: "NOT_FOUND" }, 404);
+  });
+  api.delete("/conversations/:id", (c) =>
+    deleteConversation(rt.db, c.req.param("id"))
+      ? c.json({ deleted: true })
+      : c.json({ error: "No such conversation.", code: "NOT_FOUND" }, 404),
+  );
 
   // --- Ingest (manual import) ---
   api.post("/ingest", async (c) => {

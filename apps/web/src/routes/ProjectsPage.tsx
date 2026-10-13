@@ -186,11 +186,7 @@ export function ProjectPage() {
       <header className="rk-page__head">
         <h1 className="rk-title">{proj.name}</h1>
         {proj.notebookId && (
-          <Link
-            to="/notebooks/$id"
-            params={{ id: proj.notebookId }}
-            className="rk-button rk-button--primary"
-          >
+          <Link to="/ask" search={{ project: proj.id }} className="rk-button rk-button--primary">
             Ask about this project
           </Link>
         )}

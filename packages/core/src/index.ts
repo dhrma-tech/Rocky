@@ -6,6 +6,7 @@ export * from "./actions/service.ts";
 export * from "./actions/types.ts";
 export * from "./assistant/ask.ts";
 export * from "./assistant/brief.ts";
+export * from "./assistant/conversations.ts";
 export * from "./assistant/draft.ts";
 export * from "./assistant/home.ts";
 export * from "./assistant/propose.ts";

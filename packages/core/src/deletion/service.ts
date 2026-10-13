@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { deleteTurnsCiting } from "../assistant/conversations.ts";
 import { appendAudit } from "../audit/append.ts";
 import { dataPaths } from "../config/paths.ts";
 import { deleteChunkIndexes } from "../ingest/upsert.ts";
@@ -156,6 +157,8 @@ export function deleteData(
         .prepare(`delete from briefs where subject_id in ${inDocs}`)
         .run(...ids).changes;
       report.generated += db.prepare(citesDocs("routine_runs")).run(...ids).changes;
+      // Chat answers that quote these documents (or list them as closest matches).
+      report.generated += deleteTurnsCiting(db, ids);
       report.generated += db
         .prepare(
           `delete from style_profiles where exists (select 1 from json_each(style_profiles.source_document_ids) s where s.value in ${inDocs})`,
@@ -242,7 +245,7 @@ export function deleteData(
 
 /**
  * "Delete everything": the DB (with WAL and backups), blobs, eval databases and every Rocky
- * keychain entry. Settings files and downloaded models stay. The caller must close the DB first.
+ * keychain entry, and the memory profile. Settings files and downloaded models stay. The caller must close the DB first.
  */
 export function deleteEverything(dataDir: string, secrets: SecretStore): { removed: string[] } {
   const p = dataPaths(dataDir);
@@ -255,6 +258,8 @@ export function deleteEverything(dataDir: string, secrets: SecretStore): { remov
     p.rec,
     `${p.root}/evals`,
     `${p.root}/daemon.json`,
+    // The memory profile holds personal facts (roadmap A5): it is data, not a setting.
+    p.memory,
   ];
   const removed: string[] = [];
   for (const t of targets)

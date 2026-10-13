@@ -1,0 +1,347 @@
+/* Chat and workspace (UI spec 5): a 720px conversation beside a 420–560px work pane. */
+.rk-chat {
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+}
+.rk-chat[data-embedded] {
+  height: 70dvh;
+}
+.rk-chat__col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rk-chat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.rk-chat__crumbs {
+  margin: 0;
+  color: var(--color-text-2);
+}
+.rk-chat__tools {
+  display: flex;
+  gap: var(--space-1);
+}
+.rk-chat__log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
+}
+.rk-chat__turns {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 720px;
+  display: grid;
+  gap: var(--space-6);
+}
+.rk-turn {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-chat__empty {
+  max-width: 720px;
+  margin: 12vh auto 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-chat__empty p {
+  margin: 0;
+}
+.rk-chat__starters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.rk-starter-chip {
+  min-height: var(--hit-min);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rk-starter-chip:hover {
+  background: var(--color-surface-2);
+}
+.rk-starter-chip:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* Messages: you in blush on the right, Rocky in periwinkle on the left. */
+.rk-msg {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.rk-msg__body {
+  min-width: 0;
+  max-width: 72ch;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  font-family: var(--type-chat-font);
+  font-size: var(--type-chat-size);
+  line-height: var(--type-chat-line);
+}
+.rk-msg--user {
+  justify-content: flex-end;
+}
+.rk-msg--user .rk-msg__body {
+  background: var(--color-user-message);
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+.rk-msg--rocky .rk-msg__body {
+  flex: 1;
+  background: var(--color-rocky-message);
+  color: var(--color-text);
+  display: grid;
+  gap: var(--space-2);
+}
+.rk-msg--rocky[data-selected] .rk-msg__body {
+  box-shadow: inset 3px 0 0 var(--color-agent);
+}
+.rk-msg__answer {
+  margin: 0;
+  font-family: var(--type-chat-font);
+  font-size: var(--type-chat-size);
+  line-height: var(--type-chat-line);
+  color: var(--color-text);
+}
+.rk-msg__draft {
+  margin: 0;
+  color: var(--color-text-2);
+}
+.rk-msg__error {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-error-text);
+}
+.rk-msg__meta,
+.rk-msg__inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* Hover (or keyboard focus) reveals Copy and Edit. */
+.rk-msg__actions {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--duration-micro) var(--ease-standard);
+}
+.rk-msg--user .rk-msg__actions {
+  order: -1;
+}
+.rk-msg:hover .rk-msg__actions,
+.rk-msg:focus-within .rk-msg__actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .rk-msg__actions {
+    opacity: 1;
+  }
+}
+.rk-verify {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+}
+.rk-verify--ok {
+  color: var(--color-success-text);
+}
+.rk-verify--weak {
+  color: var(--color-warning-text);
+}
+.rk-verify--none {
+  color: var(--color-text-2);
+}
+.rk-run-card {
+  flex: 1;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+}
+.rk-run-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rk-run-card__line {
+  margin: 0;
+}
+.rk-skel-bubble {
+  display: block;
+  height: 72px;
+  border-radius: var(--radius-card);
+}
+.rk-skel-bubble--user {
+  width: 50%;
+  height: 44px;
+  margin-left: auto;
+}
+
+/* Composer */
+.rk-composer {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-4);
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-2);
+}
+.rk-composer__input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 56px;
+  max-height: 256px;
+  resize: none;
+  padding: var(--space-3);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-control);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font-family: var(--type-body-font);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+}
+.rk-composer__input:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: 1px;
+}
+.rk-composer__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.rk-composer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rk-chip-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-2);
+  font-size: var(--type-caption-size);
+  text-decoration: none;
+}
+a.rk-chip-quiet:hover {
+  background: var(--color-surface-2);
+}
+.rk-composer__hint {
+  margin: 0;
+}
+
+/* Work pane */
+.rk-pane {
+  width: clamp(420px, 34vw, 560px);
+  flex-shrink: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+  box-sizing: border-box;
+}
+.rk-pane__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rk-pane__body {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-pane__body p {
+  margin: 0;
+}
+.rk-pane__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-pane__list .rk-row-open {
+  display: grid;
+  width: 100%;
+  text-align: left;
+}
+.rk-history-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rk-history-row .rk-row-open {
+  flex: 1;
+}
+.rk-steps {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+}
+/* Planned is not done: steps that have not happened yet are outlined in words and colour. */
+.rk-steps li[data-planned] {
+  color: var(--color-text-muted);
+}
+.rk-chat__viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+@media (min-width: 1200px) {
+  .rk-chat__viewer {
+    position: relative;
+    inset: auto;
+    z-index: 20;
+  }
+}
+/* Below 900px the work pane is a full-screen sheet. */
+@media (max-width: 899px) {
+  .rk-pane {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    width: auto;
+    border-left: 0;
+  }
+}
+/* Links inside sentences are underlined, not told apart by colour alone. */
+.rk-pane__body p a,
+.rk-chat__empty p a {
+  text-decoration: underline;
+}

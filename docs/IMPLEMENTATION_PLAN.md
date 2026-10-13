@@ -136,7 +136,7 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 2 | Sign-up / unlock | **n/a** (no passcode/lock in engine; D-004) | — | — | — |
 | 3 | Onboarding | done (D-048) | `OnboardingPage.tsx` | P2 | M |
 | 4 | Today | partial | `HomePage.tsx` | P1 | M |
-| 5 | Chat + workspace | partial | `AskPage.tsx` | P2 | L |
+| 5 | Chat + workspace | done (D-053) | `AskPage.tsx` | P2 | L |
 | 6 | Task creation drawer | missing | — | P2 | M |
 | 7 | Running task (run page) | missing | — | P1 | M |
 | 8 | Ledger | partial | audit list in `ActionsPage.tsx` | P1 | M |

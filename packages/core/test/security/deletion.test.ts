@@ -85,6 +85,23 @@ async function seedDoc(name: string, body: string, connectorId?: string) {
   db.prepare(
     "insert into style_profiles (id, channel, descriptor, exemplars, updated_at, source_document_ids) values (?, 'email', 'brief', '[]', 1, ?)",
   ).run(`sp-${id}`, JSON.stringify([id]));
+  // A saved chat turn whose answer quotes the document (UI spec 5).
+  db.prepare(
+    "insert or ignore into conversations (id, title, scope, created_at, updated_at) values ('conv', 'Deck?', '{}', 1, 1)",
+  ).run();
+  db.prepare(
+    "insert into conversation_turns (id, conversation_id, ord, question, answer, created_at) values (?, 'conv', 0, 'Who sends the deck?', ?, 1)",
+  ).run(
+    `t-${id}`,
+    JSON.stringify({
+      answer: JSON.parse(output),
+      notFound: false,
+      closestMatches: [],
+      path: null,
+      verifierPath: null,
+      usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+    }),
+  );
   return { id, chunkIds: chunks.map((c) => c.id), seqs: chunks.map((c) => c.seq) };
 }
 
@@ -169,7 +186,7 @@ describe("deletion leaves nothing behind", () => {
       cards: 1,
       blobs: 1,
       auditPayloads: 1,
-      generated: 3,
+      generated: 4,
     });
     expect(remnants([a.id, ...a.chunkIds], a.seqs)).toEqual([]);
     expect(fs.existsSync(blobPath(blobs, blob.blob_hash))).toBe(false);
@@ -224,7 +241,7 @@ describe("deletion leaves nothing behind", () => {
     const fileDb = openDb(file);
     migrate(fileDb);
     fileDb.close();
-    for (const d of ["backups", "blobs/ab", "evals", "rec/01ABC/mic"])
+    for (const d of ["backups", "blobs/ab", "evals", "rec/01ABC/mic", "memory/people"])
       fs.mkdirSync(path.join(data, d), { recursive: true });
     fs.writeFileSync(path.join(data, "rocky.yaml"), "localOnly: true\n");
     const secrets = memorySecrets({

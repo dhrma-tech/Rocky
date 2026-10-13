@@ -71,8 +71,12 @@ const routeTree = rootRoute.addChildren([
     getParentRoute: () => rootRoute,
     path: "/ask",
     component: AskPage,
-    validateSearch: (s: Record<string, unknown>): { q?: string } =>
-      typeof s.q === "string" && s.q.trim() ? { q: s.q.slice(0, 4000) } : {},
+    // q: ask on arrival; c: reopen a conversation; project: scope the chat to a project.
+    validateSearch: (s: Record<string, unknown>): { q?: string; c?: string; project?: string } => ({
+      ...(typeof s.q === "string" && s.q.trim() ? { q: s.q.slice(0, 4000) } : {}),
+      ...(typeof s.c === "string" && /^[0-9A-Z]{26}$/.test(s.c) ? { c: s.c } : {}),
+      ...(typeof s.project === "string" && s.project.length <= 40 ? { project: s.project } : {}),
+    }),
   }),
   createRoute({
     getParentRoute: () => rootRoute,

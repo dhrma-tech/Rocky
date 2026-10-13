@@ -30,9 +30,9 @@ P2 in progress on `main` (see "P2 status" below).
 - The strict-review UI is a checkbox on the current approval card; the M2 card replaces it later in P1.
 - A2: no connector can be promoted to supported until the owner adds test-account secrets; Google test-mode refresh tokens expire after 7 days.
 
-## P2 status (2026-10-08, paused: daily limit)
+## P2 status (2026-10-13)
 
-Shipped (now on `main`, D-049): I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, Projects, Memory and Settings screens (spec 18: rules second, models, privacy, appearance), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
-Verified at pause: typecheck, lint, 686 unit tests, web build, Settings Playwright + axe at 360/768/1280.
-Left in P2: screens Chat/workspace, Background, Files, Profile, Help, Task creation, Task history; Integrations restyle; command palette.
-Open: routing default after A8 numbers; possible `rocky/db-key` keychain entry from a test run; flaky brief test (~1 in 6); macOS/Linux autostart unverified.
+Shipped on `main`: I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, A1 desktop app, installers and first-run model (D-050, D-051), screens Onboarding (D-048), Projects, Memory, Settings (spec 18) and Chat/workspace (D-053), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
+Verified 2026-10-13: typecheck, lint; `pnpm test` 101 files, 725 passed, 1 skipped; `test:security` 18 files, 157 passed; `test:e2e` 20 passed (chat, onboarding, screens, stories; axe at 360/768/1280); `build:web` ok.
+Left in P2: screens Background, Files, Profile, Help, Task creation, Task history; Integrations restyle; command palette; A1 Docker fallback (D-052, owner decision).
+Open: routing default after A8 numbers; possible `rocky/db-key` keychain entry from a test run; flaky brief test (~1 in 6); macOS/Linux autostart and builds unverified.

@@ -227,6 +227,91 @@ describe("API", () => {
     expect(rt.db.prepare("select count(*) as n from chunks_fts").get()).toEqual({ n: 0 });
   });
 
+  it("a chat keeps its verified turns, the ledger gets the run, and deleting the source drops the turn", async () => {
+    const corpus = path.join(dir, "corpus");
+    fs.mkdirSync(corpus);
+    fs.writeFileSync(
+      path.join(corpus, "renewal.md"),
+      "# Renewal\n\nThe CloudHost contract renews on November 1. Notice is 30 days.",
+    );
+    await req("/api/v1/ingest", {
+      method: "POST",
+      headers: bearer,
+      body: JSON.stringify({ path: corpus }),
+    });
+    await rt.drainJobs();
+    const created = await req("/api/v1/conversations", {
+      method: "POST",
+      headers: bearer,
+      body: "{}",
+    });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: string };
+    // Nothing is listed until the first answer is saved.
+    expect(await (await req("/api/v1/conversations", { headers: bearer })).json()).toEqual({
+      conversations: [],
+    });
+
+    const question = "When does the CloudHost contract renew?";
+    await (
+      await req("/api/v1/ask", {
+        method: "POST",
+        headers: bearer,
+        body: JSON.stringify({ question, conversationId: id }),
+      })
+    ).text();
+
+    const conv = (await (await req(`/api/v1/conversations/${id}`, { headers: bearer })).json()) as {
+      title: string;
+      history: {
+        question: string;
+        result: { answer: { citations: { documentId: string }[] }[] };
+      }[];
+    };
+    expect(conv.title).toBe(question);
+    expect(conv.history).toHaveLength(1);
+    const docId = conv.history[0]?.result.answer[0]?.citations[0]?.documentId ?? "";
+
+    const events = (await (
+      await req("/api/v1/events/page?tail=50", { headers: bearer })
+    ).json()) as {
+      events: {
+        kind: string;
+        state?: string;
+        runId: string | null;
+        tool?: string;
+        count?: number;
+      }[];
+    };
+    const run = events.events.filter((e) => e.runId?.startsWith("ask:"));
+    expect(run.map((e) => e.state ?? e.kind)).toEqual([
+      "thinking",
+      "working",
+      "receipt",
+      "completed",
+    ]);
+    expect(run[2]).toMatchObject({ tool: "Ask", count: 1 });
+    // The ledger never holds answer text.
+    expect(JSON.stringify(run)).not.toContain("November 1");
+
+    await req(`/api/v1/documents/${docId}`, { method: "DELETE", headers: bearer });
+    const after = (await (
+      await req(`/api/v1/conversations/${id}`, { headers: bearer })
+    ).json()) as {
+      history: unknown[];
+    };
+    expect(after.history).toEqual([]);
+    expect(
+      (
+        await req("/api/v1/ask", {
+          method: "POST",
+          headers: bearer,
+          body: JSON.stringify({ question, conversationId: "nope" }),
+        })
+      ).status,
+    ).toBe(404);
+  });
+
   it("streams policy errors as an SSE error event with their code", async () => {
     await ingestPath(rt.db, rt.paths.blobs, fixture("."));
     await rt.drainJobs();

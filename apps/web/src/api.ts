@@ -437,7 +437,7 @@ export const api = {
  * Resolves with the final result; an `error` event rejects with an ApiError.
  */
 export async function askStream(
-  req: AskRequest,
+  req: AskRequest & { conversationId?: string },
   onEvent: (e: AskEvent) => void,
   signal?: AbortSignal,
 ): Promise<AskResult> {
@@ -755,4 +755,28 @@ export const onboarding = {
   sample: () => call<{ loaded: boolean; tour: { question: string; expect: string }[] }>("/sample"),
   loadSample: () => call<{ documents: number }>("/sample", { method: "POST" }),
   suggestions: () => call<{ questions: string[] }>("/suggestions"),
+};
+
+// --- Conversations (UI spec 5) ---
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  scope: { notebookIds?: string[] };
+  turns: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ConversationView extends ConversationSummary {
+  history: { id: string; question: string; result: AskResult; createdAt: number }[];
+}
+
+export const conversations = {
+  list: () => call<{ conversations: ConversationSummary[] }>("/conversations"),
+  get: (id: string) => call<ConversationView>(`/conversations/${encodeURIComponent(id)}`),
+  create: (scope: { notebookIds?: string[] }) =>
+    call<{ id: string }>("/conversations", { method: "POST", body: JSON.stringify({ scope }) }),
+  remove: (id: string) =>
+    call<{ deleted: boolean }>(`/conversations/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
