@@ -80,8 +80,16 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/tasks/background",
+    component: lazyRouteComponent(() => import("./routes/BackgroundPage.tsx"), "BackgroundPage"),
+  }),
+  // Routines live under Tasks > Background (UI spec 11).
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/routines",
-    component: lazyRouteComponent(() => import("./routes/RoutinesPage.tsx"), "RoutinesPage"),
+    beforeLoad: () => {
+      throw redirect({ to: "/tasks/background" });
+    },
   }),
   createRoute({ getParentRoute: () => rootRoute, path: "/notebooks", component: NotebooksPage }),
   createRoute({

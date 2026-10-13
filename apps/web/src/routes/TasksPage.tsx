@@ -7,7 +7,7 @@ import "./screens.css";
 
 /**
  * Tasks (P1): what is running and what finished in the last day, from the live event stream.
- * The full history table, filters and Background routines arrive with screens 10 and 11 (P2).
+ * Background routines are in Tasks > Background (screen 11); the history table comes with screen 10.
  */
 export function TasksPage() {
   const live = useLive();
@@ -27,8 +27,8 @@ export function TasksPage() {
     <div className="rk-page">
       <header className="rk-page__head">
         <h1 className="rk-title">Tasks</h1>
-        <Link to="/routines" className="rk-button rk-button--secondary">
-          Routines
+        <Link to="/tasks/background" className="rk-button rk-button--secondary">
+          Background
         </Link>
       </header>
       {live.loading && <Skeleton rows={3} height={120} label="Loading tasks" />}
@@ -43,7 +43,7 @@ export function TasksPage() {
         <EmptyState
           headline="No tasks yet."
           action={
-            <Link to="/routines" className="rk-button rk-button--primary">
+            <Link to="/tasks/background" className="rk-button rk-button--primary">
               Set up a routine
             </Link>
           }

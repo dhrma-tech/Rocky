@@ -563,6 +563,7 @@ export const assistant = {
   deleteRoutine: (id: string) =>
     call<{ deleted: boolean }>(`/routines/${id}`, { method: "DELETE" }),
   runRoutine: (id: string) => call<{ jobId: string }>(`/routines/${id}/run`, { method: "POST" }),
+  pauseAllRoutines: () => call<{ paused: string[] }>("/routines/pause-all", { method: "POST" }),
   runs: (id: string) => call<{ runs: RoutineRun[] }>(`/routines/${encodeURIComponent(id)}/runs`),
   templates: () =>
     call<{

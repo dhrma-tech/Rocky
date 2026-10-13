@@ -121,7 +121,7 @@ Status: **exists** (meets the acceptance text), **partial** (some of it is there
 | Completed | missing | P1 | Rest + check; success chip "Done"; one-line summary with counts; Open results, Undo, Re-run |
 | Failed | missing | P1 | Static + error mark; error chip; failed step auto-opens with what happened / tried / you can do; receipts stay |
 | Waiting | missing | P2 | Dimmed; neutral chip with clock; what and until when; Check now, Stop waiting |
-| Background | missing | P2 | Sidebar "n running"; neutral chip; notify only needs-you/done/failed |
+| Background | partial (D-054: sidebar count + Tasks > Background; notifications P3) | P2 | Sidebar "n running"; neutral chip; notify only needs-you/done/failed |
 | Learned | missing | P2 | Bookmark mark; "Learned" chip; batched memory notice; Edit, Forget, Accept |
 | Remembers | missing | P2 | "Used memory: …" chip with book icon; hover shows line; click opens file |
 
@@ -142,7 +142,7 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 8 | Ledger | partial | audit list in `ActionsPage.tsx` | P1 | M |
 | 9 | Browser view | missing | — | P3 (snapshot viewer + bar; live off) | M |
 | 10 | Task history | missing | — | P2 | M |
-| 11 | Background | partial | `RoutinesPage.tsx` | P2 | M |
+| 11 | Background | done (D-054) | `BackgroundPage.tsx`, `RoutineEditor.tsx` | P2 | M |
 | 12 | Projects | missing (no project entity) | — | P2 | L |
 | 13 | Memory | missing | — | P2 | M |
 | 14 | Files | missing | — | P2 | M |

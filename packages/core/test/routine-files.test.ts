@@ -11,6 +11,7 @@ import {
   getRoutine,
   listRoutines,
   parseRoutineFile,
+  pauseAllRoutines,
   routinesDir,
   runRoutine,
   syncRoutineFiles,
@@ -117,6 +118,24 @@ describe("routine files", () => {
   });
 });
 
+describe("pause all", () => {
+  it("switches off only the routines that were on and returns them", () => {
+    const mk = (name: string, enabled: boolean) =>
+      createRoutine(db, {
+        name,
+        schedule: "0 7 * * *",
+        inputs: ["overdue"],
+        prompt: "List what is overdue.",
+        enabled,
+      });
+    const on = [mk("A", true), mk("B", true)];
+    mk("C", false);
+    expect(pauseAllRoutines(db).sort()).toEqual(on.sort());
+    expect(listRoutines(db).map((r) => r.enabled)).toEqual([false, false, false]);
+    expect(pauseAllRoutines(db)).toEqual([]);
+  });
+});
+
 describe("auto-pause", () => {
   it("three failed runs in a row pause the routine and say why", async () => {
     const at = (h: number) => new Date(2026, 9, 7, h, 0).getTime();
@@ -147,7 +166,14 @@ describe("auto-pause", () => {
       expect(getRoutine(db, id).enabled).toBe(true);
     }
     expect((await runRoutine({ db, router: h.router }, id, at(7) + 2)).status).toBe("failed");
-    expect(getRoutine(db, id).enabled).toBe(false);
+    expect(getRoutine(db, id)).toMatchObject({
+      enabled: false,
+      autoPaused: true,
+      recent: ["failed", "failed", "failed"],
+    });
+    // Resuming clears the warning.
+    updateRoutine(db, id, { enabled: true });
+    expect(getRoutine(db, id).autoPaused).toBe(false);
     expect(
       eventsAfter(db, 0).find((e) => e.kind === "error" && e.code === "ROUTINE_PAUSED"),
     ).toMatchObject({ message: "Brief failed 3 times in a row, so Rocky paused it." });

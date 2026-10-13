@@ -301,7 +301,7 @@ export function TodayPage() {
                 None scheduled.
               </p>
             )}
-            <Link to="/routines" className="rk-small">
+            <Link to="/tasks/background" className="rk-small">
               New routine
             </Link>
           </Card>

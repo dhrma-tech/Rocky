@@ -84,6 +84,18 @@ SCREENS.push(
       s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
   },
   {
+    name: "background",
+    url: "/tasks/background",
+    ready: (s) =>
+      s === "populated"
+        ? "text=Paused after failing"
+        : s === "empty"
+          ? "text=Nothing runs while you're away."
+          : s === "error"
+            ? "text=Couldn't read your routines."
+            : "h1",
+  },
+  {
     name: "settings",
     url: "/settings",
     ready: () => "text=Search settings",
@@ -212,4 +224,34 @@ test("settings: every category passes axe at 360 and 1280", async ({ page }) => 
     "Permissions and rules",
   );
   expect(problems).toEqual([]);
+});
+
+test("background: a self-paused routine is on top, and Pause all asks first and can be undone", async ({
+  page,
+}) => {
+  const posts: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") posts.push(`${r.method()} ${new URL(r.url()).pathname}`);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/routines");
+  await expect(page).toHaveURL(/\/tasks\/background$/);
+  const stuck = page.getByRole("region", { name: "Paused after failing" });
+  await expect(stuck.getByText("Failed 3 times in a row, so Rocky paused it.")).toBeVisible();
+  await expect(stuck.getByText(/Ollama is not running/)).toBeVisible();
+  await expect(stuck.getByRole("button", { name: "Fix: Deadline digest" })).toBeVisible();
+  await expect(
+    page.getByText(/Last 4 runs, newest last: done, failed, done, done\./),
+  ).toBeAttached();
+
+  await page.getByRole("button", { name: "Pause all" }).click();
+  await expect(page.getByRole("dialog", { name: "Pause every routine?" })).toBeVisible();
+  expect(posts).toEqual([]);
+  await page.getByRole("dialog").getByRole("button", { name: "Pause all" }).click();
+  await expect(page.getByText("Paused 1 routine.")).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(() => posts)
+    .toEqual(["POST /api/v1/routines/pause-all", "PATCH /api/v1/routines/r1"]);
 });

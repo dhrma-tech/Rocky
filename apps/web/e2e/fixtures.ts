@@ -207,22 +207,52 @@ const HOME = {
   lastRun: null,
 };
 
-const ROUTINES = {
+const run = (status: "done" | "failed", at: number, error: string | null = null) => ({
+  id: `run-${at}`,
+  routineId: "r",
+  startedAt: at,
+  finishedAt: at + 60_000,
+  status,
+  answer: [],
+  notFound: status === "done",
+  error,
+  path: null,
+});
+const routine = (o: Record<string, unknown>) => ({
+  pack: null,
+  template: null,
+  inputs: ["overdue"],
+  prompt: "Summarise.",
+  edited: false,
+  file: null,
+  lastRunAt: null,
+  nextRunAt: null,
+  lastRun: null,
+  recent: [],
+  autoPaused: false,
+  ...o,
+});
+export const ROUTINES = {
   routines: [
-    {
+    routine({
       id: "r1",
       name: "Monday brief",
-      pack: null,
-      template: null,
       schedule: "0 8 * * 1",
       enabled: true,
-      inputs: [],
-      prompt: "",
-      edited: false,
-      lastRunAt: null,
       nextRunAt: NOW + 3 * 86_400_000,
-      lastRun: null,
-    },
+      lastRun: run("done", NOW - 4 * 86_400_000),
+      recent: ["done", "done", "failed", "done"],
+    }),
+    routine({
+      id: "r2",
+      name: "Deadline digest",
+      schedule: "0 18 * * 0",
+      enabled: false,
+      autoPaused: true,
+      lastRun: run("failed", NOW - 86_400_000, "Ollama is not running at http://127.0.0.1:11434."),
+      recent: ["failed", "failed", "failed", "done", "done"],
+    }),
+    routine({ id: "r3", name: "End of day", schedule: "0 17 * * 1-5", enabled: false }),
   ],
 };
 
@@ -357,7 +387,7 @@ export async function mockApi(page: Page, scenario: Scenario) {
         secrets: {},
       });
     if (scenario === "loading") return; // never answers
-    if (scenario === "error" && path.startsWith("/actions"))
+    if (scenario === "error" && (path.startsWith("/actions") || path === "/routines"))
       return json(route, { error: "The store could not be read.", code: "INTERNAL" }, 500);
     const full = scenario === "populated";
     if (path === "/actions" && method === "GET") {
@@ -373,6 +403,18 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/home")
       return json(route, full ? HOME : { ...HOME, today: [], dueSoon: [], pendingApprovals: 0 });
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
+    if (path === "/routines/pause-all") return json(route, { paused: ["r1"] });
+    if (path === "/templates")
+      return json(route, {
+        packs: [
+          {
+            id: "student",
+            name: "Student",
+            description: "Classes and deadlines.",
+            routines: [{ template: "morning", name: "Morning brief", schedule: "0 7 * * 1-5" }],
+          },
+        ],
+      });
     if (path === "/recordings/active") return json(route, { recordings: [] });
     if (path === "/memory") return json(route, full ? MEMORY : { dir: MEMORY.dir, files: [] });
     if (path === "/memory/file")

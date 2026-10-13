@@ -213,4 +213,17 @@ describe("routines, home and timeline routes", () => {
     expect(tl.body.items).toEqual([]);
     expect((await req("/timeline?from=5&to=1")).status).toBe(400);
   });
+
+  it("pause all switches off every running routine and returns their ids for undo", async () => {
+    const list = await req<{ routines: Routine[] }>("/routines");
+    const [a, b] = list.body.routines.map((r) => r.id) as [string, string];
+    for (const id of [a, b])
+      await req(`/routines/${id}`, { method: "PATCH", body: JSON.stringify({ enabled: true }) });
+    const res = await req<{ paused: string[] }>("/routines/pause-all", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(res.body.paused.sort()).toEqual([a, b].sort());
+    const after = await req<{ routines: Routine[] }>("/routines");
+    expect(after.body.routines.every((r) => !r.enabled && !r.autoPaused)).toBe(true);
+    expect(after.body.routines[0]?.recent).toEqual([]);
+  });
 });

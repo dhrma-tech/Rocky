@@ -100,6 +100,17 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+.rk-nav__count {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  font-variant-numeric: tabular-nums;
+}
+.rk-side[data-rail="true"] .rk-nav__count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
 .rk-side[data-rail="true"] .rk-nav__badge {
   position: absolute;
   top: 2px;

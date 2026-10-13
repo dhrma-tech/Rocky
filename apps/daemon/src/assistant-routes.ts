@@ -20,6 +20,7 @@ import {
   latestBrief,
   listPacks,
   listRoutines,
+  pauseAllRoutines,
   proposeFromDocument,
   queueStyleRefresh,
   ROUTINE_JOB,
@@ -165,6 +166,7 @@ export function registerAssistantRoutes(
     });
     return c.json({ added, routines: listRoutines(rt.db, opts()) }, 201);
   });
+  api.post("/routines/pause-all", (c) => c.json({ paused: pauseAllRoutines(rt.db) }));
   api.get("/routines/:id", (c) => c.json(getRoutine(rt.db, c.req.param("id"), opts())));
   api.patch("/routines/:id", async (c) => {
     updateRoutine(rt.db, c.req.param("id"), await body(c, RoutineUpdateSchema));

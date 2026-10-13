@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { LiveProvider, useLive, useOverallState } from "./agent-ui/live.tsx";
 import { Pebble } from "./agent-ui/Pebble.tsx";
+import { activeRuns } from "./agent-ui/runs.ts";
 import { StatusChip } from "./agent-ui/StatusChip.tsx";
 import { ApiError, api, onboarding, type Swatch } from "./api.ts";
 import { RecordingPill } from "./components/capture.tsx";
@@ -123,6 +124,8 @@ function ShellFrame({
   const pendingCount = pending.data?.actions.length ?? 0;
   const live = useLive();
   const state = useOverallState(pendingCount);
+  // UI spec "Background" state: a calm count in the sidebar, no animation.
+  const runningCount = activeRuns(live.runs).length;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -150,6 +153,12 @@ function ShellFrame({
           <span className="rk-nav__badge">
             {pendingCount}
             <span className="sr-only"> waiting for you</span>
+          </span>
+        )}
+        {to === "/tasks" && runningCount > 0 && (
+          <span className="rk-nav__count">
+            {runningCount}
+            <span className={rail ? "sr-only" : undefined}> running</span>
           </span>
         )}
       </Link>

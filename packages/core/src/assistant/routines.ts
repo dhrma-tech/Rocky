@@ -226,9 +226,11 @@ function row(db: Db, id: string): Row {
 }
 
 function toRoutine(db: Db, r: Row, dataDir: string | undefined, now: number): Routine {
-  const last = db
-    .prepare("select * from routine_runs where routine_id = ? order by started_at desc limit 1")
-    .get(r.id) as RunRow | undefined;
+  const runs = db
+    .prepare("select * from routine_runs where routine_id = ? order by started_at desc limit 5")
+    .all(r.id) as RunRow[];
+  const last = runs[0];
+  const recent = runs.map((x) => x.status);
   const shipped = r.pack && r.template_ref ? templatePrompt(dataDir, r.pack, r.template_ref) : "";
   return {
     id: r.id,
@@ -247,6 +249,11 @@ function toRoutine(db: Db, r: Row, dataDir: string | undefined, now: number): Ro
     lastRunAt: r.last_run_at,
     nextRunAt: r.enabled === 1 ? nextScheduled(r.schedule_cron, now) : null,
     lastRun: last ? toRun(last) : null,
+    recent,
+    autoPaused:
+      r.enabled === 0 &&
+      recent.length >= PAUSE_AFTER_FAILURES &&
+      recent.slice(0, PAUSE_AFTER_FAILURES).every((x) => x === "failed"),
   };
 }
 
@@ -345,6 +352,15 @@ export function updateRoutine(db: Db, id: string, patch: RoutineUpdate, now = Da
     patch.enabled && !r.enabled ? now : r.last_run_at,
     id,
   );
+}
+
+/** UI spec 11 "Pause all": switches every running routine off. Returns their ids (for Undo). */
+export function pauseAllRoutines(db: Db, now = Date.now()): string[] {
+  const ids = (
+    db.prepare("select id from routines where enabled = 1").all() as { id: string }[]
+  ).map((r) => r.id);
+  for (const id of ids) updateRoutine(db, id, { enabled: false }, now);
+  return ids;
 }
 
 export function deleteRoutine(db: Db, id: string): void {

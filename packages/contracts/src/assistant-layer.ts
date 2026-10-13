@@ -88,6 +88,10 @@ export const RoutineSchema = z.object({
   lastRunAt: z.number().int().nullable(),
   nextRunAt: z.number().int().nullable(),
   lastRun: RoutineRunSchema.nullable(),
+  /** Status of the last five runs, newest first (UI spec 11 health strip). */
+  recent: z.array(RoutineRunSchema.shape.status),
+  /** Off because its last three runs failed (auto-pause), not because the user switched it off. */
+  autoPaused: z.boolean(),
 });
 export type Routine = z.infer<typeof RoutineSchema>;
 
