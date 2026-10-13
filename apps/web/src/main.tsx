@@ -80,6 +80,11 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/files",
+    component: lazyRouteComponent(() => import("./routes/FilesPage.tsx"), "FilesPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/profile",
     component: lazyRouteComponent(() => import("./routes/ProfilePage.tsx"), "ProfilePage"),
   }),

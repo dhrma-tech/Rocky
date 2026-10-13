@@ -55,6 +55,7 @@ import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
 import { registerEventRoutes } from "./event-routes.ts";
+import { registerFileRoutes } from "./file-routes.ts";
 import { registerImportRoutes } from "./imports.ts";
 import { registerMemoryRoutes } from "./memory-routes.ts";
 import { registerModelRoutes } from "./model-routes.ts";
@@ -635,6 +636,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerEventRoutes(api, { rt });
+  registerFileRoutes(api, { rt });
   registerModelRoutes(api, { rt, errorBody });
   registerMemoryRoutes(api, { rt, body });
   registerProjectRoutes(api, { rt, body, rewatch: rewatch ?? (async () => {}) });

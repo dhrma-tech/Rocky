@@ -647,6 +647,31 @@ export const memory = {
     ),
 };
 
+// --- Files (UI spec 14) ---
+
+export interface ReadFileView {
+  documentId: string;
+  name: string;
+  path: string;
+  mime: string | null;
+  readAt: number;
+  size: number | null;
+  exists: boolean;
+  textChars: number;
+}
+
+export const files = {
+  list: (q?: string) =>
+    call<{ files: ReadFileView[] }>(`/files${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  preview: (id: string) =>
+    call<{ text: string; truncated: boolean }>(`/files/${encodeURIComponent(id)}/preview`),
+  reveal: (id: string) =>
+    call<{ revealed: true }>(`/files/${encodeURIComponent(id)}/reveal`, { method: "POST" }),
+  /** Removes Rocky's copy (text, index, citations). The file on disk is never touched. */
+  forget: (id: string) =>
+    call<{ deleted: true }>(`/documents/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
 // --- Projects (UI spec 12) ---
 
 export interface ProjectView {

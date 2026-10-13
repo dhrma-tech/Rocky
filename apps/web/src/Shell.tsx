@@ -5,6 +5,7 @@ import {
   Brain,
   CalendarCheck,
   CircleHelp,
+  Files,
   FolderOpen,
   Hand,
   House,
@@ -26,14 +27,15 @@ import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.t
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
 import { GlobalHelpKeys } from "./help/shortcuts.tsx";
+import { TaskCreator } from "./TaskCreator.tsx";
 import { Avatar, Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
 import "./shell.css";
 
 /**
- * App shell (UI spec "App shell", docs/DECISIONS.md D-018). Sidebar: Today, Approvals, Tasks;
- * Library: Notebooks, Commitments, Integrations; footer: Settings. Projects, Memory, Files,
- * Notifications and the profile join as their screens ship (P2, P3). Rocky's pebble and
- * state chip sit at the top so the agent's state shows on every screen.
+ * App shell (UI spec "App shell", docs/DECISIONS.md D-018). Sidebar: Today, Approvals, Projects,
+ * Tasks; Library: Memory, Files, Notebooks, Commitments, Integrations; footer: Help, Settings,
+ * your profile, search (Ctrl+K). Notifications join in P3. Rocky's pebble and state chip sit at
+ * the top so the agent's state shows on every screen.
  */
 
 interface NavItem {
@@ -43,6 +45,7 @@ interface NavItem {
     | "/projects"
     | "/tasks"
     | "/memory"
+    | "/files"
     | "/notebooks"
     | "/commitments"
     | "/connectors"
@@ -59,6 +62,7 @@ const PRIMARY: NavItem[] = [
 ];
 const LIBRARY: NavItem[] = [
   { to: "/memory", label: "Memory", icon: Brain },
+  { to: "/files", label: "Files", icon: Files },
   { to: "/notebooks", label: "Notebooks", icon: BookOpen },
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/connectors", label: "Integrations", icon: Plug },
@@ -252,6 +256,7 @@ function ShellFrame({
       <RecordingPill />
       <CommandPalette toggleSidebar={toggleRail} />
       <GlobalHelpKeys />
+      <TaskCreator />
       <main id="main" className="rk-main">
         <div className="rk-main__banners">
           {engineDown && (

@@ -367,3 +367,175 @@
   max-width: 560px;
   margin-top: var(--space-8);
 }
+
+/* --- Files (UI spec 14). --- */
+.rk-files__name {
+  min-height: var(--hit-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.rk-files__path {
+  overflow-wrap: anywhere;
+}
+.rk-files__gone td {
+  color: var(--color-text-muted);
+}
+.rk-files__never {
+  max-width: 72ch;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-success-tint);
+  color: var(--color-success-text);
+}
+.rk-files__preview {
+  display: grid;
+  gap: var(--space-4);
+}
+.rk-files__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.rk-files__text {
+  max-height: 50vh;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  font-family: var(--type-mono-font, ui-monospace, monospace);
+  font-size: var(--type-small-size);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Integrations (UI spec 15). --- */
+.rk-int__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.rk-int__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--color-neutral-tint);
+  color: var(--color-text-2);
+}
+.rk-int__detail {
+  display: grid;
+  gap: var(--space-6);
+}
+.rk-int__block {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-int__block > h3 {
+  margin: 0;
+}
+.rk-int__form {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-int__message {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-tint);
+  color: var(--color-warning-text);
+  white-space: pre-wrap;
+}
+.rk-int__perm {
+  display: grid;
+  grid-template-columns: 5em minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+.rk-int__perm > .rk-small {
+  grid-column: 2;
+}
+.rk-int__perm-name {
+  font-weight: 600;
+}
+.rk-int__log {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--type-small-size);
+}
+.rk-int__error {
+  display: block;
+  color: var(--color-error-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Task creation drawer (UI spec 6). --- */
+.rk-taskform {
+  display: grid;
+  gap: var(--space-5);
+}
+.rk-taskform__templates {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rk-taskform__template {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--hit-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rk-taskform__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.rk-taskform__inputs {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.rk-taskform__preview {
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-neutral-tint);
+}
+.rk-taskform__preview ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+}
+.rk-taskform__footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  background: var(--color-surface);
+}

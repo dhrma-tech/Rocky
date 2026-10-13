@@ -137,7 +137,7 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 3 | Onboarding | done (D-048) | `OnboardingPage.tsx` | P2 | M |
 | 4 | Today | partial | `HomePage.tsx` | P1 | M |
 | 5 | Chat + workspace | done (D-053) | `AskPage.tsx` | P2 | L |
-| 6 | Task creation drawer | missing | — | P2 | M |
+| 6 | Task creation drawer | done (D-061) | `TaskCreator.tsx` | P2 | M |
 | 7 | Running task (run page) | missing | — | P1 | M |
 | 8 | Ledger | partial | audit list in `ActionsPage.tsx` | P1 | M |
 | 9 | Browser view | missing | — | P3 (snapshot viewer + bar; live off) | M |
@@ -145,8 +145,8 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 11 | Background | done (D-054) | `BackgroundPage.tsx`, `RoutineEditor.tsx` | P2 | M |
 | 12 | Projects | missing (no project entity) | — | P2 | L |
 | 13 | Memory | missing | — | P2 | M |
-| 14 | Files | missing | — | P2 | M |
-| 15 | Integrations | partial | `ConnectorsPage.tsx` | P2 (tiers in P1) | M |
+| 14 | Files | done (D-059) | `FilesPage.tsx`, `core/src/files/read-files.ts` | P2 | M |
+| 15 | Integrations | done (D-060) | `ConnectorsPage.tsx` | P2 | M |
 | 16 | Notifications | missing | — | P3 | M |
 | 17 | Approvals | partial | `ActionsPage.tsx` | P1 | M |
 | 18 | Settings | partial | `SettingsPage.tsx` | P2 (rules in P1) | M |

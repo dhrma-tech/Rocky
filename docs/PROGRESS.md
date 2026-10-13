@@ -32,7 +32,7 @@ P2 in progress on `main` (see "P2 status" below).
 
 ## P2 status (2026-10-13)
 
-Shipped on `main`: I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, A1 desktop app, installers and first-run model (D-050, D-051), screens Onboarding (D-048), Projects, Memory, Settings (spec 18), Chat/workspace (D-053), Background (D-054) and Task history (D-055), command palette (D-056), Help (D-057) and Profile (D-058), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
-Verified 2026-10-13: typecheck, lint; `pnpm test` 101 files, 727 passed, 1 skipped; `test:security` 18 files, 157 passed; `test:e2e` 22 passed (chat, onboarding, screens incl. Background, stories; axe at 360/768/1280); `build:web` ok.
-Left in P2: screens Files, Task creation; Integrations restyle; A1 Docker fallback (D-052, owner decision).
+Shipped on `main`: I3 autostart + daily backups, M5 encryption by default, A8 model fit/bench (8.4 tok/s, ~105 s per cited answer here), A9 sample workspace, A5 memory profile, A6 routine files + auto-pause, A1 desktop app, installers and first-run model (D-050, D-051), screens Onboarding (D-048), Projects, Memory, Settings (spec 18), Chat/workspace (D-053), Background (D-054) and Task history (D-055), command palette (D-056), Help (D-057), Profile (D-058), Files (D-059) the Integrations restyle (D-060) and Task creation (D-061), base components (select, checkbox, radio, segmented, table, modal, progress, avatar).
+Verified 2026-10-13: typecheck, lint; `pnpm test` 736 passed, 1 skipped; `test:security` 18 files, 157 passed; `test:e2e` 34 passed (every P2 screen in four states at 360/768/1280 with axe, plus interaction tests); `build:web` ok.
+Left in P2: A1 Docker fallback (D-052, owner decision). Every P2 screen is built.
 Open: routing default after A8 numbers; possible `rocky/db-key` keychain entry from a test run; flaky brief test (~1 in 6); one e2e run under heavy load failed once and passed on rerun (not identified); macOS/Linux autostart and builds unverified.

@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { useLive, useNow } from "../agent-ui/live.tsx";
 import { activeRuns, finishedSince } from "../agent-ui/runs.ts";
 import { TaskCard } from "../agent-ui/work.tsx";
-import { EmptyState, ErrorState, Skeleton } from "../ui/index.tsx";
+import { openTaskCreator } from "../TaskCreator.tsx";
+import { Button, EmptyState, ErrorState, Skeleton } from "../ui/index.tsx";
 import "./screens.css";
 
 /**
@@ -33,6 +34,9 @@ export function TasksPage() {
         <Link to="/tasks/background" className="rk-button rk-button--secondary">
           Background
         </Link>
+        <Button variant="primary" onClick={openTaskCreator}>
+          New task
+        </Button>
       </header>
       {live.loading && <Skeleton rows={3} height={120} label="Loading tasks" />}
       {live.error && (
@@ -46,9 +50,9 @@ export function TasksPage() {
         <EmptyState
           headline="No tasks yet."
           action={
-            <Link to="/tasks/background" className="rk-button rk-button--primary">
-              Set up a routine
-            </Link>
+            <Button variant="primary" onClick={openTaskCreator}>
+              New task
+            </Button>
           }
         >
           Syncs, routines, transcriptions and approved actions show up here as they run.

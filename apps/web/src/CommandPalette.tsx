@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { projects } from "./api.ts";
 import { CATEGORIES } from "./settings-categories.ts";
+import { openTaskCreator } from "./TaskCreator.tsx";
 
 /**
  * Command palette (UI spec "Command palette"): Ctrl/Cmd+K, one input, groups for Actions, Go to,
@@ -89,6 +90,7 @@ function Palette({ onClose, toggleSidebar }: { onClose: () => void; toggleSideba
       ["/tasks/background", "Background routines", "schedule routines pause"],
       ["/ledger", "Ledger", "activity audit events"],
       ["/memory", "Memory", "remember facts profile"],
+      ["/files", "Files", "read documents folders disk"],
       ["/notebooks", "Notebooks", "study"],
       ["/commitments", "Commitments", "promises deadlines"],
       ["/connectors", "Integrations", "connect tools gmail calendar"],
@@ -98,10 +100,17 @@ function Palette({ onClose, toggleSidebar }: { onClose: () => void; toggleSideba
     ];
     return [
       {
+        id: "a:task",
+        group: "Actions",
+        title: "New task",
+        words: "create routine schedule start",
+        run: openTaskCreator,
+      },
+      {
         id: "a:ask",
         group: "Actions",
         title: "Ask Rocky a question",
-        words: "chat new task",
+        words: "chat",
         run: go("/ask"),
       },
       {

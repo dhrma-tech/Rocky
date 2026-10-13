@@ -84,6 +84,30 @@ SCREENS.push(
       s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
   },
   {
+    name: "integrations",
+    url: "/connectors",
+    ready: (s) =>
+      s === "populated"
+        ? "text=Needs attention"
+        : s === "empty"
+          ? "text=No tools connected."
+          : s === "error"
+            ? "text=Couldn't read your integrations."
+            : "h1",
+  },
+  {
+    name: "files",
+    url: "/files",
+    ready: (s) =>
+      s === "populated"
+        ? "text=pricing-notes.md"
+        : s === "empty"
+          ? "text=Rocky hasn't touched any files."
+          : s === "error"
+            ? "text=Couldn't read the file list."
+            : "h1",
+  },
+  {
     name: "profile",
     url: "/profile",
     ready: (s) => (s === "loading" ? "h1" : "text=Your name"),
@@ -406,4 +430,129 @@ test("profile: the pebble previews live, Save sends only the profile, Discard re
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Profile saved.")).toBeVisible();
   expect(patches).toEqual([{ userName: "Dana Whitfield", name: "Rocky", swatch: "lilac" }]);
+});
+
+test("files: preview what Rocky read, open in folder, gone files can't open, forget asks first", async ({
+  page,
+}) => {
+  const writes: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") writes.push(`${r.method()} ${new URL(r.url()).pathname}`);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/files");
+  await expect(page.getByText("no longer on disk")).toBeVisible();
+  await page.getByRole("radio", { name: "Changed" }).check({ force: true });
+  await expect(page.getByText("Rocky has never changed one of your files.")).toBeVisible();
+  await page.getByRole("radio", { name: "Read" }).check({ force: true });
+  await page.getByRole("button", { name: "Preview pricing-notes.md" }).click();
+  const drawer = page.getByRole("dialog", { name: "pricing-notes.md" });
+  await expect(drawer.getByText("Dana prefers annual billing.")).toBeVisible();
+  await expect(drawer.getByText("Showing the first part of 9,120 characters.")).toBeVisible();
+  const problems: string[] = [];
+  await check(page, "files preview", problems);
+  expect(problems).toEqual([]);
+  await drawer.getByRole("button", { name: "Open in folder" }).click();
+  await drawer.getByRole("button", { name: "Forget this file" }).click();
+  await expect(page.getByRole("dialog", { name: "Forget this file?" })).toBeVisible();
+  expect(writes).toEqual(["POST /api/v1/files/f1/reveal"]);
+  await page.getByRole("button", { name: "Forget", exact: true }).click();
+  await expect(
+    page.getByText("Rocky forgot pricing-notes.md. The file is still on disk."),
+  ).toBeVisible();
+  expect(writes).toEqual(["POST /api/v1/files/f1/reveal", "DELETE /api/v1/documents/f1"]);
+  await page.getByRole("button", { name: "Preview old-plan.pdf" }).click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "old-plan.pdf" })
+      .getByRole("button", { name: "Open in folder" }),
+  ).toBeDisabled();
+});
+
+test("integrations: an expired login is on top with Reconnect; permissions are ask or block", async ({
+  page,
+}) => {
+  const writes: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") writes.push(`${r.method()} ${new URL(r.url()).pathname}`);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/connectors");
+  const needs = page.getByRole("region", { name: "Needs attention" });
+  await expect(needs.getByText("Your GitHub token expired.")).toBeVisible();
+  await expect(needs.getByRole("button", { name: "Reconnect GitHub" })).toBeVisible();
+  await page.getByRole("button", { name: "Details: Gmail" }).click();
+  const drawer = page.getByRole("dialog", { name: "Gmail" });
+  // The existing block rule shows; send can't be allowed from here.
+  const del = drawer.getByRole("group", { name: "Delete in Gmail" });
+  await expect(del.getByRole("radio", { name: "Block" })).toBeChecked();
+  await expect(drawer.getByText("Rocky always asks before anything is sent.")).toBeVisible();
+  await expect(drawer.getByRole("radio", { name: "Allow" })).toHaveCount(0);
+  const problems: string[] = [];
+  await check(page, "integration drawer", problems);
+  expect(problems).toEqual([]);
+  await drawer
+    .getByRole("group", { name: "Write in Gmail" })
+    .getByRole("radio", { name: "Block" })
+    .click({ force: true });
+  await expect(
+    page.getByText("Rocky can't write in Gmail now. Proposals are blocked."),
+  ).toBeVisible();
+  // The mock doesn't store rules, so the control shows the server's answer; only the calls count.
+  await del.getByRole("radio", { name: "Ask" }).click({ force: true });
+  await expect
+    .poll(() => writes)
+    .toEqual(["POST /api/v1/rules", "POST /api/v1/rules/rule1/revoke"]);
+});
+
+test("task creation: once goes to a scoped question; weekdays saves a routine; draft survives closing", async ({
+  page,
+}) => {
+  const posts: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().endsWith("/api/v1/routines")) posts.push(r.postDataJSON());
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/tasks");
+  await page.getByRole("button", { name: "New task" }).first().click();
+  const drawer = page.getByRole("dialog", { name: "New task" });
+  await expect(drawer.getByRole("button", { name: /A morning brief/ })).toBeVisible();
+  // Starting without a goal says why, at the field.
+  await drawer.getByRole("button", { name: "Start task" }).click();
+  await expect(drawer.getByText("Say what you want Rocky to do.")).toBeVisible();
+
+  await drawer.getByRole("button", { name: /A morning brief/ }).click();
+  await expect(drawer.getByRole("radio", { name: "Weekdays" })).toBeChecked();
+  await expect(drawer.getByText("Weekdays at 08:00.", { exact: false })).toBeVisible();
+  const problems: string[] = [];
+  await check(page, "task drawer", problems);
+  expect(problems).toEqual([]);
+  // Closing keeps the draft.
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "New task" }).first().click();
+  await expect(drawer.getByLabel("What should Rocky do?")).toHaveValue(/Summarise what matters today/);
+  await drawer.getByRole("button", { name: "Save routine" }).click();
+  await expect(page).toHaveURL(/\/tasks\/background$/);
+  expect(posts).toEqual([
+    {
+      name: "Summarise what matters today: events and anything overdue.",
+      schedule: "0 8 * * 1-5",
+      inputs: ["calendar_today", "overdue"],
+      prompt: "Summarise what matters today: events and anything overdue. Under 8 sentences.",
+      enabled: true,
+    },
+  ]);
+
+  // Once, scoped to a project: it becomes a question on the chat screen.
+  await page.keyboard.press("Control+k");
+  await page.getByRole("combobox", { name: "Search commands" }).fill("new task");
+  await page.keyboard.press("Enter");
+  await drawer.getByLabel("What should Rocky do?").fill("What is still open?");
+  await drawer.getByLabel("Look in").selectOption("p1");
+  await expect(drawer.getByText("the files in Launch (E:/Work/Launch)")).toBeVisible();
+  await drawer.getByRole("button", { name: "Start task" }).click();
+  await expect(page).toHaveURL(/\/ask\?.*project=p1/);
 });

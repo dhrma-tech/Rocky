@@ -5,17 +5,7 @@ import { useEffect, useState } from "react";
 import { assistant, watchJob } from "../api.ts";
 import { Badge, Button, cls } from "../components/ui.tsx";
 import { PathLine, Sentences } from "../components/verified.tsx";
-import { DAYS, fromCron, scheduleLabel, toCron } from "../routines.ts";
-
-const INPUTS: { id: RoutineInput; label: string }[] = [
-  { id: "calendar_today", label: "Today's calendar" },
-  { id: "meetings_today", label: "Today's meetings and lectures" },
-  { id: "week_meetings", label: "This week's meetings" },
-  { id: "commitments_due_7d", label: "Commitments due in 7 days" },
-  { id: "overdue", label: "Overdue commitments" },
-  { id: "deadlines_14d", label: "Deadlines in 14 days" },
-  { id: "unread_important_threads", label: "Unread important mail" },
-];
+import { DAYS, fromCron, INPUTS, scheduleLabel, toCron } from "../routines.ts";
 
 const inputCls = "min-h-11 rounded-md border border-border-strong bg-page px-3 text-sm";
 const when = (ms: number) =>

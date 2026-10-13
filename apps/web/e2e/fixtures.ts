@@ -383,6 +383,47 @@ const RULES = [
     active: true,
   },
 ];
+const entry = (kind: string, displayName: string, tier: string, oauthGroup: string | null) => ({
+  kind,
+  displayName,
+  permissions: `Reads your ${displayName} items. Drafts only; never sends.`,
+  configSchema: {},
+  secrets: [],
+  oauthGroup,
+  actions: [],
+  defaultIntervalMin: 15,
+  plugin: false,
+  tier,
+});
+const CATALOG = [
+  entry("gmail", "Gmail", "experimental", "google-oauth"),
+  entry("github", "GitHub", "experimental", null),
+  entry("notion", "Notion", "experimental", null),
+];
+const connector = (kind: string, displayName: string, status: string, message: string | null) => ({
+  id: kind,
+  kind,
+  displayName,
+  enabled: true,
+  readOnly: false,
+  config: {},
+  status,
+  message,
+  tier: "experimental",
+  intervalMin: 15,
+  lastSyncAt: NOW - 600_000,
+  lastSuccessAt: NOW - 600_000,
+  nextSyncAt: NOW + 300_000,
+  lastError: null,
+  cursor: {},
+  documentCount: 214,
+  lastRun: null,
+  createdAt: NOW - 9 * 86_400_000,
+});
+const CONNECTORS = [
+  connector("gmail", "Gmail", "connected", null),
+  connector("github", "GitHub", "needs_reconnect", "Your GitHub token expired. Paste a new one."),
+];
 const MODELS = {
   ollama: true,
   hardware: { ramGb: 15.7, cuda: false, cores: 8 },
@@ -428,7 +469,11 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (scenario === "loading") return; // never answers
     if (
       scenario === "error" &&
-      (path.startsWith("/actions") || path === "/routines" || path === "/runs")
+      (path.startsWith("/actions") ||
+        path === "/routines" ||
+        path === "/runs" ||
+        path === "/files" ||
+        path === "/connectors")
     )
       return json(route, { error: "The store could not be read.", code: "INTERNAL" }, 500);
     const full = scenario === "populated";
@@ -444,8 +489,45 @@ export async function mockApi(page: Page, scenario: Scenario) {
     }
     if (path === "/home")
       return json(route, full ? HOME : { ...HOME, today: [], dueSoon: [], pendingApprovals: 0 });
+    if (path === "/routines" && method === "POST") {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      return json(route, routine({ id: "r9", enabled: true, ...body }), 201);
+    }
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
     if (path === "/runs") return json(route, { runs: full ? RUNS : [] });
+    if (path === "/files")
+      return json(route, {
+        files: full
+          ? [
+              {
+                documentId: "f1",
+                name: "pricing-notes.md",
+                path: "C:\\Users\\dana\\Notes\\pricing-notes.md",
+                mime: "text/markdown",
+                readAt: NOW - 3_600_000,
+                size: 18_432,
+                exists: true,
+                textChars: 9_120,
+              },
+              {
+                documentId: "f2",
+                name: "old-plan.pdf",
+                path: "C:\\Users\\dana\\Notes\\archive\\a-very-long-folder-name-that-should-wrap\\old-plan.pdf",
+                mime: "application/pdf",
+                readAt: NOW - 5 * 86_400_000,
+                size: null,
+                exists: false,
+                textChars: 2_400,
+              },
+            ]
+          : [],
+      });
+    if (path.startsWith("/files/") && path.endsWith("/preview"))
+      return json(route, { text: "# Pricing\n\nDana prefers annual billing.", truncated: true });
+    if (path.startsWith("/files/") && path.endsWith("/reveal"))
+      return json(route, { revealed: true });
+    if (path.startsWith("/documents/") && method === "DELETE")
+      return json(route, { deleted: true });
     if (path === "/health") return json(route, { ok: true, version: "0.9.0" });
     if (path === "/onboarding") {
       const saved = {
@@ -514,6 +596,30 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/memory") return json(route, full ? MEMORY : { dir: MEMORY.dir, files: [] });
     if (path === "/memory/file")
       return json(route, { content: "# Preferences\n\n- Short answers first\n", hash: "h1" });
+    if (path === "/connectors/catalog") return json(route, { catalog: CATALOG });
+    if (path === "/connectors" && method === "GET")
+      return json(route, { connectors: full ? CONNECTORS : [] });
+    if (/^\/connectors\/[^/]+\/runs$/.test(path))
+      return json(route, {
+        runs: [
+          {
+            id: "cr1",
+            connectorId: "gmail",
+            startedAt: NOW - 600_000,
+            finishedAt: NOW - 590_000,
+            status: "ok",
+            added: 3,
+            updated: 1,
+            deleted: 0,
+            requests: 7,
+            full: false,
+            error: null,
+          },
+        ],
+      });
+    if (path === "/imports/archives") return json(route, { imports: [] });
+    if (path === "/rules" && method === "POST") return json(route, { ...RULES[0], id: "rule2" });
+    if (/^\/rules\/[^/]+\/revoke$/.test(path)) return json(route, { ...RULES[0], revokedAt: NOW });
     if (path === "/rules") return json(route, { rules: full ? RULES : [] });
     if (path === "/rules/preview")
       return json(route, { sentence: "Rocky always asks before any action." });

@@ -1,3 +1,5 @@
+import type { RoutineInput } from "@rocky/contracts";
+
 /** Schedule editor helpers: the time + weekdays the UI edits ↔ a five-field cron expression. */
 
 export interface SimpleSchedule {
@@ -67,3 +69,14 @@ export function scheduleLabel(expr: string): string {
 }
 
 export const DAYS = DAY_NAMES;
+
+/** What a routine can read (roadmap A6 collectors), in words. */
+export const INPUTS: { id: RoutineInput; label: string }[] = [
+  { id: "calendar_today", label: "Today's calendar" },
+  { id: "meetings_today", label: "Today's meetings and lectures" },
+  { id: "week_meetings", label: "This week's meetings" },
+  { id: "commitments_due_7d", label: "Commitments due in 7 days" },
+  { id: "overdue", label: "Overdue commitments" },
+  { id: "deadlines_14d", label: "Deadlines in 14 days" },
+  { id: "unread_important_threads", label: "Unread important mail" },
+];

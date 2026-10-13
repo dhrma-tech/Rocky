@@ -6,6 +6,7 @@ import { useDeferredValue, useState } from "react";
 import { elapsed } from "../agent-ui/runs.ts";
 import { StatusChip } from "../agent-ui/StatusChip.tsx";
 import { api, assistant } from "../api.ts";
+import { openTaskCreator } from "../TaskCreator.tsx";
 import {
   Button,
   Card,
@@ -269,9 +270,9 @@ export function HistoryPage() {
         >
           Export
         </Button>
-        <Link to="/ask" className="rk-button rk-button--primary">
+        <Button variant="primary" onClick={openTaskCreator}>
           New task
-        </Link>
+        </Button>
       </header>
       <div className="rk-history__filters">
         <Input
