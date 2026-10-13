@@ -533,7 +533,9 @@ test("task creation: once goes to a scoped question; weekdays saves a routine; d
   // Closing keeps the draft.
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "New task" }).first().click();
-  await expect(drawer.getByLabel("What should Rocky do?")).toHaveValue(/Summarise what matters today/);
+  await expect(drawer.getByLabel("What should Rocky do?")).toHaveValue(
+    /Summarise what matters today/,
+  );
   await drawer.getByRole("button", { name: "Save routine" }).click();
   await expect(page).toHaveURL(/\/tasks\/background$/);
   expect(posts).toEqual([
