@@ -4,6 +4,7 @@ import {
   BookOpen,
   Brain,
   CalendarCheck,
+  CircleHelp,
   FolderOpen,
   Hand,
   House,
@@ -24,13 +25,14 @@ import { ApiError, api, onboarding, type Swatch } from "./api.ts";
 import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.tsx";
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
-import { Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
+import { GlobalHelpKeys } from "./help/shortcuts.tsx";
+import { Avatar, Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
 import "./shell.css";
 
 /**
  * App shell (UI spec "App shell", docs/DECISIONS.md D-018). Sidebar: Today, Approvals, Tasks;
  * Library: Notebooks, Commitments, Integrations; footer: Settings. Projects, Memory, Files,
- * Notifications, Help and the profile join as their screens ship (P2, P3). Rocky's pebble and
+ * Notifications and the profile join as their screens ship (P2, P3). Rocky's pebble and
  * state chip sit at the top so the agent's state shows on every screen.
  */
 
@@ -44,7 +46,8 @@ interface NavItem {
     | "/notebooks"
     | "/commitments"
     | "/connectors"
-    | "/settings";
+    | "/settings"
+    | "/help";
   label: string;
   icon: LucideIcon;
 }
@@ -60,7 +63,10 @@ const LIBRARY: NavItem[] = [
   { to: "/commitments", label: "Commitments", icon: CalendarCheck },
   { to: "/connectors", label: "Integrations", icon: Plug },
 ];
-const FOOTER: NavItem[] = [{ to: "/settings", label: "Settings", icon: Settings }];
+const FOOTER: NavItem[] = [
+  { to: "/help", label: "Help", icon: CircleHelp },
+  { to: "/settings", label: "Settings", icon: Settings },
+];
 
 export function Shell() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings, retry: false });
@@ -95,6 +101,7 @@ export function Shell() {
           lastSeen={settings.dataUpdatedAt}
           name={setup.data?.name ?? "Rocky"}
           swatch={setup.data?.swatch ?? "periwinkle"}
+          userName={setup.data?.userName ?? null}
         />
       </LiveProvider>
     </ToastProvider>
@@ -108,6 +115,7 @@ function ShellFrame({
   lastSeen,
   name,
   swatch,
+  userName,
 }: {
   engineDown: boolean;
   localOnly: boolean | undefined;
@@ -115,6 +123,7 @@ function ShellFrame({
   lastSeen: number;
   name: string;
   swatch: Swatch;
+  userName: string | null;
 }) {
   // Phones start with the icon rail so the page keeps its width; the tab bar comes in P3.
   const [rail, setRail] = useState(() => window.matchMedia("(max-width: 899px)").matches);
@@ -211,6 +220,15 @@ function ShellFrame({
         {LIBRARY.map(item)}
         <div className="rk-side__foot">
           {FOOTER.map(item)}
+          <Link
+            to="/profile"
+            className="rk-nav"
+            activeProps={{ className: "active" }}
+            aria-label={rail ? `Profile: ${userName ?? "you"}` : undefined}
+          >
+            <Avatar name={userName ?? "You"} size={24} />
+            {!rail && (userName ?? "Profile")}
+          </Link>
           <IconButton
             label={`Search and commands (${paletteShortcut})`}
             tipSide="right"
@@ -233,6 +251,7 @@ function ShellFrame({
       </nav>
       <RecordingPill />
       <CommandPalette toggleSidebar={toggleRail} />
+      <GlobalHelpKeys />
       <main id="main" className="rk-main">
         <div className="rk-main__banners">
           {engineDown && (

@@ -95,7 +95,7 @@ export function MemoryPage() {
           <EmptyState
             headline="Nothing remembered yet."
             action={
-              <Link to="/help" className="rk-button rk-button--secondary">
+              <Link to="/help" search={{ a: "memory" }} className="rk-button rk-button--secondary">
                 Learn how Rocky asks first
               </Link>
             }

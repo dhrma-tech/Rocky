@@ -84,6 +84,16 @@ SCREENS.push(
       s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
   },
   {
+    name: "profile",
+    url: "/profile",
+    ready: (s) => (s === "loading" ? "h1" : "text=Your name"),
+  },
+  {
+    name: "help",
+    url: "/help",
+    ready: () => "text=Common problems",
+  },
+  {
     name: "history",
     url: "/tasks/history",
     ready: (s) =>
@@ -333,4 +343,67 @@ test("command palette: Ctrl+K, type, Enter; recent first; settings deep link; pa
   await page.keyboard.press("Control+k");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Command palette" })).toHaveCount(0);
+});
+
+test("help: search, an article, diagnostics, shortcuts with ?, F1 from anywhere", async ({
+  page,
+}) => {
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  await page.waitForSelector("h1");
+  await page.keyboard.press("F1");
+  await expect(page).toHaveURL(/\/help$/);
+  await page.getByLabel("Search help").fill("ollama");
+  await page.getByRole("link", { name: /Answers are slow or no model is found/ }).click();
+  await expect(page).toHaveURL(/\/help\?a=model$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Answers are slow or no model is found",
+  );
+  await page.getByRole("button", { name: "Run diagnostics" }).click();
+  await expect(page.getByRole("heading", { name: "Something needs attention" })).toBeVisible();
+  // Failures first, with the fix.
+  await expect(page.locator(".rk-help__checks > li").first()).toContainText("Ollama");
+  await expect(page.getByText("Install it from ollama.com/download and start it.")).toBeVisible();
+  // The issue link carries the checks with the user's name taken out, and only opens GitHub.
+  const href =
+    (await page.getByRole("link", { name: "Report an issue" }).getAttribute("href")) ?? "";
+  const body = new URL(href).searchParams.get("body") ?? "";
+  expect(href.startsWith("https://github.com/dhrma-tech/Rocky/issues/new?")).toBe(true);
+  expect(body).toContain("FAIL Ollama");
+  expect(body).not.toContain("dana");
+  const problems: string[] = [];
+  await check(page, "help article", problems);
+  await page.locator("body").click({ position: { x: 600, y: 890 } });
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
+  await page.getByLabel("Search shortcuts").fill("palette");
+  await expect(page.locator(".rk-shortcuts__row")).toHaveCount(1);
+  await check(page, "shortcut sheet", problems);
+  expect(problems).toEqual([]);
+});
+
+test("profile: the pebble previews live, Save sends only the profile, Discard restores", async ({
+  page,
+}) => {
+  const patches: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "PATCH") patches.push(r.postDataJSON());
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/profile");
+  await expect(page.getByLabel("Your name")).toHaveValue("Dana Whitfield");
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+  await page.getByRole("tab", { name: "Rocky" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Pip");
+  await page.getByLabel("Sage").check();
+  await expect(page.getByRole("tab", { name: "Pip" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Pip, in sage" })).toBeVisible();
+  await page.getByRole("button", { name: "Discard changes" }).click();
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Rocky");
+  await page.getByLabel("Lilac").check();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Profile saved.")).toBeVisible();
+  expect(patches).toEqual([{ userName: "Dana Whitfield", name: "Rocky", swatch: "lilac" }]);
 });

@@ -446,6 +446,56 @@ export async function mockApi(page: Page, scenario: Scenario) {
       return json(route, full ? HOME : { ...HOME, today: [], dueSoon: [], pendingApprovals: 0 });
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
     if (path === "/runs") return json(route, { runs: full ? RUNS : [] });
+    if (path === "/health") return json(route, { ok: true, version: "0.9.0" });
+    if (path === "/onboarding") {
+      const saved = {
+        step: 4,
+        name: "Rocky",
+        swatch: "periwinkle",
+        preset: "ask-everything",
+        readOnlyRuleId: null,
+        completedAt: NOW - 86_400_000,
+        userName: full ? "Dana Whitfield" : null,
+        firstRun: false,
+      };
+      if (method === "PATCH")
+        return json(route, { ...saved, ...(route.request().postDataJSON() as object) });
+      return json(route, saved);
+    }
+    if (path === "/system/diagnostics")
+      return json(route, {
+        generatedAt: NOW,
+        dataDir: "C:/Users/dana/RockyData",
+        dataDirSource: "flag",
+        hardware: {
+          platform: "win32",
+          release: "10.0.26200",
+          cpu: "Intel",
+          cores: 8,
+          ramGb: 15.7,
+          ramTier: "high",
+          gpus: [],
+          cuda: false,
+        },
+        ollamaModels: [],
+        checks: [
+          { id: "node", label: "Node.js", status: "pass", detail: "v24.11.1" },
+          {
+            id: "ollama",
+            label: "Ollama",
+            status: "fail",
+            detail: "not reachable at http://127.0.0.1:11434",
+            hint: "Install it from ollama.com/download and start it.",
+          },
+          {
+            id: "disk",
+            label: "Free disk",
+            status: "warn",
+            detail: "8 GB free on C:\\Users\\dana",
+          },
+        ],
+        ok: false,
+      });
     if (path === "/runs/archive") return json(route, { archived: 1 });
     if (path === "/runs/unarchive") return json(route, { restored: 1 });
     if (path === "/routines/pause-all") return json(route, { paused: ["r1"] });

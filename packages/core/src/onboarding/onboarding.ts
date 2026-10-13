@@ -17,8 +17,9 @@ import type { Db } from "../store/db.ts";
 
 /**
  * Onboarding (UI spec 3, D-048): four steps, saved after each so closing the tab resumes at the
- * same step. The state is a small JSON file in the data dir, not the store: it holds no user data,
- * only the name and colour the user gave Rocky and how far they got.
+ * same step. The state is a small JSON file in the data dir, not the store: it holds no content,
+ * only the name and colour the user gave Rocky, the name the user goes by (Profile, UI spec 19)
+ * and how far they got.
  */
 
 export const SWATCHES = ["periwinkle", "rose", "sage", "butter", "lilac", "peach"] as const;
@@ -33,6 +34,8 @@ export const OnboardingStateSchema = z.object({
   /** The block rule "Read only" made, so switching back revokes exactly that rule. */
   readOnlyRuleId: z.string().nullable().default(null),
   completedAt: z.number().int().nullable().default(null),
+  /** Profile > You: the name the user goes by; null until they give one. */
+  userName: z.string().trim().min(1).max(60).nullable().default(null),
 });
 export type OnboardingState = z.infer<typeof OnboardingStateSchema>;
 
@@ -43,6 +46,7 @@ export const OnboardingPatchSchema = z
     swatch: z.enum(SWATCHES),
     preset: z.enum(PRESETS),
     complete: z.literal(true),
+    userName: z.string().trim().min(1).max(60).nullable(),
   })
   .partial()
   .strict();
@@ -90,6 +94,7 @@ export function updateOnboarding(
   if (patch.step !== undefined) s.step = patch.step;
   if (patch.name !== undefined) s.name = patch.name;
   if (patch.swatch !== undefined) s.swatch = patch.swatch;
+  if (patch.userName !== undefined) s.userName = patch.userName;
   if (patch.preset !== undefined && patch.preset !== s.preset) {
     // Read only is one block rule on every action: Rocky still reads and answers, but no change
     // reaches an app. It shows in Settings > Rules like any other rule and can be revoked there.

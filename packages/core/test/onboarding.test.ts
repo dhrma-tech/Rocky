@@ -42,6 +42,14 @@ describe("onboarding state", () => {
     expect(loadOnboarding(dir)).toMatchObject({ step: 3, name: "Pip", swatch: "sage" });
   });
 
+  it("keeps the user's name for Profile, and clears it with null", () => {
+    expect(loadOnboarding(dir).userName).toBeNull();
+    updateOnboarding(dir, db, actions.rules, { userName: "  Dana  " });
+    expect(loadOnboarding(dir).userName).toBe("Dana");
+    updateOnboarding(dir, db, actions.rules, { userName: null });
+    expect(loadOnboarding(dir).userName).toBeNull();
+  });
+
   it("falls back to defaults when the file is damaged", () => {
     fs.writeFileSync(`${dir}/onboarding.json`, "{ not json");
     expect(loadOnboarding(dir).step).toBe(1);

@@ -154,6 +154,15 @@ describe("daemon exposure (SECURITY.md)", () => {
 });
 
 describe("API", () => {
+  it("diagnostics run the doctor checks and name nothing secret", async () => {
+    const res = await req("/api/v1/system/diagnostics", { method: "POST", headers: bearer });
+    expect(res.status).toBe(200);
+    const report = (await res.json()) as { checks: { id: string; status: string }[] };
+    const ids = report.checks.map((c) => c.id);
+    for (const id of ["node", "ram", "disk", "ollama"]) expect(ids).toContain(id);
+    expect(JSON.stringify(report)).not.toMatch(/sk-ant|Bearer /);
+  }, 30_000);
+
   it("settings: PUT persists to rocky.yaml and applies to the gate immediately", async () => {
     const res = await req("/api/v1/settings", {
       method: "PUT",

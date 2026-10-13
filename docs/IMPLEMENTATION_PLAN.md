@@ -150,8 +150,8 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 16 | Notifications | missing | — | P3 | M |
 | 17 | Approvals | partial | `ActionsPage.tsx` | P1 | M |
 | 18 | Settings | partial | `SettingsPage.tsx` | P2 (rules in P1) | M |
-| 19 | Profile | missing | — | P2 | S |
-| 20 | Help | missing | — | P2 | M |
+| 19 | Profile | done (D-058) | `ProfilePage.tsx` | P2 | S |
+| 20 | Help | done (D-057) | `HelpPage.tsx`, `help/` | P2 | M |
 | 21 | Error states (system) | partial | scattered | P1 | S |
 | 22 | Empty states (system) | partial | scattered | P1→P2 | S |
 | 23 | Mobile | missing | — | P3 | L |

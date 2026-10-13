@@ -93,6 +93,8 @@ function Palette({ onClose, toggleSidebar }: { onClose: () => void; toggleSideba
       ["/commitments", "Commitments", "promises deadlines"],
       ["/connectors", "Integrations", "connect tools gmail calendar"],
       ["/settings", "Settings", "preferences"],
+      ["/profile", "Profile", "name colour color you rocky avatar"],
+      ["/help", "Help", "docs support diagnostics shortcuts"],
     ];
     return [
       {

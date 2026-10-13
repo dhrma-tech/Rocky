@@ -80,6 +80,19 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/profile",
+    component: lazyRouteComponent(() => import("./routes/ProfilePage.tsx"), "ProfilePage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/help",
+    component: lazyRouteComponent(() => import("./routes/HelpPage.tsx"), "HelpPage"),
+    // a: an article id, so error states can deep-link to the exact article.
+    validateSearch: (s: Record<string, unknown>): { a?: string } =>
+      typeof s.a === "string" && /^[a-z-]{1,40}$/.test(s.a) ? { a: s.a } : {},
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/tasks/history",
     component: lazyRouteComponent(() => import("./routes/HistoryPage.tsx"), "HistoryPage"),
   }),

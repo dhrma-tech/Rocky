@@ -32,11 +32,13 @@ import {
   ingestPath,
   listConversations,
   listWatchedFolders,
+  loadPolicy,
   meetingSegments,
   type Runtime,
   recordEvent,
   redact,
   removeWatchedFolder,
+  runDoctor,
   SECRET_NAMES,
   type SecretName,
   saveAppConfig,
@@ -600,6 +602,18 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   api.get("/system/hardware", (c) => c.json(rt.hardware));
+  // Help > Run diagnostics (UI spec 20): the same checks as `rocky doctor`, without --fix or --bench.
+  api.post("/system/diagnostics", async (c) =>
+    c.json(
+      await runDoctor({
+        dataDir: rt.dataDir,
+        // The daemon is handed its folder; how it was chosen is the CLI's business.
+        dataDirSource: "flag",
+        config: rt.config,
+        derivedModels: loadPolicy(rt.dataDir).ollama_models,
+      }),
+    ),
+  );
 
   api.get("/usage", (c) => {
     const month = c.req.query("month") ?? new Date().toISOString().slice(0, 7);

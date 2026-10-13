@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { type CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pebble } from "../agent-ui/Pebble.tsx";
 import {
   api,
@@ -13,6 +13,7 @@ import {
   type Swatch,
   system,
 } from "../api.ts";
+import { SwatchPicker } from "../components/SwatchPicker.tsx";
 import {
   Banner,
   Button,
@@ -30,15 +31,6 @@ import "./onboarding.css";
  * Onboarding (UI spec 3, D-048). Four steps, one decision each, saved on Continue so closing
  * the tab resumes at the same step: name and colour, model, boundaries, first task.
  */
-
-const SWATCHES: { value: Swatch; label: string }[] = [
-  { value: "periwinkle", label: "Periwinkle" },
-  { value: "rose", label: "Rose" },
-  { value: "sage", label: "Sage" },
-  { value: "butter", label: "Butter" },
-  { value: "lilac", label: "Lilac" },
-  { value: "peach", label: "Peach" },
-];
 
 export function OnboardingPage() {
   const state = useQuery({ queryKey: ["onboarding"], queryFn: onboarding.get });
@@ -175,25 +167,7 @@ function StepName({
         autoComplete="off"
         onChange={(e) => setName(e.target.value)}
       />
-      <fieldset className="rk-swatches">
-        <legend>Colour</legend>
-        {SWATCHES.map((s) => (
-          <label key={s.value} className="rk-swatch" title={s.label}>
-            <input
-              type="radio"
-              name="swatch"
-              value={s.value}
-              checked={swatch === s.value}
-              aria-label={s.label}
-              onChange={() => setSwatch(s.value)}
-            />
-            <span
-              className="rk-swatch__dot"
-              style={{ "--swatch": `var(--rocky-swatch-${s.value})` } as CSSProperties}
-            />
-          </label>
-        ))}
-      </fieldset>
+      <SwatchPicker value={swatch} onChange={setSwatch} />
       <p className="rk-onb__consequence rk-small">
         The name and colour show in the sidebar. The colour is only decoration: Rocky's state is
         always shown in words.

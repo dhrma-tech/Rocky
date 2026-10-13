@@ -23,6 +23,7 @@ import type {
   ConnectorUpdate,
   Countdown,
   Decision,
+  DoctorReport,
   DraftRequest,
   Entity,
   EventsPage,
@@ -710,6 +711,11 @@ export interface PullProgress {
 }
 
 export const system = {
+  diagnostics: () => call<DoctorReport>("/system/diagnostics", { method: "POST" }),
+  health: async (): Promise<{ ok: boolean; version: string }> => {
+    const res = await fetch("/api/v1/health", { credentials: "same-origin" });
+    return (await res.json()) as { ok: boolean; version: string };
+  },
   models: () => call<ModelsView>("/models"),
   chooseModels: (small: string, medium: string) =>
     call<{ saved: boolean; restartNeeded: boolean }>("/models/use", {
@@ -736,6 +742,8 @@ export interface OnboardingView {
   preset: BoundaryPreset;
   readOnlyRuleId: string | null;
   completedAt: number | null;
+  /** Profile > You (UI spec 19). */
+  userName: string | null;
   firstRun: boolean;
 }
 
@@ -762,6 +770,7 @@ export const onboarding = {
     swatch?: Swatch;
     preset?: BoundaryPreset;
     complete?: true;
+    userName?: string | null;
   }) => call<OnboardingView>("/onboarding", { method: "PATCH", body: JSON.stringify(patch) }),
   testKey: () => call<KeyTestResult>("/onboarding/test-key", { method: "POST" }),
   watchFolder: (path: string) =>
