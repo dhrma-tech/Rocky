@@ -39,15 +39,22 @@ export function eventsAfter(
       : db.prepare("select * from events where seq > ? order by seq limit ?").all(after, limit)
   ) as Row[];
   return rows.flatMap((r) => {
-    const parsed = RockyEventSchema.safeParse({
-      ...(JSON.parse(r.payload) as object),
-      seq: r.seq,
-      at: r.at,
-      kind: r.kind,
-      runId: r.run_id,
-    });
-    return parsed.success ? [parsed.data] : [];
+    const e = parseEventRow(r);
+    return e ? [e] : [];
   });
+}
+
+/** One stored row as a typed event, or null when it no longer parses. */
+export function parseEventRow(row: unknown): RockyEvent | null {
+  const r = row as Row;
+  const parsed = RockyEventSchema.safeParse({
+    ...(JSON.parse(r.payload) as object),
+    seq: r.seq,
+    at: r.at,
+    kind: r.kind,
+    runId: r.run_id,
+  });
+  return parsed.success ? parsed.data : null;
 }
 
 export function lastEventSeq(db: Db): number {

@@ -1,6 +1,12 @@
 import fs from "node:fs";
-import type { ActionRecord, HomeSummary, Routine, TimelineItem } from "@rocky/contracts";
-import { memorySecrets, openRuntime, type Runtime, upsertDocument } from "@rocky/core";
+import type {
+  ActionRecord,
+  HomeSummary,
+  Routine,
+  RunSummary,
+  TimelineItem,
+} from "@rocky/contracts";
+import { memorySecrets, openRuntime, type Runtime, recordEvent, upsertDocument } from "@rocky/core";
 import type { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { markdownBlocks } from "../../../packages/core/src/ingest/parsers/text-blocks.ts";
@@ -225,5 +231,27 @@ describe("routines, home and timeline routes", () => {
     const after = await req<{ routines: Routine[] }>("/routines");
     expect(after.body.routines.every((r) => !r.enabled && !r.autoPaused)).toBe(true);
     expect(after.body.routines[0]?.recent).toEqual([]);
+  });
+});
+
+describe("task history routes", () => {
+  it("lists runs, filters them, archives and restores", async () => {
+    recordEvent(rt.db, {
+      kind: "status",
+      runId: "ask:1",
+      state: "completed",
+      runKind: "ask",
+      title: "Ask: budget",
+    });
+    const list = await req<{ runs: RunSummary[] }>("/runs?status=done");
+    expect(list.body.runs.map((r) => r.id)).toEqual(["ask:1"]);
+    expect((await req("/runs?status=nope")).status).toBe(400);
+    expect((await post("/runs/archive", { ids: [] })).status).toBe(400);
+    expect((await post<{ archived: number }>("/runs/archive", { ids: ["ask:1"] })).body).toEqual({
+      archived: 1,
+    });
+    expect((await req<{ runs: RunSummary[] }>("/runs")).body.runs).toEqual([]);
+    await post("/runs/unarchive", { ids: ["ask:1"] });
+    expect((await req<{ runs: RunSummary[] }>("/runs")).body.runs).toHaveLength(1);
   });
 });

@@ -141,7 +141,7 @@ Done when (spec F.5): a recorded run shows every state and the four places agree
 | 7 | Running task (run page) | missing | — | P1 | M |
 | 8 | Ledger | partial | audit list in `ActionsPage.tsx` | P1 | M |
 | 9 | Browser view | missing | — | P3 (snapshot viewer + bar; live off) | M |
-| 10 | Task history | missing | — | P2 | M |
+| 10 | Task history | done (D-055) | `HistoryPage.tsx`, `core/src/events/history.ts` | P2 | M |
 | 11 | Background | done (D-054) | `BackgroundPage.tsx`, `RoutineEditor.tsx` | P2 | M |
 | 12 | Projects | missing (no project entity) | — | P2 | L |
 | 13 | Memory | missing | — | P2 | M |

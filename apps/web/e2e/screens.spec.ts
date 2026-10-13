@@ -84,6 +84,18 @@ SCREENS.push(
       s === "populated" ? "text=Locate the folder" : "h1, [role=alert], [role=status]",
   },
   {
+    name: "history",
+    url: "/tasks/history",
+    ready: (s) =>
+      s === "populated"
+        ? "text=Routine: Monday brief"
+        : s === "empty"
+          ? "text=No tasks yet."
+          : s === "error"
+            ? "text=Couldn't read the history."
+            : "h1",
+  },
+  {
     name: "background",
     url: "/tasks/background",
     ready: (s) =>
@@ -254,4 +266,35 @@ test("background: a self-paused routine is on top, and Pause all asks first and 
   await expect
     .poll(() => posts)
     .toEqual(["POST /api/v1/routines/pause-all", "PATCH /api/v1/routines/r1"]);
+});
+
+test("history: J/K and Enter open a run, a routine re-runs, archive has Undo", async ({ page }) => {
+  const writes: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") writes.push(`${r.method()} ${new URL(r.url()).pathname}`);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/tasks/history");
+  await page.waitForSelector("text=Routine: Monday brief");
+  // Only the routine's run can run again.
+  await expect(page.getByRole("button", { name: /^Re-run:/ })).toHaveCount(1);
+  await page.getByRole("button", { name: "Re-run: Routine: Monday brief" }).click();
+  await expect(page.getByText("Routine: Monday brief is queued again.")).toBeVisible();
+  await page.getByRole("button", { name: "Archive: Syncing Gmail" }).click();
+  await expect(page.getByText("Archived 1 run.")).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(() => writes)
+    .toEqual([
+      "POST /api/v1/routines/r1/run",
+      "POST /api/v1/runs/archive",
+      "POST /api/v1/runs/unarchive",
+    ]);
+  await page.locator("body").click({ position: { x: 5, y: 890 } });
+  await page.keyboard.press("j");
+  await page.keyboard.press("j");
+  await expect(page.locator("tr[data-run]").nth(1)).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/runs\//);
 });

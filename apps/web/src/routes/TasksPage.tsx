@@ -27,6 +27,9 @@ export function TasksPage() {
     <div className="rk-page">
       <header className="rk-page__head">
         <h1 className="rk-title">Tasks</h1>
+        <Link to="/tasks/history" className="rk-button rk-button--secondary">
+          History
+        </Link>
         <Link to="/tasks/background" className="rk-button rk-button--secondary">
           Background
         </Link>

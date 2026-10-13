@@ -641,12 +641,15 @@ export function Table<T>({
   rows,
   rowKey,
   initialSort,
+  rowProps,
 }: {
   caption: string;
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
   initialSort?: { key: string; dir: "asc" | "desc" };
+  /** Extra attributes per row (focus and Enter for J/K lists, aria-selected). */
+  rowProps?: (row: T) => HTMLAttributes<HTMLTableRowElement> & Record<`data-${string}`, string>;
 }) {
   const [sort, setSort] = useState(initialSort ?? null);
   const col = columns.find((c) => c.key === sort?.key);
@@ -703,7 +706,7 @@ export function Table<T>({
         </thead>
         <tbody>
           {sorted.map((r) => (
-            <tr key={rowKey(r)}>
+            <tr key={rowKey(r)} {...rowProps?.(r)}>
               {columns.map((c) => (
                 <td key={c.key} data-label={c.title}>
                   {c.render(r)}

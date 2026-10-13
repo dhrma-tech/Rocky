@@ -29,6 +29,7 @@ describe("migration 001", () => {
       "events",
       "action_rules",
       "projects",
+      "run_archive",
     ]) {
       expect(names).toContain(t);
     }

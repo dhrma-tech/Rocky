@@ -1,4 +1,12 @@
-import { eventsAfter, type Runtime, recentEvents } from "@rocky/core";
+import { RunHistoryQuerySchema, RunIdsSchema } from "@rocky/contracts";
+import {
+  archiveRuns,
+  eventsAfter,
+  listRuns,
+  type Runtime,
+  recentEvents,
+  unarchiveRuns,
+} from "@rocky/core";
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
@@ -8,6 +16,7 @@ import { z } from "zod";
  * - GET /events: SSE. Replays every event after `Last-Event-ID` (set by EventSource on reconnect)
  *   or `?after=`, then follows new ones. Each message carries `id: seq` and `event: kind`.
  * - GET /events/page: the same events as JSON pages, for the ledger and tests.
+ * - GET /runs, POST /runs/archive, /runs/unarchive: task history (UI spec 10).
  * Readers poll the table, so events written by the CLI appear too.
  */
 
@@ -35,6 +44,23 @@ export function registerEventRoutes(api: Hono, { rt }: { rt: Runtime }): void {
       ...(q.data.runId ? { runId: q.data.runId } : {}),
     });
     return c.json({ events, last: events.at(-1)?.seq ?? q.data.after });
+  });
+
+  // Task history (UI spec 10).
+  api.get("/runs", (c) => {
+    const q = RunHistoryQuerySchema.safeParse(c.req.query());
+    if (!q.success) return c.json({ error: z.prettifyError(q.error), code: "BAD_REQUEST" }, 400);
+    return c.json({ runs: listRuns(rt.db, c.req.query()) });
+  });
+  api.post("/runs/archive", async (c) => {
+    const b = RunIdsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!b.success) return c.json({ error: z.prettifyError(b.error), code: "BAD_REQUEST" }, 400);
+    return c.json({ archived: archiveRuns(rt.db, b.data.ids) });
+  });
+  api.post("/runs/unarchive", async (c) => {
+    const b = RunIdsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!b.success) return c.json({ error: z.prettifyError(b.error), code: "BAD_REQUEST" }, 400);
+    return c.json({ restored: unarchiveRuns(rt.db, b.data.ids) });
   });
 
   api.get("/events", (c) => {

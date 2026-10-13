@@ -50,6 +50,7 @@ import type {
   RoutineUpdate,
   RuleCreate,
   RulePreview,
+  RunSummary,
   ScopeRules,
   SettingsUpdate,
   StudyGuide,
@@ -336,6 +337,21 @@ export const api = {
   connectors: () => call<{ connectors: Connector[] }>("/connectors"),
   catalog: () => call<{ catalog: ConnectorCatalogEntry[] }>("/connectors/catalog"),
   recentEvents: (n = 500) => call<EventsPage>(`/events/page?tail=${n}`),
+  runs: (q: { q?: string; status?: string; from?: number; archived?: boolean } = {}) => {
+    const p = new URLSearchParams();
+    if (q.q) p.set("q", q.q);
+    if (q.status && q.status !== "all") p.set("status", q.status);
+    if (q.from) p.set("from", String(q.from));
+    if (q.archived) p.set("archived", "1");
+    return call<{ runs: RunSummary[] }>(`/runs?${p}`);
+  },
+  archiveRuns: (ids: string[]) =>
+    call<{ archived: number }>("/runs/archive", { method: "POST", body: JSON.stringify({ ids }) }),
+  unarchiveRuns: (ids: string[]) =>
+    call<{ restored: number }>("/runs/unarchive", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
   eventsPage: (after = 0, opts: { runId?: string; limit?: number } = {}) =>
     call<EventsPage>(
       `/events/page?after=${after}${opts.runId ? `&runId=${encodeURIComponent(opts.runId)}` : ""}${opts.limit ? `&limit=${opts.limit}` : ""}`,

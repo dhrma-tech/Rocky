@@ -80,6 +80,11 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/tasks/history",
+    component: lazyRouteComponent(() => import("./routes/HistoryPage.tsx"), "HistoryPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/tasks/background",
     component: lazyRouteComponent(() => import("./routes/BackgroundPage.tsx"), "BackgroundPage"),
   }),

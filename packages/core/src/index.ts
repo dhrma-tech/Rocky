@@ -40,6 +40,7 @@ export * from "./deletion/service.ts";
 export * from "./doctor.ts";
 export * from "./entities/entities.ts";
 export * from "./evals/run.ts";
+export * from "./events/history.ts";
 export * from "./events/log.ts";
 export * from "./ingest/chunker.ts";
 export * from "./ingest/delete.ts";

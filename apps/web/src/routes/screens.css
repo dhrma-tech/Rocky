@@ -244,3 +244,47 @@
   background: var(--color-info-tint);
   border-color: var(--color-info-text);
 }
+
+/* --- Task history (UI spec 10). --- */
+.rk-history__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.rk-history__filters > .rk-field {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.rk-history__title {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+.rk-history__title:hover {
+  text-decoration: underline;
+}
+.rk-history__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.rk-history__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-neutral-tint);
+}
+.rk-nums {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rk-history__filters .rk-segmented {
+  flex-wrap: wrap;
+  max-width: 100%;
+}

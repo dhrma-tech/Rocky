@@ -126,3 +126,43 @@ export const EventsPageSchema = z.object({
   last: z.number().int().nonnegative(),
 });
 export type EventsPage = z.infer<typeof EventsPageSchema>;
+
+// --- Task history (UI spec 10) ---
+
+/** One past or current run, folded from its events on the server. */
+export const RunSummarySchema = z.object({
+  id: z.string(),
+  kind: RunKindSchema,
+  title: z.string(),
+  state: AgentStateSchema,
+  startedAt: z.number().int(),
+  updatedAt: z.number().int(),
+  /** Receipts the run wrote. */
+  receipts: z.number().int().nonnegative(),
+  /** The last receipt in words, or the error that stopped it. */
+  outcome: z.string().nullable(),
+  archived: z.boolean(),
+  /** Set for a routine's run, so it can be run again. */
+  routineId: z.string().nullable(),
+});
+export type RunSummary = z.infer<typeof RunSummarySchema>;
+
+export const RunStatusFilterSchema = z.enum(["all", "active", "needs_you", "done", "failed"]);
+export type RunStatusFilter = z.infer<typeof RunStatusFilterSchema>;
+
+export const RunHistoryQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  status: RunStatusFilterSchema.default("all"),
+  from: z.coerce.number().int().nonnegative().optional(),
+  to: z.coerce.number().int().nonnegative().optional(),
+  archived: z
+    .enum(["0", "1"])
+    .default("0")
+    .transform((v) => v === "1"),
+  limit: z.coerce.number().int().min(1).max(500).default(200),
+});
+export type RunHistoryQuery = z.input<typeof RunHistoryQuerySchema>;
+
+export const RunIdsSchema = z
+  .object({ ids: z.array(z.string().min(1).max(100)).min(1).max(500) })
+  .strict();

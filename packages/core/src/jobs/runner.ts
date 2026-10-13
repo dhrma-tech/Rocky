@@ -76,7 +76,7 @@ export class JobRunner {
 
   private async run(job: Job): Promise<void> {
     const handler = this.handlers[job.type];
-    const view = jobView(job);
+    const view = jobView(job, this.db);
     const status = (state: AgentState, line?: string) => {
       if (!view) return;
       recordEvent(this.db, {
@@ -115,12 +115,15 @@ export class JobRunner {
 }
 
 /** How a job shows up in the event stream, or null for jobs too small to show (embedding). */
-function jobView(job: Job): { title: string; runKind: RunKind; background: boolean } | null {
+function jobView(
+  job: Job,
+  db: Db,
+): { title: string; runKind: RunKind; background: boolean } | null {
   switch (job.type) {
     case "embed_document":
       return null;
     case "routine":
-      return { title: "Routine", runKind: "routine", background: true };
+      return { title: routineTitle(db, job), runKind: "routine", background: true };
     case "style_profile":
       return { title: "Learning your writing style", runKind: "job", background: true };
     case "transcribe_meeting":
@@ -132,4 +135,16 @@ function jobView(job: Job): { title: string; runKind: RunKind; background: boole
     default:
       return { title: job.type.replace(/_/g, " "), runKind: "job", background: false };
   }
+}
+
+/** "Routine: Monday brief", so the task history names it. */
+function routineTitle(db: Db, job: Job): string {
+  const id = (job.payload as { routineId?: unknown }).routineId;
+  const row =
+    typeof id === "string"
+      ? (db.prepare("select name from routines where id = ?").get(id) as
+          | { name: string }
+          | undefined)
+      : undefined;
+  return row ? `Routine: ${row.name}` : "Routine";
 }

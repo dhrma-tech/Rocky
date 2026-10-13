@@ -232,6 +232,45 @@ const routine = (o: Record<string, unknown>) => ({
   autoPaused: false,
   ...o,
 });
+export const RUNS = [
+  {
+    id: "ask:1",
+    kind: "ask",
+    title: "Ask: What did Dana agree to on pricing?",
+    state: "completed",
+    startedAt: NOW - 3_600_000,
+    updatedAt: NOW - 3_480_000,
+    receipts: 1,
+    outcome: "Ask → cited 3 sources · 0 changed",
+    archived: false,
+    routineId: null,
+  },
+  {
+    id: "job-r1",
+    kind: "routine",
+    title: "Routine: Monday brief",
+    state: "failed",
+    startedAt: NOW - 86_400_000,
+    updatedAt: NOW - 86_340_000,
+    receipts: 0,
+    outcome: "Ollama is not running at http://127.0.0.1:11434.",
+    archived: false,
+    routineId: "r1",
+  },
+  {
+    id: "sync-1",
+    kind: "sync",
+    title: "Syncing Gmail",
+    state: "completed",
+    startedAt: NOW - 2 * 86_400_000,
+    updatedAt: NOW - 2 * 86_400_000 + 12_000,
+    receipts: 1,
+    outcome: "Gmail → synced 12 items",
+    archived: false,
+    routineId: null,
+  },
+];
+
 export const ROUTINES = {
   routines: [
     routine({
@@ -387,7 +426,10 @@ export async function mockApi(page: Page, scenario: Scenario) {
         secrets: {},
       });
     if (scenario === "loading") return; // never answers
-    if (scenario === "error" && (path.startsWith("/actions") || path === "/routines"))
+    if (
+      scenario === "error" &&
+      (path.startsWith("/actions") || path === "/routines" || path === "/runs")
+    )
       return json(route, { error: "The store could not be read.", code: "INTERNAL" }, 500);
     const full = scenario === "populated";
     if (path === "/actions" && method === "GET") {
@@ -403,6 +445,9 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/home")
       return json(route, full ? HOME : { ...HOME, today: [], dueSoon: [], pendingApprovals: 0 });
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
+    if (path === "/runs") return json(route, { runs: full ? RUNS : [] });
+    if (path === "/runs/archive") return json(route, { archived: 1 });
+    if (path === "/runs/unarchive") return json(route, { restored: 1 });
     if (path === "/routines/pause-all") return json(route, { paused: ["r1"] });
     if (path === "/templates")
       return json(route, {
