@@ -1,11 +1,12 @@
 import type { ActionClass, ActionRule, RuleCreate } from "@rocky/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { api, system } from "../api.ts";
 import { DeleteEverything } from "../components/DeleteEverything.tsx";
 import { BudgetMeter } from "../components/trust.tsx";
+import { CATEGORIES, type Category } from "../settings-categories.ts";
 import { getTheme, setTheme, type Theme } from "../theme.ts";
 import {
   Banner,
@@ -28,22 +29,18 @@ import "./screens.css";
  * sits second, under General. Settings apply at once with a toast and Undo.
  */
 
-const CATEGORIES = [
-  { id: "general", title: "General", words: "data folder import files" },
-  { id: "rules", title: "Permissions and rules", words: "allow ask block grant approval safety" },
-  { id: "model", title: "Model", words: "ollama local api key budget speed" },
-  { id: "memory", title: "Memory", words: "remember profile" },
-  { id: "privacy", title: "Privacy and data", words: "local only encryption delete" },
-  { id: "appearance", title: "Appearance", words: "theme dark light" },
-  { id: "advanced", title: "Advanced", words: "ollama url port" },
-  { id: "about", title: "About", words: "version licence" },
-] as const;
-type Category = (typeof CATEGORIES)[number]["id"];
-
 export function SettingsPage() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
-  const [cat, setCat] = useState<Category>("general");
-  const [picked, setPicked] = useState(false);
+  // ?section= opens a category directly (the command palette links here).
+  const { section } = useSearch({ strict: false }) as { section?: string };
+  const linked = CATEGORIES.find((c) => c.id === section)?.id;
+  const [cat, setCat] = useState<Category>(linked ?? "general");
+  const [picked, setPicked] = useState(Boolean(linked));
+  useEffect(() => {
+    if (!linked) return;
+    setCat(linked);
+    setPicked(true);
+  }, [linked]);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const shown = CATEGORIES.filter(

@@ -140,6 +140,10 @@ const routeTree = rootRoute.addChildren([
     getParentRoute: () => rootRoute,
     path: "/settings",
     component: lazyRouteComponent(() => import("./routes/SettingsPage.tsx"), "SettingsPage"),
+    validateSearch: (s: Record<string, unknown>): { section?: string } =>
+      typeof s.section === "string" && /^[a-z]{1,20}$/.test(s.section)
+        ? { section: s.section }
+        : {},
   }),
 ]);
 const router = createRouter({ routeTree });

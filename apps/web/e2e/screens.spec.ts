@@ -298,3 +298,39 @@ test("history: J/K and Enter open a run, a routine re-runs, archive has Undo", a
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/runs\//);
 });
+
+test("command palette: Ctrl+K, type, Enter; recent first; settings deep link; passes axe", async ({
+  page,
+}) => {
+  await mockApi(page, "populated");
+  for (const width of [360, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await page.waitForSelector("h1");
+    await page.keyboard.press("Control+k");
+    const box = page.getByRole("combobox", { name: "Search commands" });
+    await expect(box).toBeFocused();
+    const problems: string[] = [];
+    await check(page, `palette @${width}`, problems);
+    expect(problems).toEqual([]);
+    await page.screenshot({ path: path.join(SHOTS, `palette--${width}.png`) });
+    await box.fill("hist");
+    await expect(page.getByRole("option", { name: "Task history" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/tasks\/history$/);
+  }
+  // The last command comes first next time.
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("group", { name: "Recent" })).toContainText("Task history");
+  await page.getByRole("combobox", { name: "Search commands" }).fill("model ollama");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/settings\?section=model$/);
+  await expect(page.getByRole("region", { name: "Model" })).toBeVisible();
+  // Escape closes without running anything.
+  await page.keyboard.press("Control+k");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Command palette" })).toHaveCount(0);
+});

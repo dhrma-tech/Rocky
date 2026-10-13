@@ -12,14 +12,16 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plug,
+  Search,
   Settings,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LiveProvider, useLive, useOverallState } from "./agent-ui/live.tsx";
 import { Pebble } from "./agent-ui/Pebble.tsx";
 import { activeRuns } from "./agent-ui/runs.ts";
 import { StatusChip } from "./agent-ui/StatusChip.tsx";
 import { ApiError, api, onboarding, type Swatch } from "./api.ts";
+import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.tsx";
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
 import { Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
@@ -127,6 +129,7 @@ function ShellFrame({
   // UI spec "Background" state: a calm count in the sidebar, no animation.
   const runningCount = activeRuns(live.runs).length;
 
+  const toggleRail = useCallback(() => setRail((r) => !r), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
@@ -209,6 +212,13 @@ function ShellFrame({
         <div className="rk-side__foot">
           {FOOTER.map(item)}
           <IconButton
+            label={`Search and commands (${paletteShortcut})`}
+            tipSide="right"
+            onClick={openPalette}
+          >
+            <Search size={20} strokeWidth={1.5} aria-hidden />
+          </IconButton>
+          <IconButton
             label={rail ? "Open sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
             tipSide="right"
             onClick={() => setRail((r) => !r)}
@@ -222,6 +232,7 @@ function ShellFrame({
         </div>
       </nav>
       <RecordingPill />
+      <CommandPalette toggleSidebar={toggleRail} />
       <main id="main" className="rk-main">
         <div className="rk-main__banners">
           {engineDown && (
