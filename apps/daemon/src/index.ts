@@ -1,17 +1,23 @@
 import fs from "node:fs";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
   ActionScheduler,
+  type ChannelHost,
   ConnectorScheduler,
+  channelOnlySecrets,
   dailyBackup,
   deleteEverything,
   FolderWatcher,
+  forkChannelHost,
+  InProcessChannelHost,
   JobRunner,
   Notifier,
   type OpenRuntimeOptions,
   openRuntime,
+  PhoneDispatcher,
   type Runtime,
   redactingLogger,
   shippedDir,
@@ -20,6 +26,9 @@ import {
 import { createApp } from "./app.ts";
 import { Auth, newToken } from "./auth.ts";
 import { CONNECTOR_HOST_ENTRY, registerConnectors } from "./connectors.ts";
+
+/** The channel host process entry (channel-host.ts): phone channel secrets live only there. */
+export const CHANNEL_HOST_ENTRY = fileURLToPath(new URL("./channel-host.ts", import.meta.url));
 
 export { createApp } from "./app.ts";
 export { Auth, newToken } from "./auth.ts";
@@ -118,8 +127,20 @@ export async function startDaemon(opts: {
   backup();
   const backupTimer = setInterval(backup, 60 * 60_000);
   backupTimer.unref();
-  // Notifications (UI spec 16): follow the event log each second; in-app keeps the record.
-  const notifier = new Notifier({ db: rt.db });
+  // Phone channels (D-065) run in their own process, started on first use; test seams that pass
+  // their own secrets run them in-process.
+  const testSecrets = opts.runtime?.secrets;
+  const channels: ChannelHost = testSecrets
+    ? new InProcessChannelHost({
+        secrets: channelOnlySecrets(testSecrets),
+        fetch: opts.runtime?.fetch ?? globalThis.fetch,
+        config: () => rt.config,
+      })
+    : forkChannelHost(CHANNEL_HOST_ENTRY, ["--data-dir", opts.dataDir], log);
+  const phone = new PhoneDispatcher({ db: rt.db, host: channels, config: () => rt.config, log });
+  // Notifications (UI spec 16): follow the event log each second; in-app keeps the record, and
+  // the phone gets what the preferences allow.
+  const notifier = new Notifier({ db: rt.db, onNew: (n) => void phone.dispatch(n) });
   const notify = () => {
     try {
       notifier.tick();
@@ -137,6 +158,7 @@ export async function startDaemon(opts: {
     auth,
     poke: () => runner.poke(),
     rewatch: () => watcher.start(),
+    channels,
     deleteEverything: async () => {
       log("deleting everything at the user's request");
       await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -148,6 +170,7 @@ export async function startDaemon(opts: {
       await actionScheduler.stop();
       await watcher.stop();
       await runner.stop();
+      await channels.close();
       rt.close();
       const { removed } = deleteEverything(opts.dataDir, rt.secrets);
       log(`removed ${removed.length} items; the daemon is exiting`);
@@ -178,6 +201,7 @@ export async function startDaemon(opts: {
       await actionScheduler.stop();
       await watcher.stop();
       await runner.stop();
+      await channels.close();
       fs.rmSync(daemonInfoFile(opts.dataDir), { force: true });
       rt.close();
     },

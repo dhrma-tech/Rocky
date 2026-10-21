@@ -69,6 +69,24 @@ export const NotificationPrefsSchema = z.object({
       end: HHMM.default("07:00"),
     })
     .prefault({}),
+  /**
+   * ntfy (D-065): off by default. The topic and an optional access token are secrets in the
+   * keychain, never here. Without `details`, a message says only what kind of thing is waiting.
+   */
+  ntfy: z
+    .object({
+      enabled: z.boolean().default(false),
+      server: z
+        .url()
+        .refine(
+          (u) =>
+            u.startsWith("https://") || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(u),
+          "an https:// address (http only for a server on this computer)",
+        )
+        .default("https://ntfy.sh"),
+      details: z.boolean().default(false),
+    })
+    .prefault({}),
 });
 export type NotificationPrefs = z.infer<typeof NotificationPrefsSchema>;
 

@@ -24,6 +24,7 @@ import {
   Tabs,
   useToast,
 } from "../ui/index.tsx";
+import { PhoneChannel } from "./PhoneChannel.tsx";
 import "./screens.css";
 
 /**
@@ -284,12 +285,13 @@ function Preferences() {
           </tbody>
         </table>
         <p className="rk-small rk-muted" style={{ margin: "var(--space-3) 0 0" }}>
-          Approvals always say Review, never Approve, so a glance can't approve anything. No phone
-          is connected yet; phone notifications start once one is.
+          Approvals always say Review, never Approve, so a glance can't approve anything. The Phone
+          column takes effect once ntfy is set up below.
         </p>
       </Card>
 
       <QuietHours prefs={prefs} saving={save.isPending} onSave={set} />
+      <PhoneChannel prefs={prefs} saving={save.isPending} onSave={set} />
     </div>
   );
 }

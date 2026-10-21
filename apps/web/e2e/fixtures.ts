@@ -453,6 +453,7 @@ const SETTINGS = {
     system: { needsYou: true, updates: false, headsUp: true },
     phone: { needsYou: true, updates: false, headsUp: true },
     quietHours: { enabled: false, start: "22:00", end: "07:00" },
+    ntfy: { enabled: false, server: "https://ntfy.sh", details: false },
   },
   dataDir: "E:/RockyData",
   secrets: {},
@@ -565,6 +566,10 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/devices/hosts") return json(route, route.request().postDataJSON());
     if (path.startsWith("/devices/") && path.endsWith("/revoke"))
       return json(route, { revoked: "x" });
+    if (path === "/channels")
+      return json(route, { ntfy: { topicSet: full, tokenSet: false }, localOnly: false });
+    if (path.startsWith("/channels/"))
+      return json(route, { stored: true, sent: true, deleted: true });
     if (path === "/notifications")
       return json(route, full ? NOTIFICATIONS : { unread: 0, notifications: [] });
     if (path.startsWith("/notifications/")) return json(route, { changed: 1 });

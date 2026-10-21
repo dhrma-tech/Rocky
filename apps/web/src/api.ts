@@ -200,6 +200,19 @@ export const devices = {
   },
 };
 
+/** Phone channels (D-065). Secrets are write-only: Rocky says whether one is set, never what. */
+export const channels = {
+  get: () =>
+    call<{ ntfy: { topicSet: boolean; tokenSet: boolean }; localOnly: boolean }>("/channels"),
+  setSecret: (name: "topic" | "token", value: string) =>
+    call<{ stored: boolean }>("/channels/ntfy/secret", {
+      method: "POST",
+      body: JSON.stringify({ name, value }),
+    }),
+  forget: () => call<{ deleted: boolean }>("/channels/ntfy", { method: "DELETE" }),
+  test: () => call<{ sent: boolean }>("/channels/test", { method: "POST" }),
+};
+
 export type StreamState = "live" | "reconnecting";
 
 /**

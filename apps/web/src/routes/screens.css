@@ -590,3 +590,8 @@
   display: grid;
   gap: var(--space-4);
 }
+.rk-phone {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}

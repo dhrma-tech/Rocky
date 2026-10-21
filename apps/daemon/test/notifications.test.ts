@@ -95,6 +95,7 @@ describe("notification routes", () => {
       system: { needsYou: true, updates: true, headsUp: false },
       phone: { needsYou: false, updates: false, headsUp: false },
       quietHours: { enabled: true, start: "21:30", end: "06:45" },
+      ntfy: { enabled: false, server: "https://ntfy.sh", details: false },
     };
     const res = await call("/settings", {
       method: "PUT",

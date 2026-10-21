@@ -24,6 +24,7 @@ import {
   appendTurn,
   ask,
   blobPath,
+  type ChannelHost,
   createConversation,
   deleteConversation,
   deleteData,
@@ -53,6 +54,7 @@ import { z } from "zod";
 import { registerAssistantRoutes } from "./assistant-routes.ts";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
+import { registerChannelRoutes } from "./channel-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
 import { registerDeviceRoutes, registerPairRoute } from "./device-routes.ts";
 import { registerEventRoutes } from "./event-routes.ts";
@@ -152,6 +154,8 @@ export interface AppDeps {
   rewatch?: () => Promise<void>;
   /** "Delete everything": the daemon stops, removes all data, and exits (index.ts). */
   deleteEverything?: () => Promise<void>;
+  /** Phone channels (ntfy): the channel host process, or an in-process one in tests. */
+  channels?: ChannelHost;
 }
 
 /** Deny with an optional note for Rocky (UI spec 17). */
@@ -159,7 +163,15 @@ const DenyBody = z.object({ note: z.string().max(500).optional() });
 const AskBody = AskRequestSchema.extend({ conversationId: z.string().max(40).optional() });
 const ConversationBody = z.object({ scope: ScopeSchema.optional() }).strict();
 
-export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }: AppDeps): Hono {
+export function createApp({
+  rt,
+  auth,
+  poke,
+  webDir,
+  rewatch,
+  deleteEverything,
+  channels,
+}: AppDeps): Hono {
   const app = new Hono();
   app.use("*", auth.hostGuard());
 
@@ -647,6 +659,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerEventRoutes(api, { rt });
   registerNotificationRoutes(api, { rt });
   registerDeviceRoutes(api, { rt, auth });
+  registerChannelRoutes(api, { rt, auth, channels });
   registerFileRoutes(api, { rt });
   registerModelRoutes(api, { rt, errorBody });
   registerMemoryRoutes(api, { rt, body });

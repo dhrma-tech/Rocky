@@ -779,3 +779,30 @@ test("pair: six digits and a name pair the phone, a wrong code says why", async 
   await expect(page).toHaveURL(/:\d+\/$/);
   expect(sent.at(-1)).toMatchObject({ code: "123456" });
 });
+
+test("phone notifications: a random topic goes to the keychain, then a test is sent", async ({
+  page,
+}) => {
+  const posts: { path: string; body: unknown }[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().includes("/channels/"))
+      posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() });
+  });
+  await mockApi(page, "empty");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/notifications?tab=preferences");
+  await expect(page.getByRole("button", { name: "Send a test" })).toBeDisabled();
+  await page.getByRole("button", { name: "Make one for me" }).click();
+  const topic = page.getByLabel("Topic", { exact: true });
+  await expect(topic).toHaveValue(/^rocky_[a-z0-9]{20}$/);
+  const value = await topic.inputValue();
+  await page.getByRole("button", { name: "Save topic" }).click();
+  await expect
+    .poll(() => posts)
+    .toEqual([{ path: "/api/v1/channels/ntfy/secret", body: { name: "topic", value } }]);
+  // Saved topics are never shown again.
+  await expect(topic).toHaveValue("");
+  const problems: string[] = [];
+  await check(page, "phone channel", problems);
+  expect(problems).toEqual([]);
+});

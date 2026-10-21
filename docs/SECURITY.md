@@ -34,6 +34,12 @@ Adversarial fixtures live in `packages/core/test/security/fixtures/` and every o
 - `Host` must be `127.0.0.1:<port>` or `localhost:<port>` (DNS-rebinding defense). `Origin` must match on state-changing requests (CSRF defense).
 - Phones (roadmap A3, [PHONE.md](PHONE.md)): the daemon still binds `127.0.0.1` only. A phone reaches it through `tailscale serve`, which ends HTTPS on this computer and forwards the original `Host` with `X-Forwarded-Proto: https` (checked in Tailscale's source, `ipn/ipnlocal/serve.go`). A name the user added (`daemon.allowedHosts`, DNS names only) is accepted only with that header and only with a paired device's cookie (`Secure`, `HttpOnly`, `SameSite=Strict`, 90 days, only its SHA-256 stored, revocable). The install token and desktop sessions don't work by such a name. Pairing takes a 6-digit code made on the computer: it works once, for 5 minutes, and five wrong guesses end it. A phone can't write secrets, delete data, pair devices, change the allowed names, use MCP or bootstrap. Plain HTTP on a LAN is not supported: it would expose the cookie. Any other local process could also send these headers to 127.0.0.1, but it would still need a paired device's cookie.
 
+## Phone notifications (roadmap A3)
+
+- Off by default. A separate channel host process holds the ntfy topic and token (keychain names `channel.*`). The daemon can't read them, and neither can connector code. The host may reach only the configured ntfy server and `api.telegram.org`.
+- Local-only mode blocks every phone send. The daemon checks it, and the channel host checks it again.
+- Without "Include details", a message names only the kind of thing waiting. Each send is audited as `notification_sent` with a hash of the text, never the text.
+
 ## Rules, grants and the Undo window (roadmap A4)
 
 Rules decide what happens to a proposal before the user sees it: **block** (stored as rejected, audited with the rule), **ask** (the default), or **allow**. Ask first wins: block beats ask beats allow. An allow rule must name one action type, carry at least one condition on the payload (`equals`, `oneOf`, `domainIn`, `lte`) and end within 90 days; there is no blanket "always allow". No rule can allow an action that sends, spends or deletes (a calendar event with guests counts as sending), an action drafted from external text (strict review), or anything not proposed from a user turn or a user-enabled routine. A rule-approved action is approved by its exact payload hash and audited with the rule id, like a click. Every approval, by a person or a rule, waits 10 seconds before the daemon runs it, so Undo still works; "Approve now" skips the wait. Approvals from the CLI run only with `rocky actions run`.
@@ -93,6 +99,7 @@ Plugins run in the connector host process with the same OS privileges as you. Th
 | No invisible or bidi control characters in source | `source-hygiene.test.ts` |
 | No exfiltration through rendering (no images, no live links) | `apps/web/test/safe-text.test.ts` |
 | Daemon binds 127.0.0.1, token, Host and Origin checks | `apps/daemon/test/server.test.ts`, `app.test.ts`, `mcp-http.test.ts` |
+| Phone channels: secrets only in the channel host, egress limited, local-only blocks, audit without text | `packages/core/test/security/channels.test.ts`, `apps/daemon/test/channels.test.ts` |
 | Phones: allowed names over HTTPS only, paired-device cookie only, pairing codes can't be guessed, phones can't touch secrets or delete | `apps/daemon/test/phone.security.test.ts` (in `pnpm test:security`) |
 | Recording needs both consent checks; consent is audited | `apps/daemon/test/capture.test.ts`, `core/test/capture.test.ts` |
 | MCP output wrapped; local-only hidden | `packages/mcp/test/mcp.test.ts` |
