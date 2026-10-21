@@ -9,6 +9,7 @@ import {
   deleteEverything,
   FolderWatcher,
   JobRunner,
+  Notifier,
   type OpenRuntimeOptions,
   openRuntime,
   type Runtime,
@@ -111,6 +112,18 @@ export async function startDaemon(opts: {
   backup();
   const backupTimer = setInterval(backup, 60 * 60_000);
   backupTimer.unref();
+  // Notifications (UI spec 16): follow the event log each second; in-app keeps the record.
+  const notifier = new Notifier({ db: rt.db });
+  const notify = () => {
+    try {
+      notifier.tick();
+    } catch (err) {
+      log(`notifier tick failed: ${String(err)}`);
+    }
+  };
+  notify();
+  const notifyTimer = setInterval(notify, 1000);
+  notifyTimer.unref();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -124,6 +137,7 @@ export async function startDaemon(opts: {
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
       clearInterval(backupTimer);
+      clearInterval(notifyTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();
@@ -153,6 +167,7 @@ export async function startDaemon(opts: {
       clearInterval(notebookTimer);
       clearInterval(routineTimer);
       clearInterval(backupTimer);
+      clearInterval(notifyTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();

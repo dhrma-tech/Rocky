@@ -416,6 +416,85 @@ export function Drawer({
   );
 }
 
+// --- Popover ---
+
+/**
+ * A small non-modal panel tied to a button (the notification bell). Built on the browser's
+ * `popover` attribute: Esc and a click outside close it, focus returns to the button. It opens
+ * beside its button when there is room (the sidebar), otherwise below it.
+ */
+export function Popover({
+  title,
+  trigger,
+  children,
+}: {
+  title: string;
+  trigger: (props: {
+    ref: (el: HTMLButtonElement | null) => void;
+    popoverTarget: string;
+    "aria-expanded": boolean;
+    "aria-controls": string;
+  }) => ReactNode;
+  children: (close: () => void) => ReactNode;
+}) {
+  const id = useId();
+  const titleId = useId();
+  const panel = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const p = panel.current;
+    if (!p) return;
+    const onToggle = (e: Event) => {
+      const isOpen = (e as ToggleEvent).newState === "open";
+      setOpen(isOpen);
+      const b = button.current;
+      if (!isOpen || !b) return;
+      const r = b.getBoundingClientRect();
+      const w = p.offsetWidth;
+      const h = p.offsetHeight;
+      const gap = 8;
+      const beside = r.right + gap + w <= window.innerWidth;
+      const left = beside
+        ? r.right + gap
+        : Math.max(gap, Math.min(r.left, window.innerWidth - w - gap));
+      const top = beside
+        ? Math.max(gap, Math.min(r.bottom - h, window.innerHeight - h - gap))
+        : Math.min(r.bottom + gap, window.innerHeight - h - gap);
+      p.style.left = `${left}px`;
+      p.style.top = `${Math.max(gap, top)}px`;
+    };
+    p.addEventListener("toggle", onToggle);
+    return () => p.removeEventListener("toggle", onToggle);
+  }, []);
+  const close = useCallback(() => panel.current?.hidePopover(), []);
+  return (
+    <>
+      {trigger({
+        ref: (el) => {
+          button.current = el;
+        },
+        popoverTarget: id,
+        "aria-expanded": open,
+        "aria-controls": id,
+      })}
+      <div
+        ref={panel}
+        id={id}
+        popover="auto"
+        className="rk-popover"
+        role="dialog"
+        aria-labelledby={titleId}
+      >
+        <h2 id={titleId} className="rk-h3 rk-popover__title">
+          {title}
+        </h2>
+        {open && children(close)}
+      </div>
+    </>
+  );
+}
+
 // --- Toast ---
 
 interface ToastItem {

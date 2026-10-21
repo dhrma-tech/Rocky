@@ -1,3 +1,4 @@
+import type { NotificationPrefs } from "@rocky/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -27,6 +28,7 @@ import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.t
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
 import { GlobalHelpKeys } from "./help/shortcuts.tsx";
+import { NotificationBell, useSystemNotifications } from "./notifications.tsx";
 import { TaskCreator } from "./TaskCreator.tsx";
 import { Avatar, Banner, Button, IconButton, ToastProvider } from "./ui/index.tsx";
 import "./shell.css";
@@ -34,7 +36,7 @@ import "./shell.css";
 /**
  * App shell (UI spec "App shell", docs/DECISIONS.md D-018). Sidebar: Today, Approvals, Projects,
  * Tasks; Library: Memory, Files, Notebooks, Commitments, Integrations; footer: Help, Settings,
- * your profile, search (Ctrl+K). Notifications join in P3. Rocky's pebble and state chip sit at
+ * notifications (bell), your profile, search (Ctrl+K). Rocky's pebble and state chip sit at
  * the top so the agent's state shows on every screen.
  */
 
@@ -101,6 +103,7 @@ export function Shell() {
         <ShellFrame
           engineDown={settings.isError}
           localOnly={settings.data?.localOnly}
+          prefs={settings.data?.notifications}
           retry={() => void settings.refetch()}
           lastSeen={settings.dataUpdatedAt}
           name={setup.data?.name ?? "Rocky"}
@@ -115,6 +118,7 @@ export function Shell() {
 function ShellFrame({
   engineDown,
   localOnly,
+  prefs,
   retry,
   lastSeen,
   name,
@@ -123,6 +127,7 @@ function ShellFrame({
 }: {
   engineDown: boolean;
   localOnly: boolean | undefined;
+  prefs: NotificationPrefs | undefined;
   retry: () => void;
   lastSeen: number;
   name: string;
@@ -141,6 +146,7 @@ function ShellFrame({
   const state = useOverallState(pendingCount);
   // UI spec "Background" state: a calm count in the sidebar, no animation.
   const runningCount = activeRuns(live.runs).length;
+  useSystemNotifications(engineDown ? undefined : prefs);
 
   const toggleRail = useCallback(() => setRail((r) => !r), []);
   useEffect(() => {
@@ -223,6 +229,16 @@ function ShellFrame({
         {!rail && <p className="rk-side__group">Library</p>}
         {LIBRARY.map(item)}
         <div className="rk-side__foot">
+          {rail ? (
+            <span className="rk-tip rk-tip--right">
+              <NotificationBell rail />
+              <span className="rk-tip__text" aria-hidden="true">
+                Notifications
+              </span>
+            </span>
+          ) : (
+            <NotificationBell rail={false} />
+          )}
           {FOOTER.map(item)}
           <Link
             to="/profile"

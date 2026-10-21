@@ -1,0 +1,116 @@
+/* Notifications (UI spec 16): rows shared by the bell popover and the full page. */
+.rk-notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.rk-notif {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-4) var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.rk-notif:last-child {
+  border-bottom: 0;
+}
+.rk-notif__icon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+.rk-notif[data-kind="needs_you"] .rk-notif__icon {
+  color: var(--color-warning-text);
+}
+.rk-notif__main {
+  flex: 1;
+  min-width: 0;
+}
+.rk-notif__sentence {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.rk-notif[data-unread="true"] .rk-notif__sentence {
+  font-weight: 500;
+}
+.rk-notif__dot {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+.rk-notif-pop__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+.rk-notif-day {
+  margin: var(--space-4) 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.rk-notif-prefs {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.rk-notif-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+.rk-notif-matrix caption {
+  text-align: left;
+  margin-bottom: var(--space-2);
+}
+.rk-notif-matrix th,
+.rk-notif-matrix td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+.rk-notif-matrix thead th {
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.rk-notif-matrix tbody th {
+  font-weight: 500;
+}
+.rk-notif-matrix td {
+  width: 1%;
+  white-space: nowrap;
+}
+.rk-block {
+  display: block;
+  font-weight: 400;
+}
+.rk-notif-quiet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+@media (max-width: 599px) {
+  .rk-notif-matrix th,
+  .rk-notif-matrix td {
+    padding: var(--space-1);
+  }
+  .rk-notif-matrix td {
+    white-space: normal;
+  }
+  /* "In Rocky" is always on; on a phone the column only costs width. */
+  .rk-notif-matrix__always {
+    display: none;
+  }
+}

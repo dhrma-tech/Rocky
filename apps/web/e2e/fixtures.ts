@@ -445,6 +445,58 @@ const MODELS = {
   note: "These fit comfortably in 15.7 GB.",
 };
 
+const SETTINGS = {
+  localOnly: true,
+  budget: { monthlyCapUsd: 10 },
+  ollama: { baseUrl: "" },
+  notifications: {
+    system: { needsYou: true, updates: false, headsUp: true },
+    phone: { needsYou: true, updates: false, headsUp: true },
+    quietHours: { enabled: false, start: "22:00", end: "07:00" },
+  },
+  dataDir: "E:/RockyData",
+  secrets: {},
+};
+
+export const NOTIFICATIONS = {
+  unread: 2,
+  notifications: [
+    {
+      id: "01JZ0000000000000000000003",
+      at: NOW - 60_000,
+      kind: "needs_you",
+      sentence: "Needs your approval: Draft a reply to Priya: pricing question",
+      link: "/approvals",
+      actionLabel: "Review",
+      runId: "a1",
+      readAt: null,
+      snoozedUntil: null,
+    },
+    {
+      id: "01JZ0000000000000000000002",
+      at: NOW - 3_600_000,
+      kind: "update",
+      sentence: "Routine: Morning brief finished.",
+      link: "/runs/r1",
+      actionLabel: "Open",
+      runId: "r1",
+      readAt: null,
+      snoozedUntil: null,
+    },
+    {
+      id: "01JZ0000000000000000000001",
+      at: NOW - 2 * 86_400_000,
+      kind: "system",
+      sentence: "Weekly review failed 3 times in a row, so Rocky paused it.",
+      link: "/tasks/background",
+      actionLabel: "Open",
+      runId: null,
+      readAt: NOW - 86_400_000,
+      snoozedUntil: null,
+    },
+  ],
+};
+
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
@@ -458,20 +510,16 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path === "/events") return;
     if (scenario === "engine-down")
       return json(route, { error: "engine down", code: "UNAVAILABLE" }, 503);
-    if (path === "/settings")
-      return json(route, {
-        localOnly: true,
-        budget: { monthlyCapUsd: 10 },
-        ollama: { baseUrl: "" },
-        dataDir: "E:/RockyData",
-        secrets: {},
-      });
+    if (path === "/settings" && method === "PUT")
+      return json(route, { ...SETTINGS, ...(route.request().postDataJSON() as object) });
+    if (path === "/settings") return json(route, SETTINGS);
     if (scenario === "loading") return; // never answers
     if (
       scenario === "error" &&
       (path.startsWith("/actions") ||
         path === "/routines" ||
         path === "/runs" ||
+        path === "/notifications" ||
         path === "/files" ||
         path === "/connectors")
     )
@@ -495,6 +543,9 @@ export async function mockApi(page: Page, scenario: Scenario) {
     }
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
     if (path === "/runs") return json(route, { runs: full ? RUNS : [] });
+    if (path === "/notifications")
+      return json(route, full ? NOTIFICATIONS : { unread: 0, notifications: [] });
+    if (path.startsWith("/notifications/")) return json(route, { changed: 1 });
     if (path === "/files")
       return json(route, {
         files: full

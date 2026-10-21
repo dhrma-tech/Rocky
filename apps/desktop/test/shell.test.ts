@@ -53,8 +53,12 @@ describe("permissions", () => {
     expect(permissionAllowed("media", `${ORIGIN}/meetings`, ORIGIN)).toBe(true);
     expect(permissionAllowed("media", "https://evil.example/", ORIGIN)).toBe(false);
   });
+  it("allows notifications only for the daemon's own pages", () => {
+    expect(permissionAllowed("notifications", `${ORIGIN}/`, ORIGIN)).toBe(true);
+    expect(permissionAllowed("notifications", "https://evil.example/", ORIGIN)).toBe(false);
+  });
   it("denies everything else", () => {
-    for (const p of ["geolocation", "notifications", "openExternal", "midi", "hid"])
+    for (const p of ["geolocation", "openExternal", "midi", "hid"])
       expect(permissionAllowed(p, `${ORIGIN}/`, ORIGIN)).toBe(false);
   });
 });

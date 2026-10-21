@@ -60,6 +60,7 @@ import { registerImportRoutes } from "./imports.ts";
 import { registerMemoryRoutes } from "./memory-routes.ts";
 import { registerModelRoutes } from "./model-routes.ts";
 import { registerNotebookRoutes } from "./notebook-routes.ts";
+import { registerNotificationRoutes } from "./notification-routes.ts";
 import { registerOnboardingRoutes } from "./onboarding-routes.ts";
 import { registerProjectRoutes } from "./project-routes.ts";
 import { registerSampleRoutes } from "./sample-routes.ts";
@@ -565,6 +566,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
       localOnly: rt.config.localOnly,
       budget: rt.config.budget,
       ollama: rt.config.ollama,
+      notifications: rt.config.notifications,
       dataDir: rt.dataDir,
       secrets: Object.fromEntries(WRITABLE_SECRETS.map((n) => [n, rt.secrets.has(n)])),
     }),
@@ -580,6 +582,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
       ...(u.localOnly !== undefined ? { localOnly: u.localOnly } : {}),
       ...(u.budget ? { budget: u.budget } : {}),
       ...(u.ollama ? { ollama: u.ollama } : {}),
+      ...(u.notifications ? { notifications: u.notifications } : {}),
     };
     saveAppConfig(rt.dataDir, next);
     // The gate reads rt.config on every call, so the change applies immediately.
@@ -588,6 +591,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
       localOnly: rt.config.localOnly,
       budget: rt.config.budget,
       ollama: rt.config.ollama,
+      notifications: rt.config.notifications,
     });
   });
 
@@ -636,6 +640,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerCaptureRoutes(api, { rt, poke, body });
   registerConnectorRoutes(api, { rt, body });
   registerEventRoutes(api, { rt });
+  registerNotificationRoutes(api, { rt });
   registerFileRoutes(api, { rt });
   registerModelRoutes(api, { rt, errorBody });
   registerMemoryRoutes(api, { rt, body });

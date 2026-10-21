@@ -146,6 +146,26 @@ SCREENS.push(
     url: "/settings",
     ready: () => "text=Search settings",
   },
+  {
+    name: "notifications",
+    url: "/notifications?tab=all",
+    // Every tab panel stays mounted; wait in the one that shows.
+    ready: (s) =>
+      s === "loading"
+        ? "h1"
+        : `[role=tabpanel]:not([hidden]) >> text=${
+            s === "populated"
+              ? "Routine: Morning brief finished."
+              : s === "empty"
+                ? "You're caught up."
+                : "Notifications didn't load."
+          }`,
+  },
+  {
+    name: "notification-preferences",
+    url: "/notifications?tab=preferences",
+    ready: () => "text=What reaches you where",
+  },
 );
 const SCENARIOS: Scenario[] = ["populated", "empty", "loading", "error"];
 
@@ -557,4 +577,59 @@ test("task creation: once goes to a scoped question; weekdays saves a routine; d
   await expect(drawer.getByText("the files in Launch (E:/Work/Launch)")).toBeVisible();
   await drawer.getByRole("button", { name: "Start task" }).click();
   await expect(page).toHaveURL(/\/ask\?.*project=p1/);
+});
+
+test("notifications: the bell shows unread, Review goes to Approvals, mark all read sends once", async ({
+  page,
+}) => {
+  const posts: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().includes("/notifications/"))
+      posts.push(new URL(r.url()).pathname);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  const bell = page.getByRole("button", { name: /Notifications/ });
+  await expect(bell).toContainText("2");
+  await bell.click();
+  const pop = page.getByRole("dialog", { name: "Notifications" });
+  await expect(pop.getByText("Needs your approval: Draft a reply to Priya")).toBeVisible();
+  // A glance can never approve: the only action on an approval is Review.
+  await expect(pop.getByRole("button", { name: /^Approve/ })).toHaveCount(0);
+  await pop.getByRole("link", { name: /^Review:/ }).click();
+  await expect(page).toHaveURL(/\/approvals$/);
+  await expect(pop).toBeHidden();
+  expect(posts).toContain("/api/v1/notifications/read");
+
+  await page.goto("/notifications");
+  await expect(page.getByRole("tab", { name: "Needs you (1)" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await page.getByRole("tab", { name: "Updates" }).click();
+  await expect(
+    page.getByRole("tabpanel", { name: "Updates" }).getByRole("heading", { name: "Today" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Mark all as read" }).click();
+  await expect(page.getByText("Marked 1 as read.")).toBeVisible();
+  expect(posts.filter((p) => p.endsWith("/read-all"))).toHaveLength(1);
+});
+
+test("notification preferences: a matrix change and quiet hours save through settings", async ({
+  page,
+}) => {
+  const puts: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "PUT" && r.url().endsWith("/settings")) puts.push(r.postDataJSON());
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/notifications?tab=preferences");
+  await page.getByLabel("Updates on this computer").check();
+  await expect.poll(() => puts.length).toBe(1);
+  expect(puts[0]).toMatchObject({ notifications: { system: { updates: true } } });
+  await page.getByRole("switch", { name: "Use quiet hours" }).click();
+  await expect.poll(() => puts.length).toBe(2);
+  expect(puts[1]).toMatchObject({ notifications: { quietHours: { enabled: true } } });
 });

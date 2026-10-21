@@ -9,5 +9,6 @@ export * from "./events.ts";
 export * from "./imports.ts";
 export * from "./memory.ts";
 export * from "./notebooks.ts";
+export * from "./notifications.ts";
 export * from "./router.ts";
 export * from "./understanding.ts";

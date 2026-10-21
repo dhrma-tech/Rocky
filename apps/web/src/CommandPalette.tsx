@@ -97,6 +97,7 @@ function Palette({ onClose, toggleSidebar }: { onClose: () => void; toggleSideba
       ["/settings", "Settings", "preferences"],
       ["/profile", "Profile", "name colour color you rocky avatar"],
       ["/help", "Help", "docs support diagnostics shortcuts"],
+      ["/notifications", "Notifications", "bell alerts quiet hours unread"],
     ];
     return [
       {

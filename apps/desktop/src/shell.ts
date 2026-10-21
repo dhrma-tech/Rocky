@@ -39,8 +39,9 @@ export function navigationTarget(url: string, origin: string): "allow" | "extern
   return "block";
 }
 
-/** Permissions the UI may ask for: the microphone for meeting capture, and clipboard writes. */
-const ALLOWED_PERMISSIONS = new Set(["media", "clipboard-sanitized-write"]);
+/** Permissions the UI may ask for: the microphone for meeting capture, clipboard writes, and the
+ * computer's notifications (UI spec 16). */
+const ALLOWED_PERMISSIONS = new Set(["media", "clipboard-sanitized-write", "notifications"]);
 
 export function permissionAllowed(permission: string, requestingUrl: string, origin: string) {
   return ALLOWED_PERMISSIONS.has(permission) && navigationTarget(requestingUrl, origin) === "allow";

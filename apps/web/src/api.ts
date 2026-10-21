@@ -38,6 +38,8 @@ import type {
   NotebookCreate,
   NotebookSource,
   NotebookUpdate,
+  NotificationList,
+  NotificationPrefs,
   QuizCreate,
   QuizGrade,
   QuizQuestion,
@@ -197,6 +199,7 @@ export interface Settings {
   localOnly: boolean;
   budget: { monthlyCapUsd: number };
   ollama: { baseUrl: string };
+  notifications: NotificationPrefs;
   dataDir: string;
   secrets: Record<string, boolean>;
 }
@@ -346,6 +349,26 @@ export const api = {
     if (q.archived) p.set("archived", "1");
     return call<{ runs: RunSummary[] }>(`/runs?${p}`);
   },
+  // Notifications (UI spec 16).
+  notifications: (tab: "all" | "needs_you" | "updates" = "all", limit = 100) =>
+    call<NotificationList>(`/notifications?tab=${tab}&limit=${limit}`),
+  readNotifications: (ids: string[]) =>
+    call<{ changed: number }>("/notifications/read", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
+  readAllNotifications: () =>
+    call<{ changed: number }>("/notifications/read-all", { method: "POST" }),
+  snoozeNotifications: (ids: string[], until: number) =>
+    call<{ changed: number }>("/notifications/snooze", {
+      method: "POST",
+      body: JSON.stringify({ ids, until }),
+    }),
+  dismissNotifications: (ids: string[]) =>
+    call<{ changed: number }>("/notifications/dismiss", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
   archiveRuns: (ids: string[]) =>
     call<{ archived: number }>("/runs/archive", { method: "POST", body: JSON.stringify({ ids }) }),
   unarchiveRuns: (ids: string[]) =>

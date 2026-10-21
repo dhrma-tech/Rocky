@@ -65,6 +65,8 @@ export * from "./notebooks/scope.ts";
 export * from "./notebooks/service.ts";
 export * from "./notebooks/sm2.ts";
 export * from "./notebooks/sources.ts";
+export * from "./notifications/derive.ts";
+export * from "./notifications/notifier.ts";
 export * from "./onboarding/onboarding.ts";
 export * from "./projects/projects.ts";
 export * from "./retrieval/retrieve.ts";

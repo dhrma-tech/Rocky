@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NotificationPrefsSchema } from "./notifications.ts";
 
 /** User settings file: `<dataDir>/rocky.yaml`. Every field has a default, so an empty file is valid. */
 export const AppConfigSchema = z.object({
@@ -25,6 +26,8 @@ export const AppConfigSchema = z.object({
    * notebooks are hidden from it, and with global localOnly every tool refuses, unless allowed here.
    */
   mcp: z.object({ allowLocalOnly: z.boolean().default(false) }).prefault({}),
+  /** Notifications (UI spec 16): which kinds reach which channel, and quiet hours. */
+  notifications: NotificationPrefsSchema.prefault({}),
   /** Connector plugins: npm package names or file: URLs (connectors.md "Plugins"). */
   plugins: z.array(z.string().min(1)).default([]),
 });
@@ -36,6 +39,7 @@ export const SettingsUpdateSchema = z
     localOnly: z.boolean(),
     budget: z.object({ monthlyCapUsd: z.number().nonnegative().max(10_000) }),
     ollama: z.object({ baseUrl: z.url() }),
+    notifications: NotificationPrefsSchema,
   })
   .partial()
   .strict();

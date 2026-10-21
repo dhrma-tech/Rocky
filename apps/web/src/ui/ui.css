@@ -499,3 +499,22 @@ textarea.rk-input {
   color: var(--color-text);
   font-weight: 600;
 }
+
+/* --- Popover: a small panel beside its button (the notification bell). --- */
+.rk-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(380px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(560px, calc(100dvh - 2 * var(--space-4)));
+  overflow: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-modal);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3), var(--elevation-edge);
+}
+.rk-popover__title {
+  margin: 0 0 var(--space-3);
+}
