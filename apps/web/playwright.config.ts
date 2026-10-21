@@ -20,8 +20,6 @@ export default defineConfig({
     ...(channel ? { channel } : {}),
     // No third-party requests from the UI (user rule 3): anything off localhost fails the test.
     serviceWorkers: "block",
-    // Transitions finish at once, so axe never measures a tooltip halfway through its fade.
-    contextOptions: { reducedMotion: "reduce" },
   },
   webServer: {
     command: `pnpm exec vite --port ${PORT} --strictPort`,

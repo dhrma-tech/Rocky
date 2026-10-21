@@ -131,3 +131,15 @@
   opacity: 1;
   transition-delay: 500ms;
 }
+
+/* Press and hold (UI spec 23): the fill grows while the finger stays down. */
+.rk-hold {
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+  background-image: linear-gradient(
+    to right,
+    var(--button-primary-bg-pressed) calc(var(--hold, 0) * 100%),
+    transparent calc(var(--hold, 0) * 100%)
+  );
+}

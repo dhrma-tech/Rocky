@@ -6,6 +6,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { DRAFTS, mockApi, type Scenario } from "./fixtures.ts";
 
+// Transitions finish at once, so axe never measures a tooltip halfway through its fade.
+test.use({ contextOptions: { reducedMotion: "reduce" } });
+
 const SHOTS = path.join(import.meta.dirname, "screenshots", "screens");
 fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -632,4 +635,74 @@ test("notification preferences: a matrix change and quiet hours save through set
   await page.getByRole("switch", { name: "Use quiet hours" }).click();
   await expect.poll(() => puts.length).toBe(2);
   expect(puts[1]).toMatchObject({ notifications: { quietHours: { enabled: true } } });
+});
+
+test("phone: a tab bar with Today, Approvals, Tasks, Chat and More; More holds the rest", async ({
+  page,
+}) => {
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  const tabs = page.getByRole("navigation", { name: "Main" });
+  for (const name of [/^Today/, /^Approvals/, /^Tasks/, /^Chat/])
+    await expect(tabs.getByRole("link", { name })).toBeVisible();
+  await expect(tabs.getByRole("button", { name: /^More/ })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: /^Approvals/ })).toContainText("3");
+  await tabs.getByRole("button", { name: /^More/ }).click();
+  const sheet = page.getByRole("dialog", { name: "More" });
+  await expect(sheet.getByRole("link", { name: "Commitments" })).toBeVisible();
+  const problems: string[] = [];
+  await check(page, "more sheet", problems);
+  expect(problems).toEqual([]);
+  await sheet.getByRole("link", { name: /^Notifications/ }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(sheet).toBeHidden();
+  await expect(tabs.getByRole("button", { name: /^More/ })).toHaveClass(/active/);
+  // A tablet gets the icon rail; it follows the window back to the full sidebar.
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(page.locator(".rk-side")).toHaveAttribute("data-rail", "true");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator(".rk-side")).toHaveAttribute("data-rail", "false");
+});
+
+test("phone: a high-risk approval is held to approve; a tap opens the confirm step", async ({
+  page,
+}) => {
+  // A touch screen: the browser reports a coarse pointer.
+  await page.addInitScript(() => {
+    const real = window.matchMedia.bind(window);
+    window.matchMedia = (q: string) =>
+      q === "(pointer: coarse)" ? ({ ...real(q), matches: true } as MediaQueryList) : real(q);
+  });
+  const approvals: unknown[] = [];
+  await mockApi(page, "populated");
+  await page.route("**/api/v1/actions?status=draft", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ actions: [{ ...DRAFTS[0], risk: "high" }] }),
+    }),
+  );
+  await page.route("**/api/v1/actions/*/approve", (route) => {
+    approvals.push(route.request().postDataJSON());
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ...DRAFTS[0], status: "approved", executeAfter: Date.now() + 10_000 }),
+    });
+  });
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/approvals");
+  const hold = page.getByRole("button", { name: "Hold to approve" });
+  await hold.click();
+  await expect(page.getByRole("region", { name: "Confirm approval" })).toBeVisible();
+  expect(approvals).toEqual([]);
+  await page.getByRole("button", { name: "Go back" }).click();
+  // A short press is not enough…
+  await hold.dispatchEvent("pointerdown", { pointerType: "touch" });
+  await page.waitForTimeout(300);
+  await hold.dispatchEvent("pointerup", { pointerType: "touch" });
+  expect(approvals).toEqual([]);
+  // …holding for the full time approves exactly once.
+  await hold.dispatchEvent("pointerdown", { pointerType: "touch" });
+  await expect.poll(() => approvals.length, { timeout: 4000 }).toBe(1);
+  expect(approvals[0]).toMatchObject({ payloadHash: DRAFTS[0]?.payloadHash, holdMs: 10_000 });
 });

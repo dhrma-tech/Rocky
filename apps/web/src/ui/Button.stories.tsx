@@ -1,6 +1,6 @@
 import { Check, Settings, Trash2 } from "lucide-react";
 import type { Meta, Story } from "../stories/catalog.ts";
-import { Button, IconButton } from "./Button.tsx";
+import { Button, HoldButton, IconButton } from "./Button.tsx";
 
 export default { title: "Controls/Button" } satisfies Meta;
 
@@ -59,3 +59,11 @@ export const IconOnly: Story = () => (
   </IconButton>
 );
 IconOnly.parameters = { states: ["hover", "focus"] };
+
+/** Phones: hold to approve a high-risk action; a tap opens the confirm step instead. */
+export const Hold: Story = () => (
+  <HoldButton onHold={() => {}} onPress={() => {}}>
+    Hold to approve
+  </HoldButton>
+);
+Hold.parameters = { states: ["focus"] };

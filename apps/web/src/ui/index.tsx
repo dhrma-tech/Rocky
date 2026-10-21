@@ -25,7 +25,7 @@ import {
 import { Button, IconButton } from "./Button.tsx";
 import "./ui.css";
 
-export { Button, IconButton } from "./Button.tsx";
+export { Button, HoldButton, IconButton } from "./Button.tsx";
 
 const cls = (...c: (string | false | undefined | null)[]) => c.filter(Boolean).join(" ");
 

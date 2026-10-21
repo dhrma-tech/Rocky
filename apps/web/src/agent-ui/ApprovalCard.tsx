@@ -1,7 +1,7 @@
 import type { ActionRecord } from "@rocky/contracts";
 import { ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Banner, Button, Card } from "../ui/index.tsx";
+import { Banner, Button, Card, HoldButton } from "../ui/index.tsx";
 import "./agent-ui.css";
 import { Chip } from "./StatusChip.tsx";
 
@@ -174,6 +174,7 @@ export function ApprovalCard({
 }: ApprovalCardProps) {
   const [checked, setChecked] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [touch] = useState(() => window.matchMedia("(pointer: coarse)").matches);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const strict = a.review === "strict";
   const highRisk = a.risk === "high" || HIGH_CLASSES.has(a.actionClass);
@@ -270,13 +271,24 @@ export function ApprovalCard({
 
       {a.status === "draft" && !confirming && (
         <div className="rk-approval__actions">
-          <Button
-            variant="primary"
-            disabled={busy || (strict && !checked)}
-            onClick={() => (highRisk ? setConfirming(true) : approve())}
-          >
-            Approve
-          </Button>
+          {highRisk && touch ? (
+            // Phones (UI spec 23): hold to approve a high-risk action; a tap opens the confirm step.
+            <HoldButton
+              disabled={busy || (strict && !checked)}
+              onHold={approve}
+              onPress={() => setConfirming(true)}
+            >
+              Hold to approve
+            </HoldButton>
+          ) : (
+            <Button
+              variant="primary"
+              disabled={busy || (strict && !checked)}
+              onClick={() => (highRisk ? setConfirming(true) : approve())}
+            >
+              Approve
+            </Button>
+          )}
           {onEdit && <Button onClick={onEdit}>Edit, then approve</Button>}
           <Button variant="tertiary" onClick={onDeny} disabled={busy}>
             Deny
