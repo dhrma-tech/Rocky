@@ -5,6 +5,7 @@ export const CATEGORIES = [
   { id: "model", title: "Model", words: "ollama local api key budget speed" },
   { id: "memory", title: "Memory", words: "remember profile" },
   { id: "privacy", title: "Privacy and data", words: "local only encryption delete" },
+  { id: "devices", title: "Phone and devices", words: "phone mobile pair tailscale install app" },
   { id: "appearance", title: "Appearance", words: "theme dark light" },
   { id: "advanced", title: "Advanced", words: "ollama url port" },
   { id: "about", title: "About", words: "version licence" },

@@ -54,6 +54,7 @@ import { registerAssistantRoutes } from "./assistant-routes.ts";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
 import { registerConnectorRoutes } from "./connectors.ts";
+import { registerDeviceRoutes, registerPairRoute } from "./device-routes.ts";
 import { registerEventRoutes } from "./event-routes.ts";
 import { registerFileRoutes } from "./file-routes.ts";
 import { registerImportRoutes } from "./imports.ts";
@@ -166,6 +167,8 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
 
   // One-time bootstrap: `rocky open` mints a code with the token; the browser trades it for a cookie.
   app.get("/auth/bootstrap", (c) => {
+    // Bootstrap links come from `rocky open` on this computer; a phone pairs instead.
+    if (auth.isRemote(c)) return c.text("Pair this phone from Settings › Devices instead.", 403);
     const session = auth.redeemCode(c.req.query("code") ?? "");
     if (!session)
       return c.text("This sign-in link is invalid or expired. Run `rocky open` again.", 401);
@@ -176,6 +179,8 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     });
     return c.redirect("/");
   });
+
+  registerPairRoute(app, { rt, auth });
 
   const api = new Hono();
   api.use("*", auth.apiGuard());
@@ -291,7 +296,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   api.post("/audit/verify", (c) => c.json(verifyAuditChain(rt.db)));
 
   // --- Deletion (typed confirmation required) ---
-  api.post("/deletion", async (c) => {
+  api.post("/deletion", auth.localOnly(), async (c) => {
     const { target } = await body(c, DeletionBody);
     if ("everything" in target) {
       if (!deleteEverything)
@@ -596,7 +601,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   });
 
   // Write-only: a stored key is never returned.
-  api.post("/secrets/:name", async (c) => {
+  api.post("/secrets/:name", auth.localOnly(), async (c) => {
     const name = c.req.param("name") as SecretName;
     if (!WRITABLE_SECRETS.includes(name))
       return c.json({ error: `unknown secret ${name}`, code: "BAD_REQUEST" }, 400);
@@ -641,6 +646,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
   registerConnectorRoutes(api, { rt, body });
   registerEventRoutes(api, { rt });
   registerNotificationRoutes(api, { rt });
+  registerDeviceRoutes(api, { rt, auth });
   registerFileRoutes(api, { rt });
   registerModelRoutes(api, { rt, errorBody });
   registerMemoryRoutes(api, { rt, body });
@@ -657,7 +663,7 @@ export function createApp({ rt, auth, poke, webDir, rewatch, deleteEverything }:
     config: () => rt.config,
     version: VERSION,
   });
-  api.all("/mcp", (c) => mcp.fetch(c.req.raw));
+  api.all("/mcp", auth.localOnly(), (c) => mcp.fetch(c.req.raw));
   registerNotebookRoutes(api, { rt, poke, body });
   registerAssistantRoutes(api, { rt, body, errorBody, poke });
 
@@ -710,6 +716,8 @@ const MIME: Record<string, string> = {
   ".woff2": "font/woff2",
   ".json": "application/json",
   ".mjs": "text/javascript",
+  ".webmanifest": "application/manifest+json",
+  ".ico": "image/x-icon",
 };
 
 /** Serves the built web UI; unknown paths fall back to index.html (client-side routing). */

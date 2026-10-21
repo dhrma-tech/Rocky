@@ -90,6 +90,11 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: "/pair",
+    component: lazyRouteComponent(() => import("./routes/PairPage.tsx"), "PairPage"),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: "/notifications",
     component: lazyRouteComponent(
       () => import("./routes/NotificationsPage.tsx"),
@@ -195,3 +200,9 @@ if (root)
       </QueryClientProvider>
     </StrictMode>,
   );
+
+// The installed phone app (roadmap A3): a service worker only in the production build and only
+// over HTTPS, which is how a phone reaches Rocky (docs/PHONE.md). On this computer (http on
+// 127.0.0.1, or the desktop app) there is nothing to install, so none is registered.
+if (import.meta.env.PROD && location.protocol === "https:" && "serviceWorker" in navigator)
+  void navigator.serviceWorker.register("/sw.js").catch(() => {});

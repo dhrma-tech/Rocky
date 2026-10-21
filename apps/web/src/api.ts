@@ -166,6 +166,40 @@ export function watchJob(id: string, onEvent: (e: JobEvent) => void): () => void
   return () => es.close();
 }
 
+/** Rocky reached from another device (a phone through Tailscale), not on this computer. */
+export const onAnotherDevice = () =>
+  !["127.0.0.1", "localhost", "[::1]"].includes(window.location.hostname);
+
+export interface PairedDevice {
+  id: string;
+  name: string;
+  createdAt: number;
+  expiresAt: number;
+  lastSeenAt: number | null;
+  revokedAt: number | null;
+}
+
+/** Phones (docs/PHONE.md). Pairing itself is POST /auth/pair, outside /api, with no session. */
+export const devices = {
+  list: () => call<{ devices: PairedDevice[]; hosts: string[]; port: number }>("/devices"),
+  pairCode: () =>
+    call<{ code: string; expiresAt: number }>("/devices/pair-code", { method: "POST" }),
+  revoke: (id: string) =>
+    call<{ revoked: string }>(`/devices/${encodeURIComponent(id)}/revoke`, { method: "POST" }),
+  saveHosts: (hosts: string[]) =>
+    call<{ hosts: string[] }>("/devices/hosts", { method: "PUT", body: JSON.stringify({ hosts }) }),
+  pair: async (code: string, name: string) => {
+    const res = await fetch("/auth/pair", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code, name }),
+    });
+    if (!res.ok) throw await toError(res);
+    return (await res.json()) as { paired: string; name: string };
+  },
+};
+
 export type StreamState = "live" | "reconnecting";
 
 /**

@@ -90,10 +90,6 @@
   width: 1%;
   white-space: nowrap;
 }
-.rk-block {
-  display: block;
-  font-weight: 400;
-}
 .rk-notif-quiet {
   display: flex;
   flex-wrap: wrap;

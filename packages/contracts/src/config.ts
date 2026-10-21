@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { NotificationPrefsSchema } from "./notifications.ts";
 
+/** A DNS name, optionally with a port: "pc.tail1234.ts.net". Never an IP or a wildcard. */
+export const HostNameSchema = z
+  .string()
+  .toLowerCase()
+  .regex(
+    /^(?=.{1,253}(:|$))([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?(:\d{1,5})?$/,
+    "a host name such as pc.tail1234.ts.net",
+  );
+
 /** User settings file: `<dataDir>/rocky.yaml`. Every field has a default, so an empty file is valid. */
 export const AppConfigSchema = z.object({
   localOnly: z.boolean().default(false),
@@ -15,7 +24,16 @@ export const AppConfigSchema = z.object({
       threads: z.number().int().min(0).max(64).default(0),
     })
     .prefault({}),
-  daemon: z.object({ port: z.number().int().min(1024).max(65535).default(7337) }).prefault({}),
+  daemon: z
+    .object({
+      port: z.number().int().min(1024).max(65535).default(7337),
+      /**
+       * Names a phone may reach Rocky by, through a proxy that ends HTTPS on this computer
+       * (`tailscale serve`, docs/PHONE.md). The daemon still listens on 127.0.0.1 only.
+       */
+      allowedHosts: z.array(HostNameSchema).max(10).default([]),
+    })
+    .prefault({}),
   /**
    * Encrypt the store with SQLCipher (SECURITY.md "Data at rest"). The key lives in the keychain
    * as `db-key`. Turn it on for an existing store with `rocky db encrypt`, not by editing this.

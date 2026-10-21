@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Rocky</title>
+  <rect width="512" height="512" fill="#EAEEF4"/>
+  <ellipse cx="256" cy="266" rx="148" ry="136" fill="#AFC0DD"/>
+  <ellipse cx="214" cy="214" rx="58" ry="32" fill="#FFFFFF" opacity="0.35" transform="rotate(-20 214 214)"/>
+</svg>

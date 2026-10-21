@@ -32,6 +32,7 @@ Adversarial fixtures live in `packages/core/test/security/fixtures/` and every o
 - Binds to `127.0.0.1` only.
 - A random 256-bit install token is created on first run and stored in the keychain. The UI gets it via an HttpOnly SameSite=Strict cookie set by a one-time localhost bootstrap URL that `rocky open` prints. The CLI reads it from the keychain. `rocky mcp` over stdio needs no token (it runs as you, on your data dir); the daemon's Streamable HTTP endpoint `/api/v1/mcp` requires it like every other API route. `rocky mcp --http --show-token` prints it for an HTTP client, with a warning.
 - `Host` must be `127.0.0.1:<port>` or `localhost:<port>` (DNS-rebinding defense). `Origin` must match on state-changing requests (CSRF defense).
+- Phones (roadmap A3, [PHONE.md](PHONE.md)): the daemon still binds `127.0.0.1` only. A phone reaches it through `tailscale serve`, which ends HTTPS on this computer and forwards the original `Host` with `X-Forwarded-Proto: https` (checked in Tailscale's source, `ipn/ipnlocal/serve.go`). A name the user added (`daemon.allowedHosts`, DNS names only) is accepted only with that header and only with a paired device's cookie (`Secure`, `HttpOnly`, `SameSite=Strict`, 90 days, only its SHA-256 stored, revocable). The install token and desktop sessions don't work by such a name. Pairing takes a 6-digit code made on the computer: it works once, for 5 minutes, and five wrong guesses end it. A phone can't write secrets, delete data, pair devices, change the allowed names, use MCP or bootstrap. Plain HTTP on a LAN is not supported: it would expose the cookie. Any other local process could also send these headers to 127.0.0.1, but it would still need a paired device's cookie.
 
 ## Rules, grants and the Undo window (roadmap A4)
 
@@ -92,6 +93,7 @@ Plugins run in the connector host process with the same OS privileges as you. Th
 | No invisible or bidi control characters in source | `source-hygiene.test.ts` |
 | No exfiltration through rendering (no images, no live links) | `apps/web/test/safe-text.test.ts` |
 | Daemon binds 127.0.0.1, token, Host and Origin checks | `apps/daemon/test/server.test.ts`, `app.test.ts`, `mcp-http.test.ts` |
+| Phones: allowed names over HTTPS only, paired-device cookie only, pairing codes can't be guessed, phones can't touch secrets or delete | `apps/daemon/test/phone.security.test.ts` (in `pnpm test:security`) |
 | Recording needs both consent checks; consent is audited | `apps/daemon/test/capture.test.ts`, `core/test/capture.test.ts` |
 | MCP output wrapped; local-only hidden | `packages/mcp/test/mcp.test.ts` |
 | Executors call fixed endpoints | per-connector write tests (`packages/connectors/test/write-actions.test.ts` and others) assert exact URLs |

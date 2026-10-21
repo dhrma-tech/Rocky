@@ -22,6 +22,7 @@ import {
   Table,
   useToast,
 } from "../ui/index.tsx";
+import { DevicesSettings } from "./DevicesSettings.tsx";
 import "./screens.css";
 
 /**
@@ -118,6 +119,7 @@ export function SettingsPage() {
           {cat === "privacy" && (
             <Privacy localOnly={settings.data.localOnly} dataDir={settings.data.dataDir} />
           )}
+          {cat === "devices" && <DevicesSettings />}
           {cat === "appearance" && <Appearance />}
           {cat === "advanced" && <Advanced ollama={settings.data.ollama.baseUrl} />}
           {cat === "about" && <About />}

@@ -37,6 +37,7 @@ export * from "./connectors/persist.ts";
 export * from "./connectors/service.ts";
 export * from "./connectors/to-parsed.ts";
 export * from "./deletion/service.ts";
+export * from "./devices/devices.ts";
 export * from "./doctor.ts";
 export * from "./entities/entities.ts";
 export * from "./evals/run.ts";

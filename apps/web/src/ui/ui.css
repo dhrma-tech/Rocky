@@ -46,6 +46,11 @@
 .rk-muted {
   color: var(--color-text-muted);
 }
+/* A line of its own inside a heading or label (a help line under a name). */
+.rk-block {
+  display: block;
+  font-weight: 400;
+}
 .rk-mono {
   font-family: var(--font-mono);
   font-size: var(--type-mono-size);

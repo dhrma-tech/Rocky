@@ -110,7 +110,11 @@ export function HelpPage() {
           ))}
         </article>
         {open.link && (
-          <Link to={open.link.to} className="rk-button rk-button--secondary">
+          <Link
+            to={open.link.to}
+            {...(open.link.search ? { search: open.link.search } : {})}
+            className="rk-button rk-button--secondary"
+          >
             {open.link.label}
           </Link>
         )}

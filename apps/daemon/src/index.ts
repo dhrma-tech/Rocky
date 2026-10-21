@@ -15,6 +15,7 @@ import {
   type Runtime,
   redactingLogger,
   shippedDir,
+  verifyDeviceToken,
 } from "@rocky/core";
 import { createApp } from "./app.ts";
 import { Auth, newToken } from "./auth.ts";
@@ -70,7 +71,12 @@ export async function startDaemon(opts: {
   opts.setup?.(rt);
   await registerConnectors(rt, log);
   const port = opts.port ?? rt.config.daemon.port;
-  const auth = new Auth({ token: installToken(rt), port });
+  const auth = new Auth({
+    token: installToken(rt),
+    port,
+    allowedHosts: () => rt.config.daemon.allowedHosts,
+    devices: { verify: (token) => verifyDeviceToken(rt.db, token) !== null },
+  });
   const runner = new JobRunner(rt.db, rt.jobHandlers, { log });
   runner.start();
   const watcher = new FolderWatcher({

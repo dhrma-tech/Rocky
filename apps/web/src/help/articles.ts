@@ -20,7 +20,7 @@ export interface Article {
   body: string[];
   words: string;
   /** A screen to go to from the article. */
-  link?: { to: string; label: string };
+  link?: { to: string; label: string; search?: Record<string, string> };
 }
 
 export const ARTICLES: Article[] = [
@@ -130,6 +130,20 @@ export const ARTICLES: Article[] = [
     ],
     words: "gmail calendar drive github notion connector sign in token",
     link: { to: "/connectors", label: "Open Integrations" },
+  },
+  {
+    id: "phone",
+    category: "Start here",
+    title: "Use Rocky on your phone",
+    summary: "Reach this computer privately through Tailscale, then pair with a 6-digit code.",
+    body: [
+      "Install Tailscale on this computer and your phone, signed in to the same account. On this computer, run `tailscale serve 7337`; it prints an address like https://pc.tail1234.ts.net.",
+      "In Settings > Phone and devices, add that name and make a pairing code. On the phone, open the address followed by /pair and type the code. It works once, for five minutes.",
+      "A phone can approve, deny, ask and check what is running. It can't change secrets, delete data or pair other devices. Sign a phone out from the same settings; it is locked out at once.",
+      "Rocky never listens on your network directly, and the installed phone app keeps no answers or approvals on the phone.",
+    ],
+    words: "mobile phone tailscale pair install app remote away",
+    link: { to: "/settings", search: { section: "devices" }, label: "Open Phone and devices" },
   },
   {
     id: "engine-down",

@@ -165,6 +165,11 @@ SCREENS.push(
           }`,
   },
   {
+    name: "pair",
+    url: "/pair",
+    ready: () => "text=Pairing code",
+  },
+  {
     name: "notification-preferences",
     url: "/notifications?tab=preferences",
     ready: () => "text=What reaches you where",
@@ -705,4 +710,72 @@ test("phone: a high-risk approval is held to approve; a tap opens the confirm st
   await hold.dispatchEvent("pointerdown", { pointerType: "touch" });
   await expect.poll(() => approvals.length, { timeout: 4000 }).toBe(1);
   expect(approvals[0]).toMatchObject({ payloadHash: DRAFTS[0]?.payloadHash, holdMs: 10_000 });
+});
+
+test("devices: add the Tailscale name, make a pairing code, sign a phone out after asking", async ({
+  page,
+}) => {
+  const writes: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET" && r.url().includes("/devices"))
+      writes.push(`${r.method()} ${new URL(r.url()).pathname}`);
+  });
+  await mockApi(page, "empty");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/settings?section=devices");
+  await expect(page.getByText("No phone is paired yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make a pairing code" })).toBeDisabled();
+  await page.getByLabel("Name from tailscale serve").fill("https://PC.tail1234.ts.net/");
+  await page.getByRole("button", { name: "Add" }).click();
+  await expect.poll(() => writes).toEqual(["PUT /api/v1/devices/hosts"]);
+
+  await page.unroute("**/api/v1/**");
+  await mockApi(page, "populated");
+  await page.goto("/settings?section=devices");
+  await page.getByRole("button", { name: "Make a pairing code" }).click();
+  await expect(page.getByText("482913")).toBeVisible();
+  await expect(page.getByText("https://pc.tail1234.ts.net/pair")).toBeVisible();
+  const problems: string[] = [];
+  await check(page, "devices", problems);
+  expect(problems).toEqual([]);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  const confirm = page.getByRole("dialog", { name: "Sign out Pixel 8?" });
+  await expect(confirm).toBeVisible();
+  expect(writes.filter((w) => w.endsWith("/revoke"))).toEqual([]);
+  await confirm.getByRole("button", { name: "Sign out" }).click();
+  await expect.poll(() => writes.filter((w) => w.endsWith("/revoke"))).toHaveLength(1);
+});
+
+test("pair: six digits and a name pair the phone, a wrong code says why", async ({ page }) => {
+  const sent: unknown[] = [];
+  let ok = false;
+  await mockApi(page, "populated");
+  await page.route("**/auth/pair", (route) => {
+    sent.push(route.request().postDataJSON());
+    return ok
+      ? route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({ paired: "d1", name: "Phone" }),
+        })
+      : route.fulfill({
+          status: 401,
+          contentType: "application/json",
+          body: JSON.stringify({
+            error: "That code is wrong or has expired. Make a new one on your computer.",
+            code: "PAIR_FAILED",
+          }),
+        });
+  });
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/pair");
+  const pair = page.getByRole("button", { name: "Pair" });
+  await expect(pair).toBeDisabled();
+  await page.getByLabel("Pairing code").fill("12a3456");
+  await expect(page.getByLabel("Pairing code")).toHaveValue("123456");
+  await pair.click();
+  await expect(page.getByText("That code is wrong or has expired.")).toBeVisible();
+  ok = true;
+  await pair.click();
+  await expect(page).toHaveURL(/:\d+\/$/);
+  expect(sent.at(-1)).toMatchObject({ code: "123456" });
 });

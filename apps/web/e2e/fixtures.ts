@@ -543,6 +543,28 @@ export async function mockApi(page: Page, scenario: Scenario) {
     }
     if (path === "/routines") return json(route, full ? ROUTINES : { routines: [] });
     if (path === "/runs") return json(route, { runs: full ? RUNS : [] });
+    if (path === "/devices")
+      return json(route, {
+        devices: full
+          ? [
+              {
+                id: "01JDEV0000000000000000001",
+                name: "Pixel 8",
+                createdAt: NOW - 3 * 86_400_000,
+                expiresAt: NOW + 80 * 86_400_000,
+                lastSeenAt: NOW - 5 * MIN,
+                revokedAt: null,
+              },
+            ]
+          : [],
+        hosts: full ? ["pc.tail1234.ts.net"] : [],
+        port: 7337,
+      });
+    if (path === "/devices/pair-code")
+      return json(route, { code: "482913", expiresAt: Date.now() + 300_000 });
+    if (path === "/devices/hosts") return json(route, route.request().postDataJSON());
+    if (path.startsWith("/devices/") && path.endsWith("/revoke"))
+      return json(route, { revoked: "x" });
     if (path === "/notifications")
       return json(route, full ? NOTIFICATIONS : { unread: 0, notifications: [] });
     if (path.startsWith("/notifications/")) return json(route, { changed: 1 });

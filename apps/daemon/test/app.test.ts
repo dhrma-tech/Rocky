@@ -352,6 +352,13 @@ describe("API", () => {
     expect(await (await get("/ask")).text()).toContain("<title>Rocky</title>");
     expect(await (await get("/..%2fsecret.txt")).text()).not.toContain("do not serve");
     expect(await (await get("/%2e%2e/secret.txt")).text()).not.toContain("do not serve");
+    // The installed phone app: the manifest and the service worker get their real types.
+    fs.writeFileSync(path.join(web, "manifest.webmanifest"), "{}");
+    fs.writeFileSync(path.join(web, "sw.js"), "");
+    expect((await get("/manifest.webmanifest")).headers.get("content-type")).toBe(
+      "application/manifest+json",
+    );
+    expect((await get("/sw.js")).headers.get("content-type")).toBe("text/javascript");
   });
 
   it("watched folders: add, list, remove, and restart watching on each change", async () => {

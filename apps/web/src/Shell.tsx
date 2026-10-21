@@ -26,7 +26,7 @@ import { LiveProvider, useLive, useOverallState } from "./agent-ui/live.tsx";
 import { Pebble } from "./agent-ui/Pebble.tsx";
 import { activeRuns } from "./agent-ui/runs.ts";
 import { StatusChip } from "./agent-ui/StatusChip.tsx";
-import { ApiError, api, onboarding, type Swatch } from "./api.ts";
+import { ApiError, api, onAnotherDevice, onboarding, type Swatch } from "./api.ts";
 import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.tsx";
 import { RecordingPill } from "./components/capture.tsx";
 import { LocalBadge } from "./components/trust.tsx";
@@ -109,9 +109,6 @@ function useMedia(query: string): boolean {
   return matches;
 }
 
-/** Rocky reached from another device (a phone over Tailscale), not on this computer. */
-const remote = () => !["127.0.0.1", "localhost", "[::1]"].includes(window.location.hostname);
-
 export function Shell() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings, retry: false });
   const setup = useQuery({
@@ -127,6 +124,13 @@ export function Shell() {
     if (firstRun && path !== "/welcome") void navigate({ to: "/welcome", replace: true });
   }, [firstRun, path, navigate]);
 
+  // Pairing a phone is the way in, so it needs no session (docs/PHONE.md).
+  if (path === "/pair")
+    return (
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
+    );
   if (settings.error instanceof ApiError && settings.error.status === 401) return <SignedOut />;
   // Onboarding is a centred column without the sidebar.
   if (path === "/welcome")
@@ -261,7 +265,7 @@ function ShellFrame({
   const banners = (
     <div className="rk-main__banners">
       {engineDown &&
-        (remote() ? (
+        (onAnotherDevice() ? (
           <Banner
             tone="error"
             title="Can't reach your computer. It may be asleep."
@@ -295,7 +299,7 @@ function ShellFrame({
               : "What is below is read-only until it is back."}
           </Banner>
         ))}
-      {reaching && remote() && (
+      {reaching && onAnotherDevice() && (
         <Banner tone="info" title="Reaching your computer…">
           Rocky runs there; this page shows it once it answers.
         </Banner>
@@ -506,6 +510,19 @@ function PhoneTabs({
 }
 
 function SignedOut() {
+  if (onAnotherDevice())
+    return (
+      <main className="rk-page" style={{ maxWidth: 480, paddingTop: 96 }}>
+        <h1 className="rk-title">Pair this phone first</h1>
+        <p>
+          This phone isn't paired with Rocky yet, or it was signed out. Make a pairing code on your
+          computer, in Settings › Phone and devices.
+        </p>
+        <Link to="/pair" className="rk-button rk-button--primary">
+          Pair this phone
+        </Link>
+      </main>
+    );
   return (
     <main className="rk-page" style={{ maxWidth: 480, paddingTop: 96 }}>
       <h1 className="rk-title">Open Rocky from the terminal</h1>
