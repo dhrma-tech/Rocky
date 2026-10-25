@@ -10,10 +10,20 @@ export const HostNameSchema = z
     "a host name such as pc.tail1234.ts.net",
   );
 
+export const RoutingModeSchema = z.enum(["local_first", "cloud_first"]);
+export type RoutingMode = z.infer<typeof RoutingModeSchema>;
+const RoutingSchema = z.object({ mode: RoutingModeSchema.default("local_first") });
+
 /** User settings file: `<dataDir>/rocky.yaml`. Every field has a default, so an empty file is valid. */
 export const AppConfigSchema = z.object({
   localOnly: z.boolean().default(false),
   budget: z.object({ monthlyCapUsd: z.number().nonnegative().default(10) }).prefault({}),
+  /**
+   * Routing (roadmap M4, D-068). local_first: every model call stays on this computer unless the
+   * user sends one question to the cloud after seeing the exact passages. cloud_first: background
+   * work follows policies.yaml; a question still shows its passages before any cloud call.
+   */
+  routing: RoutingSchema.prefault({}),
   ollama: z.object({ baseUrl: z.url().default("http://127.0.0.1:11434") }).prefault({}),
   whisper: z
     .object({
@@ -56,6 +66,7 @@ export const SettingsUpdateSchema = z
   .object({
     localOnly: z.boolean(),
     budget: z.object({ monthlyCapUsd: z.number().nonnegative().max(10_000) }),
+    routing: z.object({ mode: RoutingModeSchema }),
     ollama: z.object({ baseUrl: z.url() }),
     notifications: NotificationPrefsSchema,
   })

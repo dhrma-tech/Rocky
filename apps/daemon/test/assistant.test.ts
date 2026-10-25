@@ -128,6 +128,11 @@ function addThread() {
 }
 
 describe("drafts (acceptance #2)", () => {
+  // Drafts need a cloud model (no local route), so these run cloud first (D-068).
+  beforeEach(() => {
+    rt.config.routing.mode = "cloud_first";
+  });
+
   it("a draft reply is queued, reaches Gmail only after approval, and only as a draft", async () => {
     expect((await post("/connectors", { kind: "gmail", config: {} })).status).toBe(201);
     const thread = addThread();

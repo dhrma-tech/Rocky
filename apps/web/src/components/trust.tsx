@@ -3,23 +3,43 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, FileText, Mail, Mic, ShieldCheck } from "lucide-react";
 import { cls } from "./ui.tsx";
 
-/** "Local only" or "Data leaves device" (§5.7). Clicking opens Privacy settings. */
-export function LocalBadge({ localOnly }: { localOnly: boolean | undefined }) {
-  if (localOnly === undefined) return null;
+/** Where model calls may go: local-only mode, the routing mode (roadmap M4, D-068). */
+export type Boundary = "local_only" | "local_first" | "cloud_first";
+
+const BOUNDARY: Record<Boundary, { word: string; tone: "success" | "warning"; title: string }> = {
+  local_only: {
+    word: "Local only",
+    tone: "success",
+    title: "Every model call stays on this machine.",
+  },
+  local_first: {
+    word: "Local first",
+    tone: "success",
+    title:
+      "Everything runs on this machine. A question goes to a cloud model only when you send it, after seeing what it would get.",
+  },
+  cloud_first: {
+    word: "Can use cloud",
+    tone: "warning",
+    title:
+      "Background tasks may call a cloud model. Switch to local first in Settings to keep them on this machine.",
+  },
+};
+
+/** The trust boundary chip (§5.7). Clicking opens Privacy settings. */
+export function LocalBadge({ boundary }: { boundary: Boundary | undefined }) {
+  if (boundary === undefined) return null;
+  const b = BOUNDARY[boundary];
   return (
-    <Link
-      to="/settings"
-      className="rk-boundary"
-      title={
-        localOnly
-          ? "Every model call stays on this machine."
-          : "Some tasks may call an API model. Turn on local-only mode in Settings to keep everything on this machine."
-      }
-    >
+    <Link to="/settings" search={{ section: "privacy" }} className="rk-boundary" title={b.title}>
       {/* The boundary is a chip (icon, word, tint); the link around it is the 44px target. */}
-      <span className={`rk-chip rk-chip--${localOnly ? "success" : "warning"}`}>
-        {localOnly ? <ShieldCheck size={14} aria-hidden /> : <ArrowUpRight size={14} aria-hidden />}
-        {localOnly ? "Local only" : "Data can leave this device"}
+      <span className={`rk-chip rk-chip--${b.tone}`}>
+        {b.tone === "success" ? (
+          <ShieldCheck size={14} aria-hidden />
+        ) : (
+          <ArrowUpRight size={14} aria-hidden />
+        )}
+        {b.word}
       </span>
     </Link>
   );

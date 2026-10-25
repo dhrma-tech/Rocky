@@ -127,6 +127,9 @@ export interface VerifiedAnswer {
   verifierPath: PathInfo | null;
   verifierError?: string;
   usage: Usage;
+  /** Sentences the model drafted, and how many passed both checks (M4 escalation, D-068). */
+  drafted: number;
+  passed: number;
 }
 
 export interface AnswerOptions {
@@ -141,6 +144,9 @@ export interface AnswerOptions {
   localOnly?: boolean;
   showFlagged?: boolean;
   onEvent?: (e: AskEvent) => void;
+  /** Both calls follow it (D-068): "cloud" needs an accepted preview's `consent` token. */
+  route?: "local" | "cloud";
+  consent?: string;
 }
 
 /** Generate cited sentences over the given chunks and verify them (both passes). */
@@ -150,11 +156,16 @@ export async function answerOverChunks(
 ): Promise<VerifiedAnswer> {
   const onEvent = opts.onEvent ?? (() => {});
   let usage = ZERO_USAGE;
+  const none = { drafted: 0, passed: 0 };
   if (opts.chunks.length === 0)
-    return { answer: [], notFound: true, path: null, verifierPath: null, usage };
+    return { answer: [], notFound: true, path: null, verifierPath: null, usage, ...none };
   // A local-only document anywhere in the context keeps every model call local (SECURITY.md).
   const localOnly = Boolean(opts.localOnly) || opts.chunks.some((c) => c.localOnly);
   const scope = { localOnly };
+  const route = {
+    ...(opts.route ? { route: opts.route } : {}),
+    ...(opts.consent ? { consent: opts.consent } : {}),
+  };
 
   const run = await deps.router.run<ModelAnswer>({
     task: opts.task,
@@ -164,11 +175,12 @@ export async function answerOverChunks(
     schema: ModelAnswerSchema,
     scope,
     hints: { temperature: 0 },
+    ...route,
   });
   usage = addUsage(usage, run.usage);
   const draft = run.output;
   if (draft.notFound || draft.sentences.length === 0)
-    return { answer: [], notFound: true, path: run.path, verifierPath: null, usage };
+    return { answer: [], notFound: true, path: run.path, verifierPath: null, usage, ...none };
 
   const byId = new Map(opts.chunks.map((c) => [c.id, c]));
 
@@ -200,6 +212,7 @@ export async function answerOverChunks(
         schema: VerifierOutputSchema,
         scope,
         hints: { temperature: 0 },
+        ...route,
       });
       usage = addUsage(usage, v.usage);
       verifierPath = v.path;
@@ -253,5 +266,7 @@ export async function answerOverChunks(
     verifierPath,
     ...(verifierError ? { verifierError } : {}),
     usage,
+    drafted: draft.sentences.length,
+    passed: [...status.values()].filter((s) => s.status !== "unsupported").length,
   };
 }

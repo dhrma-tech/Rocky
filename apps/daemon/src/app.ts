@@ -96,13 +96,17 @@ const STATUS: Record<string, 400 | 403 | 404 | 409> = {
   BAD_PATH: 400,
   CONFLICT: 409,
   UNSUPPORTED_QUOTE: 409,
+  // An outbound preview that expired, was used, or no longer matches the sources (D-068).
+  CONSENT_INVALID: 409,
 };
 
 const POLICY_CODES = new Set([
   "EGRESS_BLOCKED",
+  "CLOUD_NEEDS_CONSENT",
   "BUDGET_EXCEEDED",
   "UNKNOWN_PRICE",
   "TASK_NEEDS_API",
+  "TASK_NEEDS_CLOUD",
   "MISSING_API_KEY",
 ]);
 
@@ -541,6 +545,7 @@ export function createApp({
     c.json({
       localOnly: rt.config.localOnly,
       budget: rt.config.budget,
+      routing: rt.config.routing,
       ollama: rt.config.ollama,
       notifications: rt.config.notifications,
       dataDir: rt.dataDir,
@@ -557,6 +562,7 @@ export function createApp({
       ...rt.config,
       ...(u.localOnly !== undefined ? { localOnly: u.localOnly } : {}),
       ...(u.budget ? { budget: u.budget } : {}),
+      ...(u.routing ? { routing: u.routing } : {}),
       ...(u.ollama ? { ollama: u.ollama } : {}),
       ...(u.notifications ? { notifications: u.notifications } : {}),
     };
@@ -566,6 +572,7 @@ export function createApp({
     return c.json({
       localOnly: rt.config.localOnly,
       budget: rt.config.budget,
+      routing: rt.config.routing,
       ollama: rt.config.ollama,
       notifications: rt.config.notifications,
     });

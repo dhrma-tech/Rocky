@@ -157,7 +157,8 @@ export async function startDaemon(opts: {
     drafts: () => rt.actions.list("draft"),
     approve: (id, hash) =>
       rt.actions.approve(id, hash, { holdMs: APPROVAL_HOLD_MS, via: "telegram" }),
-    ask: (question) => runAsk(rt, { question }, undefined, { via: "Telegram" }),
+    // Always local from Telegram: the outbound preview can only be checked in Rocky (D-068).
+    ask: (question) => runAsk(rt, { question, route: "local" }, undefined, { via: "Telegram" }),
     status: () => ({
       running: listRuns(rt.db, { status: "active" }).length,
       approvals: rt.actions.list("draft").length,

@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { AskEvent, AskRequest, AskResult } from "@rocky/contracts";
-import { appendTurn, ask, type Runtime, recordEvent } from "@rocky/core";
+import {
+  appendTurn,
+  ask,
+  type Runtime,
+  recordEvent,
+  SECRET_NAMES,
+  type SecretName,
+} from "@rocky/core";
 import { errorBody } from "./app.ts";
 
 /**
@@ -29,13 +36,39 @@ export async function runAsk(
   let drafting = false;
   status("thinking", "Searching your sources");
   try {
-    const result = await ask({ db: rt.db, router: rt.router, embedder: rt.embedder }, req, (e) => {
+    const deps = {
+      db: rt.db,
+      router: rt.router,
+      embedder: rt.embedder,
+      // Roadmap M4 (D-068): the cloud is offered only with a key for its provider.
+      consents: rt.consents,
+      cloudReady: (provider: string) =>
+        (SECRET_NAMES as readonly string[]).includes(provider) &&
+        rt.secrets.has(provider as SecretName),
+    };
+    const result = await ask(deps, req, (e) => {
       if (e.type === "draft_sentence" && !drafting) {
         drafting = true;
         status("working", "Checking each statement against its source");
       }
       send(e);
     });
+    // Waiting for the user to check the passages (D-068): nothing answered or sent yet, so no
+    // turn is kept; the consented ask that follows records its own.
+    if (result.awaitingConsent) {
+      const n = result.outbound?.passages.length ?? 0;
+      recordEvent(rt.db, {
+        kind: "receipt",
+        runId,
+        tool: "Ask",
+        verb: "showed you",
+        count: n,
+        unit: n === 1 ? "passage before sending" : "passages before sending",
+        notDone: "nothing sent",
+      });
+      status("completed");
+      return result;
+    }
     if (opts.conversationId) appendTurn(rt.db, opts.conversationId, q, result);
     const sources = new Set([
       ...result.answer.flatMap((x) => x.citations.map((ci) => ci.documentId)),

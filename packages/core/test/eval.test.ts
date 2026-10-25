@@ -92,6 +92,8 @@ beforeEach(async () => {
     fetch: w.fetch,
     hardware: { ...HW_HIGH, platform: "win32", release: "x", cpu: "x", cores: 4 },
   });
+  // Evals measure the models in policies.yaml; under local first they would stay local (D-068).
+  rt.config.routing.mode = "cloud_first";
   await ingestPath(rt.db, rt.paths.blobs, corpus);
   expect(await rt.drainJobs()).toBe(2);
 });

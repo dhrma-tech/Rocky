@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearch } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
-import { api, system } from "../api.ts";
+import { api, type Settings, system } from "../api.ts";
 import { DeleteEverything } from "../components/DeleteEverything.tsx";
 import { BudgetMeter } from "../components/trust.tsx";
 import { CATEGORIES, type Category } from "../settings-categories.ts";
@@ -117,7 +117,11 @@ export function SettingsPage() {
           )}
           {cat === "memory" && <MemorySection />}
           {cat === "privacy" && (
-            <Privacy localOnly={settings.data.localOnly} dataDir={settings.data.dataDir} />
+            <Privacy
+              localOnly={settings.data.localOnly}
+              mode={settings.data.routing.mode}
+              dataDir={settings.data.dataDir}
+            />
           )}
           {cat === "devices" && <DevicesSettings />}
           {cat === "appearance" && <Appearance />}
@@ -527,10 +531,34 @@ function MemorySection() {
   );
 }
 
-function Privacy({ localOnly, dataDir }: { localOnly: boolean; dataDir: string }) {
+type RoutingMode = Settings["routing"]["mode"];
+
+function Privacy({
+  localOnly,
+  mode,
+  dataDir,
+}: {
+  localOnly: boolean;
+  mode: RoutingMode;
+  dataDir: string;
+}) {
   const qc = useQueryClient();
   const toast = useToast();
   const storage = useQuery({ queryKey: ["storage"], queryFn: system.storage });
+  // Roadmap M4 (D-068).
+  const route = useMutation({
+    mutationFn: (m: RoutingMode) => api.saveSettings({ routing: { mode: m } }),
+    onSuccess: (_s, m) => {
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+      toast({
+        text: m === "local_first" ? "Local first is on." : "Cloud first is on.",
+        action: {
+          label: "Undo",
+          run: () => route.mutate(m === "local_first" ? "cloud_first" : "local_first"),
+        },
+      });
+    },
+  });
   const set = useMutation({
     mutationFn: (v: boolean) => api.saveSettings({ localOnly: v }),
     onSuccess: (_s, v) => {
@@ -551,6 +579,26 @@ function Privacy({ localOnly, dataDir }: { localOnly: boolean; dataDir: string }
           label={localOnly ? "On" : "Off"}
           checked={localOnly}
           onChange={(v) => set.mutate(v)}
+        />
+      </Row>
+      <Row
+        label="Where Rocky thinks"
+        help={
+          localOnly
+            ? "Local-only mode is on, so everything stays on this computer whatever you pick here."
+            : mode === "local_first"
+              ? "Everything runs on this computer. You can send one question to a cloud model after seeing the exact passages it would get. Background work never leaves."
+              : "Background work (summaries, extraction, routines) may use a cloud model as set in policies.yaml. A question still shows its passages before it goes."
+        }
+      >
+        <Segmented
+          label="Where Rocky thinks"
+          value={mode}
+          onChange={(m) => route.mutate(m)}
+          options={[
+            { value: "local_first", label: "Local first" },
+            { value: "cloud_first", label: "Cloud first" },
+          ]}
         />
       </Row>
       <Row

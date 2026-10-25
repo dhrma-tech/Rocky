@@ -26,6 +26,7 @@ import { type JobHandler, JobRunner } from "./jobs/runner.ts";
 import { memoryAddAction } from "./memory/suggest.ts";
 import { STUDY_JOB, studyJobHandler } from "./notebooks/jobs.ts";
 import { materializeAll } from "./notebooks/scope.ts";
+import { OutboundConsents } from "./router/consent.ts";
 import { cachedEmbedder, type Embedder, ollamaEmbedder } from "./router/embed.ts";
 import { ProviderGate } from "./router/gate.ts";
 import { loadPolicy } from "./router/policy.ts";
@@ -47,6 +48,8 @@ export interface Runtime {
   db: Db;
   gate: ProviderGate;
   router: Router;
+  /** Outbound previews offered and accepted (roadmap M4, D-068); the gate checks these. */
+  consents: OutboundConsents;
   embedder: Embedder;
   hardware: Hardware;
   secrets: SecretStore;
@@ -114,14 +117,19 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
   let policy = loadPolicy(opts.dataDir);
   const prices = loadPrices(opts.dataDir);
   const localOnly = () => config.localOnly || Boolean(opts.localOnly);
+  const consents = new OutboundConsents();
   const gate = new ProviderGate(db, {
     settings: () => ({
       localOnly: localOnly(),
       monthlyCapUsd: config.budget.monthlyCapUsd,
       ollamaBaseUrl: config.ollama.baseUrl,
+      // Roadmap M4 (D-068): both always on here, whatever older test seams do.
+      routingMode: config.routing.mode,
+      questionConsent: true,
     }),
     prices: () => prices,
     secrets,
+    consents,
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
   });
   const router = new Router({
@@ -129,6 +137,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     policy: () => policy,
     hardware: () => hardware,
     globalLocalOnly: localOnly,
+    routingMode: () => config.routing.mode,
   });
   const embedModel = policy.models.embed?.split("/").slice(1).join("/") ?? "nomic-embed-text";
   const embedder = cachedEmbedder(
@@ -218,6 +227,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     db,
     gate,
     router,
+    consents,
     embedder,
     hardware,
     secrets,

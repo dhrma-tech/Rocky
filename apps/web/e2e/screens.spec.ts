@@ -673,7 +673,9 @@ test("notification preferences: a matrix change and quiet hours save through set
   await mockApi(page, "populated");
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/notifications?tab=preferences");
-  await page.getByLabel("Updates on this computer").check();
+  // The box follows the optimistic save a tick later (TanStack runs onMutate after an await).
+  await page.getByLabel("Updates on this computer").click();
+  await expect(page.getByLabel("Updates on this computer")).toBeChecked();
   await expect.poll(() => puts.length).toBe(1);
   expect(puts[0]).toMatchObject({ notifications: { system: { updates: true } } });
   await page.getByRole("switch", { name: "Use quiet hours" }).click();

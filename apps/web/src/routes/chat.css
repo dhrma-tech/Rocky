@@ -345,3 +345,81 @@ a.rk-chip-quiet:hover {
 .rk-chat__empty p a {
   text-decoration: underline;
 }
+
+/* Outbound preview (roadmap M4, D-068): what a cloud model would be sent, before it is. */
+.rk-outbound {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.rk-outbound__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+}
+.rk-outbound p {
+  margin: 0;
+}
+.rk-outbound__why {
+  color: var(--color-text-2);
+}
+.rk-outbound__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-tint);
+  color: var(--color-warning-text);
+}
+.rk-outbound__warn svg {
+  flex: none;
+  margin-top: 2px;
+}
+.rk-outbound__details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--color-link);
+}
+.rk-outbound__question {
+  margin: var(--space-2) 0;
+}
+.rk-outbound__passages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-height: 360px;
+  overflow-y: auto;
+}
+.rk-outbound__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-2);
+}
+.rk-outbound__text {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2);
+  border-left: 2px solid var(--color-border-strong);
+  background: var(--color-surface-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--type-small-size);
+}
+.rk-outbound__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

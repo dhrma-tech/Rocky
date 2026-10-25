@@ -1,5 +1,6 @@
 import path from "node:path";
-import type { Hardware } from "@rocky/contracts";
+import type { Hardware, RoutingMode } from "@rocky/contracts";
+import { OutboundConsents } from "../src/router/consent.ts";
 import { ProviderGate } from "../src/router/gate.ts";
 import { loadPolicy, type PolicyFile } from "../src/router/policy.ts";
 import type { PriceTable } from "../src/router/prices.ts";
@@ -95,19 +96,37 @@ export function fakeProviders(
 export interface Harness {
   router: Router;
   gate: ProviderGate;
-  settings: { localOnly: boolean; monthlyCapUsd: number; ollamaBaseUrl: string };
+  settings: {
+    localOnly: boolean;
+    monthlyCapUsd: number;
+    ollamaBaseUrl: string;
+    routingMode?: RoutingMode;
+    questionConsent?: boolean;
+  };
+  consents: OutboundConsents;
 }
 
+/**
+ * Without `mode`, the pre-M4 seam (cloud first, no preview). With it, the gate behaves as the
+ * runtime's does (D-068): that mode, previews required for questions, and a consent registry.
+ */
 export function harness(
   db: Db,
   fetch: typeof globalThis.fetch,
-  opts: { hw?: typeof HW_HIGH; withKey?: boolean } = {},
+  opts: { hw?: typeof HW_HIGH; withKey?: boolean; mode?: RoutingMode; now?: () => number } = {},
 ): Harness {
-  const settings = { localOnly: false, monthlyCapUsd: 10, ollamaBaseUrl: "http://127.0.0.1:11434" };
+  const settings: Harness["settings"] = {
+    localOnly: false,
+    monthlyCapUsd: 10,
+    ollamaBaseUrl: "http://127.0.0.1:11434",
+    ...(opts.mode ? { routingMode: opts.mode, questionConsent: true } : {}),
+  };
+  const consents = new OutboundConsents(opts.now);
   const gate = new ProviderGate(db, {
     settings: () => settings,
     prices: () => PRICES,
     secrets: memorySecrets(opts.withKey === false ? {} : { anthropic: "sk-ant-test-key-123456" }),
+    consents,
     fetch,
   });
   const policy = realPolicy();
@@ -116,6 +135,7 @@ export function harness(
     policy: () => policy,
     hardware: () => opts.hw ?? HW_HIGH,
     globalLocalOnly: () => settings.localOnly,
+    ...(opts.mode ? { routingMode: () => settings.routingMode ?? "cloud_first" } : {}),
   });
-  return { router, gate, settings };
+  return { router, gate, settings, consents };
 }

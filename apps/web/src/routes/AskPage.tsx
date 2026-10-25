@@ -27,6 +27,7 @@ import { StatusChip } from "../agent-ui/StatusChip.tsx";
 import { Receipt } from "../agent-ui/work.tsx";
 import { ApiError, api, askStream, conversations, onboarding, projects } from "../api.ts";
 import { CreateIssueButton } from "../components/CreateIssue.tsx";
+import { OutboundPreview } from "../components/OutboundPreview.tsx";
 import { SafeText } from "../components/SafeText.tsx";
 import { SourceViewer } from "../components/SourceViewer.tsx";
 import { Sentences } from "../components/verified.tsx";
@@ -35,6 +36,7 @@ import {
   Button,
   Drawer,
   IconButton,
+  Segmented,
   Skeleton,
   Switch,
   Tabs,
@@ -61,13 +63,20 @@ interface Turn {
   checked: number;
   result?: AskResult;
   error?: ApiError;
+  /** The user closed the cloud offer under a weak local answer. */
+  declined?: boolean;
 }
+
+type Route = "local" | "cloud";
 
 export const POLICY_HELP: Record<string, string> = {
   BUDGET_EXCEEDED: "Raise the cap in Settings → Model, or turn on local-only mode.",
   EGRESS_BLOCKED: "Local-only mode is on, so online models are blocked.",
   MISSING_API_KEY: "Add an API key in Settings → Model, or turn on local-only mode.",
   TASK_NEEDS_API: "This needs an online model. Turn off local-only mode to use it.",
+  CLOUD_NEEDS_CONSENT: "Nothing was sent. Pick Cloud for this question to see what it would send.",
+  TASK_NEEDS_CLOUD: "Rocky is set to local first. Switch to cloud first in Settings → Model.",
+  CONSENT_INVALID: "Nothing was sent. Ask again to see the passages.",
 };
 
 const sourcesOf = (r: AskResult) =>
@@ -163,6 +172,15 @@ function ChatView({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [showFlagged, setShowFlagged] = useState(false);
+  // The per-question switch (D-068); until the user picks, the routing mode decides.
+  const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
+  const [picked, setPicked] = useState<Route | null>(null);
+  const cloudOn = Boolean(
+    settings.data && !settings.data.localOnly && settings.data.secrets.anthropic,
+  );
+  const route: Route = !cloudOn
+    ? "local"
+    : (picked ?? (settings.data?.routing.mode === "cloud_first" ? "cloud" : "local"));
   const [pane, setPane] = useState(
     () => !embedded && window.matchMedia("(min-width: 1200px)").matches,
   );
@@ -238,7 +256,12 @@ function ChatView({
   const update = (key: string, f: (t: Turn) => Turn) =>
     setTurns((ts) => ts.map((t) => (t.key === key ? f(t) : t)));
 
-  async function send(question: string, replacing?: string) {
+  /** `consent` sends a previewed question to the cloud; `via` overrides the switch once. */
+  async function send(
+    question: string,
+    replacing?: string,
+    how: { consent?: string; via?: Route } = {},
+  ) {
     if (!question || busy) return;
     const key = `t${Date.now()}`;
     setTurns((ts) => [
@@ -277,6 +300,7 @@ function ChatView({
           showFlagged,
           conversationId: id,
           ...(notebookIds?.length ? { scope: { notebookIds } } : {}),
+          ...(how.consent ? { consent: how.consent } : { route: how.via ?? route }),
         },
         (ev) => {
           if (ev.type === "retrieval")
@@ -414,6 +438,13 @@ function ChatView({
                     onStop={stop}
                     onRetry={() => void send(t.question, t.key)}
                     onCopy={copy}
+                    busy={busy}
+                    onSendCloud={(consent) => void send(t.question, t.key, { consent })}
+                    onKeepLocal={() =>
+                      t.result?.awaitingConsent
+                        ? void send(t.question, t.key, { via: "local" })
+                        : update(t.key, (x) => ({ ...x, declined: true }))
+                    }
                   />
                 </li>
               ))}
@@ -433,6 +464,8 @@ function ChatView({
           showFlagged={showFlagged}
           setShowFlagged={setShowFlagged}
           notebookIds={notebookIds}
+          route={route}
+          setRoute={cloudOn ? setPicked : undefined}
         />
       </section>
 
@@ -516,6 +549,9 @@ function RockyMessage({
   onStop,
   onRetry,
   onCopy,
+  busy,
+  onSendCloud,
+  onKeepLocal,
 }: {
   turn: Turn;
   selected: boolean;
@@ -524,6 +560,9 @@ function RockyMessage({
   onStop: () => void;
   onRetry: () => void;
   onCopy: (s: string) => void;
+  busy: boolean;
+  onSendCloud: (consent: string) => void;
+  onKeepLocal: () => void;
 }) {
   if (t.phase === "searching" || t.phase === "checking")
     return <RunCard turn={t} onStop={onStop} onOpen={onSelect} />;
@@ -556,6 +595,23 @@ function RockyMessage({
     );
   }
   const r = t.result as AskResult;
+  const preview = r.outbound && !t.declined && (
+    <OutboundPreview
+      preview={r.outbound}
+      question={t.question}
+      sending={busy}
+      onSend={() => onSendCloud(r.outbound?.token ?? "")}
+      onDecline={onKeepLocal}
+    />
+  );
+  // Cloud picked: nothing answered yet, only what would be sent.
+  if (r.awaitingConsent)
+    return (
+      <div className="rk-msg rk-msg--rocky" data-selected={selected || undefined}>
+        <Pebble size={24} state="needs_approval" label="Rocky" />
+        <div className="rk-msg__body">{preview}</div>
+      </div>
+    );
   const answerText = r.notFound
     ? "Not found in your sources."
     : r.answer.map((s) => s.text).join(" ");
@@ -578,6 +634,7 @@ function RockyMessage({
           <Sentences answer={r.answer} onOpen={onOpen} className="rk-msg__answer" />
         )}
         <Receipt event={receiptFor(r, n)} onOpen={onSelect} />
+        {preview}
         <div className="rk-msg__meta">
           <ModelLine result={r} />
           <CreateIssueButton question={t.question} result={r} />
@@ -757,7 +814,12 @@ function Composer({
   showFlagged,
   setShowFlagged,
   notebookIds,
+  route,
+  setRoute,
 }: {
+  route: Route;
+  /** Absent when the cloud is out of reach (no key, or local-only): no switch is shown. */
+  setRoute: ((r: Route) => void) | undefined;
   text: string;
   setText: (s: string) => void;
   busy: boolean;
@@ -808,10 +870,23 @@ function Composer({
           <Link to="/settings" className="rk-chip-quiet" title="Change in Settings">
             {setup.data?.preset === "read-only" ? "Read only" : "Ask about everything"}
           </Link>
-          {settings.data && (
-            <span className="rk-chip-quiet">
-              {settings.data.localOnly ? "Local models only" : "Local or online model"}
-            </span>
+          {setRoute ? (
+            // Per question (D-068): Cloud shows the passages it would send before anything goes.
+            <Segmented
+              label="Where this question is answered"
+              value={route}
+              onChange={setRoute}
+              options={[
+                { value: "local", label: "On this computer" },
+                { value: "cloud", label: "Cloud" },
+              ]}
+            />
+          ) : (
+            settings.data && (
+              <span className="rk-chip-quiet">
+                {settings.data.localOnly ? "Local models only" : "On this computer"}
+              </span>
+            )
           )}
           <Switch label="Show flagged" checked={showFlagged} onChange={setShowFlagged} />
         </div>

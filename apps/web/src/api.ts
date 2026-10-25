@@ -263,6 +263,8 @@ export function subscribeEvents(
 export interface Settings {
   localOnly: boolean;
   budget: { monthlyCapUsd: number };
+  /** Roadmap M4 (D-068). */
+  routing: { mode: "local_first" | "cloud_first" };
   ollama: { baseUrl: string };
   notifications: NotificationPrefs;
   dataDir: string;

@@ -325,11 +325,22 @@ describe("API", () => {
     await ingestPath(rt.db, rt.paths.blobs, fixture("."));
     await rt.drainJobs();
     rt.config.budget.monthlyCapUsd = 0.000001;
+    const question = "What does the document say?";
+    // Cloud picked: first the outbound preview (D-068), then the budget stops the consented call.
+    const preview = await (
+      await req("/api/v1/ask", {
+        method: "POST",
+        headers: bearer,
+        body: JSON.stringify({ question, route: "cloud" }),
+      })
+    ).text();
+    const token = /"token":"([0-9a-f]{32})"/.exec(preview)?.[1];
+    expect(token).toBeDefined();
     const text = await (
       await req("/api/v1/ask", {
         method: "POST",
         headers: bearer,
-        body: JSON.stringify({ question: "What does the document say?" }),
+        body: JSON.stringify({ question, consent: token }),
       })
     ).text();
     expect(text).toMatch(/event: error\ndata: .*BUDGET_EXCEEDED/);

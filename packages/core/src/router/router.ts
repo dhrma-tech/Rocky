@@ -1,6 +1,13 @@
-import type { Hardware, Origin, PathInfo, Task, Usage } from "@rocky/contracts";
+import type { Hardware, Origin, PathInfo, RoutingMode, Task, Usage } from "@rocky/contracts";
 import type { ZodType } from "zod";
-import { BudgetExceeded, isPolicyError, MissingApiKey, ProviderFailure } from "./errors.ts";
+import {
+  BudgetExceeded,
+  isPolicyError,
+  MissingApiKey,
+  ProviderFailure,
+  TaskNeedsApi,
+  TaskNeedsCloud,
+} from "./errors.ts";
 import type { ProviderGate } from "./gate.ts";
 import { escalationLimits, type PolicyFile, resolveChain, type Target } from "./policy.ts";
 import { estimateTokens } from "./prices.ts";
@@ -14,6 +21,13 @@ export interface RunRequest<T> {
   schema?: ZodType<T>;
   scope?: { localOnly?: boolean; notebookId?: string };
   hints?: { examGrade?: boolean; maxTokens?: number; timeoutMs?: number; temperature?: number };
+  /**
+   * Roadmap M4 (D-068). "local": local targets only. "cloud": cloud targets first, and `consent`
+   * (an accepted preview's token) goes to the gate, which checks it. Omitted: policies.yaml,
+   * kept local under local first.
+   */
+  route?: "local" | "cloud";
+  consent?: string;
 }
 
 export interface RunResult<T> {
@@ -27,9 +41,14 @@ export interface RouterDeps {
   policy: (notebookId?: string) => PolicyFile;
   hardware: () => Pick<Hardware, "ramGb" | "ramTier" | "gpus" | "cuda">;
   globalLocalOnly: () => boolean;
+  /** Omitted in older test seams: cloud first. */
+  routingMode?: () => RoutingMode;
 }
 
 const DEFAULT_TIMEOUT_MS = { local: 180_000, api: 120_000 };
+
+/** Tasks that send no user content; local first doesn't hold them back (the gate agrees). */
+const CONTENT_FREE: ReadonlySet<Task> = new Set(["key_test"]);
 
 const REASON: Record<ProviderFailure["kind"], string> = {
   json_invalid: "json_invalid_x2",
@@ -51,19 +70,48 @@ export class Router {
     this.deps = deps;
   }
 
-  chain(task: Task, scope?: RunRequest<unknown>["scope"], examGrade?: boolean): Target[] {
+  mode(): RoutingMode {
+    return this.deps.routingMode?.() ?? "cloud_first";
+  }
+
+  chain(
+    task: Task,
+    scope?: RunRequest<unknown>["scope"],
+    examGrade?: boolean,
+    route?: RunRequest<unknown>["route"],
+  ): Target[] {
     const localOnly = this.deps.globalLocalOnly() || Boolean(scope?.localOnly);
+    const ctx = { hardware: this.deps.hardware(), localOnly, examGrade: Boolean(examGrade) };
+    const policy = this.deps.policy(scope?.notebookId);
+    const chain = resolveChain(policy, task, ctx);
+    if (route === "cloud")
+      return [...chain.filter((t) => !t.local), ...chain.filter((t) => t.local)];
+    // Local first keeps everything on this computer (even on a low-RAM machine, which policy
+    // would send to the API); a task with no local route says so.
+    if ((route === "local" || this.mode() === "local_first") && !CONTENT_FREE.has(task)) {
+      try {
+        return resolveChain(policy, task, { ...ctx, localOnly: true });
+      } catch (err) {
+        if (err instanceof TaskNeedsApi && !localOnly) throw new TaskNeedsCloud(task);
+        throw err;
+      }
+    }
+    return chain;
+  }
+
+  /** The cloud targets a consented question would use, first one first (for the preview). */
+  cloudChain(task: Task, scope?: RunRequest<unknown>["scope"]): Target[] {
+    if (this.deps.globalLocalOnly() || scope?.localOnly) return [];
     return resolveChain(this.deps.policy(scope?.notebookId), task, {
       hardware: this.deps.hardware(),
-      localOnly,
-      examGrade: Boolean(examGrade),
-    });
+      localOnly: false,
+    }).filter((t) => !t.local);
   }
 
   async run<T>(req: RunRequest<T>): Promise<RunResult<T>> {
     const policy = this.deps.policy(req.scope?.notebookId);
     const tp = policy.tasks[req.task];
-    const chain = this.chain(req.task, req.scope, req.hints?.examGrade);
+    const chain = this.chain(req.task, req.scope, req.hints?.examGrade, req.route);
     const limits = escalationLimits(tp);
     const inputTokens = estimateTokens(req.system + req.prompt);
     let reason: string | undefined;
@@ -91,6 +139,7 @@ export class Router {
           limits.timeoutMs ??
           (target.local ? DEFAULT_TIMEOUT_MS.local : DEFAULT_TIMEOUT_MS.api),
         localOnly: Boolean(req.scope?.localOnly),
+        ...(req.route === "cloud" && req.consent ? { cloudConsent: req.consent } : {}),
         ...(req.schema ? { schema: req.schema } : {}),
         ...(req.hints?.temperature !== undefined ? { temperature: req.hints.temperature } : {}),
       };

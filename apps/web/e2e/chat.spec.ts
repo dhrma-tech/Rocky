@@ -190,6 +190,107 @@ test("a starter question creates the conversation, streams, and the work pane sh
   await expect(page.getByRole("tabpanel").getByRole("button", { name: /Renewal/ })).toBeVisible();
 });
 
+// Roadmap M4 (D-068): the outbound preview.
+const PREVIEW = {
+  token: "0123456789abcdef0123456789abcdef",
+  reason: "not_found",
+  model: "anthropic/claude-sonnet-5-5",
+  verifier: "anthropic/claude-haiku-4-5",
+  passages: [
+    {
+      chunkId: "c1",
+      documentId: "d1",
+      title: "Renewal",
+      text: "The CloudHost contract renews on November 1. Questions to billing@cloudhost.example.",
+      tags: ["email"],
+    },
+  ],
+  expiresAt: Date.now() + 10 * 60_000,
+};
+const NOT_FOUND = { ...RESULT, answer: [], notFound: true, closestMatches: [] };
+
+async function mockRouting(page: Page) {
+  const asks: Record<string, unknown>[] = [];
+  await mockChat(page);
+  await page.route("**/api/v1/settings", (route) =>
+    json(route, {
+      localOnly: false,
+      budget: { monthlyCapUsd: 10 },
+      routing: { mode: "local_first" },
+      ollama: { baseUrl: "" },
+      notifications: {},
+      dataDir: "E:/RockyData",
+      secrets: { anthropic: true },
+    }),
+  );
+  await page.route("**/api/v1/ask", (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    asks.push(body);
+    const result = body.consent
+      ? {
+          ...RESULT,
+          path: { provider: "anthropic", model: "claude-sonnet-5-5", local: false, attempts: 1 },
+        }
+      : body.route === "cloud"
+        ? {
+            ...NOT_FOUND,
+            notFound: false,
+            path: null,
+            outbound: { ...PREVIEW, reason: "asked" },
+            awaitingConsent: true,
+          }
+        : { ...NOT_FOUND, outbound: PREVIEW };
+    return route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: sse([["done", { result }]]),
+    });
+  });
+  return asks;
+}
+
+test("a weak local answer offers the cloud with the exact passages; sending uses the token", async ({
+  page,
+}) => {
+  const asks = await mockRouting(page);
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/ask");
+  const box = page.getByLabel("Ask about your work");
+  await box.fill("When does it renew?");
+  await box.press("Enter");
+  const offer = page.getByRole("region", { name: "What would be sent" });
+  await expect(offer.getByText(/found no answer it could check/)).toBeVisible();
+  await expect(offer.getByText(/Looks like it includes: Email address/)).toBeVisible();
+  await offer.getByText("Show the passage and the question").click();
+  await expect(offer.getByText(/billing@cloudhost\.example/)).toBeVisible();
+  const problems: string[] = [];
+  await check(page, "outbound preview", problems);
+  expect(problems).toEqual([]);
+  expect(asks[0]).toMatchObject({ question: "When does it renew?", route: "local" });
+  await offer.getByRole("button", { name: "Send 1 passage" }).click();
+  await expect(page.getByText("The CloudHost contract renews on November 1.")).toBeVisible();
+  expect(asks[1]).toMatchObject({ question: "When does it renew?", consent: PREVIEW.token });
+  expect(asks[1]).not.toHaveProperty("route");
+});
+
+test("Cloud for one question shows the preview first; Keep it on this computer asks locally", async ({
+  page,
+}) => {
+  const asks = await mockRouting(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/ask");
+  await page.getByText("Cloud", { exact: true }).click();
+  const box = page.getByLabel("Ask about your work");
+  await box.fill("When does it renew?");
+  await box.press("Enter");
+  const offer = page.getByRole("region", { name: "What would be sent" });
+  await expect(offer.getByText(/Nothing has been sent yet/)).toBeVisible();
+  expect(asks[0]).toMatchObject({ route: "cloud" });
+  await offer.getByRole("button", { name: "Keep it on this computer" }).click();
+  await expect.poll(() => asks.length).toBe(2);
+  expect(asks[1]).toMatchObject({ route: "local" });
+});
+
 test("keyboard: ↑ brings back the last question, Ctrl+. stops, Esc never stops", async ({
   page,
 }) => {

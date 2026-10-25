@@ -48,15 +48,18 @@ const HELP =
 
 /** An answer as chat text: the verified sentences, then where they came from. */
 export function answerText(r: AskResult): string {
+  // Asked from here, a question stays local; the cloud is only offered in Rocky, where the
+  // passages it would send can be checked first (D-068).
+  const cloud = r.outbound
+    ? "\n\nRocky's local model wasn't sure. Ask in Rocky to see what a cloud model would be sent."
+    : "";
   if (r.notFound || r.answer.length === 0) {
     const near = r.closestMatches.slice(0, 3).map((m) => m.title);
-    return near.length
-      ? `Not found in your sources. Closest: ${near.join("; ")}.`
-      : "Not found in your sources.";
+    return `${near.length ? `Not found in your sources. Closest: ${near.join("; ")}.` : "Not found in your sources."}${cloud}`;
   }
   const body = r.answer.map((s) => s.text).join(" ");
   const titles = [...new Set(r.answer.flatMap((s) => s.citations.map((c) => c.title)))];
-  return titles.length ? `${body}\n\nSources: ${titles.join("; ")}` : body;
+  return `${titles.length ? `${body}\n\nSources: ${titles.join("; ")}` : body}${cloud}`;
 }
 
 export class TelegramBot {

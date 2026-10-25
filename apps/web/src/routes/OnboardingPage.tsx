@@ -227,8 +227,18 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
   const needsSwitch =
     hasLocal && m && (m.small !== m.current.small || m.medium !== m.current.medium);
 
+  // With no model on this computer, local first could answer nothing: the key becomes the way
+  // Rocky works (cloud first), and a question still shows its passages before it goes (D-068).
+  const cloudFirst = useMutation({
+    mutationFn: () => api.saveSettings({ routing: { mode: "cloud_first" } }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+      onContinue();
+    },
+  });
   const next = () => {
     if (picked === "local" && needsSwitch) useLocal.mutate();
+    else if (picked === "api" && !hasLocal) cloudFirst.mutate();
     else onContinue();
   };
   const ready = picked === "local" ? hasLocal : result?.ok === true;
@@ -256,8 +266,8 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
                   },
                   {
                     value: "api",
-                    label: "An online model with your API key",
-                    help: "Faster on hard questions. Each call goes through the monthly budget cap.",
+                    label: "Also add an API key (optional)",
+                    help: "Rocky stays on this computer. When you want, send one question to an online model after seeing exactly what it would get. Each call counts toward the monthly budget cap.",
                   },
                 ]
               : [
@@ -321,7 +331,9 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
       <p className="rk-onb__consequence rk-small">
         {picked === "local"
           ? "Your questions and files stay on this computer."
-          : "The passages Rocky cites are sent to the provider with your question. Local-only mode blocks this."}
+          : hasLocal
+            ? "Nothing is sent unless you send a question yourself, after seeing the passages it would take."
+            : "Background work uses the online model. A question shows the passages it would send before it goes. Local-only mode blocks all of it."}
       </p>
       {useLocal.error && (
         <Banner tone="error" title="Couldn't switch models.">
@@ -337,7 +349,7 @@ function StepModel({ onContinue }: { onContinue: () => void }) {
         <Button
           variant="primary"
           disabled={!ready}
-          loading={useLocal.isPending ? "Saving…" : false}
+          loading={useLocal.isPending || cloudFirst.isPending ? "Saving…" : false}
           onClick={next}
         >
           Continue

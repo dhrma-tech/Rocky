@@ -29,7 +29,7 @@ import { StatusChip } from "./agent-ui/StatusChip.tsx";
 import { ApiError, api, onAnotherDevice, onboarding, type Swatch } from "./api.ts";
 import { CommandPalette, openPalette, paletteShortcut } from "./CommandPalette.tsx";
 import { RecordingPill } from "./components/capture.tsx";
-import { LocalBadge } from "./components/trust.tsx";
+import { type Boundary, LocalBadge } from "./components/trust.tsx";
 import { GlobalHelpKeys } from "./help/shortcuts.tsx";
 import { NotificationBell, useNotifications, useSystemNotifications } from "./notifications.tsx";
 import { TaskCreator } from "./TaskCreator.tsx";
@@ -145,7 +145,13 @@ export function Shell() {
         <ShellFrame
           engineDown={settings.isError}
           reaching={settings.isPending}
-          localOnly={settings.data?.localOnly}
+          boundary={
+            settings.data
+              ? settings.data.localOnly
+                ? "local_only"
+                : (settings.data.routing?.mode ?? "local_first")
+              : undefined
+          }
           prefs={settings.data?.notifications}
           retry={() => void settings.refetch()}
           lastSeen={settings.dataUpdatedAt}
@@ -161,7 +167,7 @@ export function Shell() {
 function ShellFrame({
   engineDown,
   reaching,
-  localOnly,
+  boundary,
   prefs,
   retry,
   lastSeen,
@@ -171,7 +177,7 @@ function ShellFrame({
 }: {
   engineDown: boolean;
   reaching: boolean;
-  localOnly: boolean | undefined;
+  boundary: Boundary | undefined;
   prefs: NotificationPrefs | undefined;
   retry: () => void;
   lastSeen: number;
@@ -258,7 +264,7 @@ function ShellFrame({
       <strong>{name}</strong>
       {state ? <StatusChip state={state} /> : <span className="rk-small rk-muted">At rest</span>}
       <Link to="/ledger">Open the ledger</Link>
-      <LocalBadge localOnly={localOnly} />
+      <LocalBadge boundary={boundary} />
     </div>
   );
 
@@ -341,7 +347,7 @@ function ShellFrame({
           <strong className="rk-topbar__name">{name}</strong>
           {state && <StatusChip state={state} />}
           <span style={{ flex: 1 }} />
-          <LocalBadge localOnly={localOnly} />
+          <LocalBadge boundary={boundary} />
         </header>
         {main}
         <PhoneTabs badges={badges} status={status} userName={userName} />

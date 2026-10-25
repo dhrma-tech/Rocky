@@ -202,7 +202,7 @@ export async function runEval(
         );
       }
       const r = await ask(
-        { db: rt.db, router: rt.router, embedder: rt.embedder },
+        { db: rt.db, router: rt.router, embedder: rt.embedder, origin: "system" },
         { question: q.question, scope: { localOnly } },
       );
       usage = add(usage, r.usage);

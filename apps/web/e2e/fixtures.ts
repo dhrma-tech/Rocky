@@ -448,6 +448,7 @@ const MODELS = {
 const SETTINGS = {
   localOnly: true,
   budget: { monthlyCapUsd: 10 },
+  routing: { mode: "local_first" },
   ollama: { baseUrl: "" },
   notifications: {
     system: { needsYou: true, updates: false, headsUp: true },

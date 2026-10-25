@@ -4,15 +4,17 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { Origin, Task } from "@rocky/contracts";
+import type { Origin, RoutingMode, Task } from "@rocky/contracts";
 import { generateText, type LanguageModel, Output } from "ai";
 import { ulid } from "ulid";
 import type { ZodType } from "zod";
 import { appendAudit } from "../audit/append.ts";
 import type { SecretStore } from "../secrets/keychain.ts";
 import type { Db } from "../store/db.ts";
+import type { OutboundConsents } from "./consent.ts";
 import {
   BudgetExceeded,
+  CloudNeedsConsent,
   EgressBlocked,
   MissingApiKey,
   ProviderFailure,
@@ -31,8 +33,18 @@ export interface GateRequest<T> {
   timeoutMs: number;
   /** Scope or notebook local-only; OR-ed with the global setting. */
   localOnly?: boolean;
+  /**
+   * The token of an outbound preview the user accepted (D-068), checked against the gate's
+   * consent registry. Counts only for `user_turn`.
+   */
+  cloudConsent?: string;
   temperature?: number;
 }
+
+/** The calls that answer a question; they never reach the cloud without a preview (D-020). */
+const QUESTION_TASKS: ReadonlySet<Task> = new Set(["chat", "verify"]);
+/** Sends no user content (Onboarding's "Test connection"), so local first doesn't hold it back. */
+const CONTENT_FREE_TASKS: ReadonlySet<Task> = new Set(["key_test"]);
 
 export interface GateResult<T> {
   output: T;
@@ -43,9 +55,19 @@ export interface GateResult<T> {
 
 export interface GateConfig {
   /** Read on every call so Settings changes apply immediately. */
-  settings: () => { localOnly: boolean; monthlyCapUsd: number; ollamaBaseUrl: string };
+  settings: () => {
+    localOnly: boolean;
+    monthlyCapUsd: number;
+    ollamaBaseUrl: string;
+    /** Roadmap M4 (D-068). The runtime always sets both; test seams that omit them get the
+     * pre-M4 behaviour (cloud first, no preview), so older router tests keep their meaning. */
+    routingMode?: RoutingMode;
+    questionConsent?: boolean;
+  };
   prices: () => PriceTable;
   secrets: SecretStore;
+  /** Accepted outbound previews (D-068). Without it, no call can claim consent. */
+  consents?: OutboundConsents;
   /** Injected in tests; also covers every provider's HTTP. */
   fetch?: typeof fetch;
   now?: () => number;
@@ -63,7 +85,10 @@ export class ProviderGate {
   /** Throws EgressBlocked / UnknownPrice / BudgetExceeded without making any request. */
   preflight(
     target: Target,
-    req: Pick<GateRequest<unknown>, "system" | "prompt" | "maxTokens" | "localOnly">,
+    req: Pick<
+      GateRequest<unknown>,
+      "task" | "origin" | "system" | "prompt" | "maxTokens" | "localOnly" | "cloudConsent"
+    >,
   ): void {
     const s = this.cfg.settings();
     if (!target.local && (s.localOnly || req.localOnly)) {
@@ -76,6 +101,27 @@ export class ProviderGate {
         target.provider,
         s.localOnly ? "global setting" : "scope or notebook",
       );
+    }
+    if (!target.local && !CONTENT_FREE_TASKS.has(req.task)) {
+      const consented =
+        req.origin === "user_turn" && this.cfg.consents?.allows(req.cloudConsent) === true;
+      const why =
+        s.routingMode === "local_first" && !consented
+          ? "local_first"
+          : s.questionConsent &&
+              req.origin === "user_turn" &&
+              QUESTION_TASKS.has(req.task) &&
+              !consented
+            ? "question"
+            : null;
+      if (why) {
+        appendAudit(this.db, {
+          eventType: "egress_blocked",
+          actor: "system",
+          meta: { provider: target.provider, model: target.model, task: req.task, reason: why },
+        });
+        throw new CloudNeedsConsent(target.provider, why);
+      }
     }
     if (target.local || s.monthlyCapUsd <= 0) return;
     const price = this.cfg.prices()[`${target.provider}/${target.model}`];
@@ -181,6 +227,8 @@ export class ProviderGate {
         inputTokens,
         outputTokens,
         costUsd: cost,
+        // Sent after the user accepted the outbound preview (D-068).
+        ...(req.cloudConsent && !target.local ? { consented: true } : {}),
       },
     });
   }
