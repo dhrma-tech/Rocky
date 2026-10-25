@@ -7,11 +7,19 @@ import {
 } from "@rocky/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, CalendarClock, CircleCheck, Hand, Info, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  CircleCheck,
+  Hand,
+  Info,
+  type LucideIcon,
+  ThumbsDown,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useLive } from "./agent-ui/live.tsx";
 import { api } from "./api.ts";
-import { Button, EmptyState, Popover, Skeleton } from "./ui/index.tsx";
+import { Button, EmptyState, IconButton, Popover, Skeleton, useToast } from "./ui/index.tsx";
 import "./notifications.css";
 
 /**
@@ -91,8 +99,34 @@ export function NotificationRow({
           {n.actionLabel}
         </Link>
       )}
+      {n.kind === "heads_up" && <NotUseful n={n} />}
       {n.readAt === null && <span className="rk-notif__dot" aria-hidden="true" />}
     </li>
+  );
+}
+
+/** Heads-ups only (roadmap A7, D-067): dismissing one lowers the score of it and similar ones. */
+function NotUseful({ n }: { n: Notification }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  return (
+    <IconButton
+      label="Not useful"
+      dense
+      onClick={() =>
+        void api
+          .dismissNotifications([n.id])
+          .then(() => {
+            toast({ text: "Dismissed. Rocky will nudge you less about things like this." });
+            return qc.invalidateQueries({ queryKey: ["notifications"] });
+          })
+          .catch((e: unknown) =>
+            toast({ text: `Not dismissed: ${e instanceof Error ? e.message : String(e)}` }),
+          )
+      }
+    >
+      <ThumbsDown size={16} strokeWidth={1.5} aria-hidden />
+    </IconButton>
   );
 }
 

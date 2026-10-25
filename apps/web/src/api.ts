@@ -203,14 +203,32 @@ export const devices = {
 /** Phone channels (D-065). Secrets are write-only: Rocky says whether one is set, never what. */
 export const channels = {
   get: () =>
-    call<{ ntfy: { topicSet: boolean; tokenSet: boolean }; localOnly: boolean }>("/channels"),
+    call<{
+      ntfy: { topicSet: boolean; tokenSet: boolean };
+      telegram: {
+        tokenSet: boolean;
+        bot: string | null;
+        stranger: { id: number; name: string; at: number } | null;
+      };
+      localOnly: boolean;
+    }>("/channels"),
+  saveTelegramToken: (value: string) =>
+    call<{ stored: boolean; bot: string | null; warning?: string }>("/channels/telegram/token", {
+      method: "POST",
+      body: JSON.stringify({ value }),
+    }),
+  forgetTelegram: () => call<{ deleted: boolean }>("/channels/telegram", { method: "DELETE" }),
   setSecret: (name: "topic" | "token", value: string) =>
     call<{ stored: boolean }>("/channels/ntfy/secret", {
       method: "POST",
       body: JSON.stringify({ name, value }),
     }),
   forget: () => call<{ deleted: boolean }>("/channels/ntfy", { method: "DELETE" }),
-  test: () => call<{ sent: boolean }>("/channels/test", { method: "POST" }),
+  test: (channel: "ntfy" | "telegram" = "ntfy") =>
+    call<{ sent: boolean }>("/channels/test", {
+      method: "POST",
+      body: JSON.stringify({ channel }),
+    }),
 };
 
 export type StreamState = "live" | "reconnecting";

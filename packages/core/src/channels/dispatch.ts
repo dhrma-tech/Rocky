@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { type AppConfig, channelTakes, inQuietHours, type Notification } from "@rocky/contracts";
 import { appendAudit } from "../audit/append.ts";
 import type { Db } from "../store/db.ts";
-import type { ChannelHost } from "./host.ts";
+import type { ChannelHost, ChannelName } from "./host.ts";
 import type { PhoneMessage } from "./ntfy.ts";
 
 /**
@@ -19,7 +19,11 @@ const GENERIC: Record<Notification["kind"], string> = {
   system: "Rocky needs a look.",
 };
 
-export function phoneMessage(n: Notification, config: AppConfig): PhoneMessage {
+export function phoneMessage(
+  n: Notification,
+  config: AppConfig,
+  channel: ChannelName = "ntfy",
+): PhoneMessage {
   const host = config.daemon.allowedHosts[0];
   const generic =
     n.kind === "needs_you" && n.link === "/approvals"
@@ -28,7 +32,7 @@ export function phoneMessage(n: Notification, config: AppConfig): PhoneMessage {
   return {
     // Fixed, plain titles: header values must be Latin-1, and they carry nothing personal.
     title: n.kind === "needs_you" ? "Rocky needs you" : "Rocky",
-    text: config.notifications.ntfy.details ? n.sentence : generic,
+    text: config.notifications[channel].details ? n.sentence : generic,
     ...(host && n.link ? { click: `https://${host}${n.link}` } : {}),
     priority: n.kind === "needs_you" ? "high" : "default",
   };
@@ -37,7 +41,8 @@ export function phoneMessage(n: Notification, config: AppConfig): PhoneMessage {
 /** Why a notification won't reach the phone, or null when it will. */
 export function phoneSkipReason(n: Notification, config: AppConfig, now: Date): string | null {
   if (config.localOnly) return "local-only";
-  if (!config.notifications.ntfy.enabled) return "no phone channel";
+  if (!config.notifications.ntfy.enabled && !config.notifications.telegram.enabled)
+    return "no phone channel";
   if (!channelTakes(config.notifications.phone, n.kind)) return "kept in Rocky";
   if (inQuietHours(config.notifications.quietHours, now)) return "quiet hours";
   return null;
@@ -64,31 +69,60 @@ export class PhoneDispatcher {
     this.now = opts.now ?? (() => new Date());
   }
 
-  /** Sends one notification if the settings allow it. Never throws: the in-app record stays. */
+  /** Sends one notification to each phone channel that is on. Never throws: the in-app record
+   * stays whatever happens. */
   async dispatch(n: Notification): Promise<"sent" | "skipped" | "failed"> {
     const config = this.config();
     if (phoneSkipReason(n, config, this.now())) return "skipped";
-    const m = phoneMessage(n, config);
-    try {
-      await this.host.sendNtfy(m);
-      appendAudit(this.db, {
-        eventType: "notification_sent",
-        actor: "system",
-        subjectType: "notification",
-        subjectId: n.id,
-        meta: {
-          channel: "ntfy",
-          kind: n.kind,
-          details: config.notifications.ntfy.details,
-          textHash: createHash("sha256").update(m.text).digest("hex"),
+    const tg = config.notifications.telegram;
+    const sends: [ChannelName, () => Promise<string>][] = [];
+    if (config.notifications.ntfy.enabled)
+      sends.push([
+        "ntfy",
+        async () => {
+          const m = phoneMessage(n, config, "ntfy");
+          await this.host.sendNtfy(m);
+          return m.text;
         },
-      });
-      return "sent";
-    } catch (err) {
-      this.log?.(
-        `phone notification not sent: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      return "failed";
+      ]);
+    if (tg.enabled && tg.userIds.length)
+      sends.push([
+        "telegram",
+        async () => {
+          const m = phoneMessage(n, config, "telegram");
+          // Approvals carry a Review link only; in-chat Approve exists only under /approvals.
+          for (const chatId of tg.userIds)
+            await this.host.sendTelegram({
+              chatId,
+              text: `${m.title}: ${m.text}`,
+              ...(m.click ? { buttons: [{ text: n.actionLabel, url: m.click }] } : {}),
+            });
+          return m.text;
+        },
+      ]);
+    let sent = 0;
+    for (const [channel, send] of sends) {
+      try {
+        const text = await send();
+        appendAudit(this.db, {
+          eventType: "notification_sent",
+          actor: "system",
+          subjectType: "notification",
+          subjectId: n.id,
+          meta: {
+            channel,
+            kind: n.kind,
+            details: config.notifications[channel].details,
+            textHash: createHash("sha256").update(text).digest("hex"),
+          },
+        });
+        sent++;
+      } catch (err) {
+        this.log?.(
+          `${channel} notification not sent: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
+    return sent ? "sent" : "failed";
   }
 }

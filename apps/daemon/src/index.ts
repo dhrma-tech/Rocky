@@ -5,25 +5,33 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import {
   ActionScheduler,
+  APPROVAL_HOLD_MS,
   type ChannelHost,
+  ChannelHostClient,
   ConnectorScheduler,
   channelOnlySecrets,
   dailyBackup,
   deleteEverything,
   FolderWatcher,
   forkChannelHost,
+  home,
   InProcessChannelHost,
   JobRunner,
+  listRuns,
   Notifier,
   type OpenRuntimeOptions,
   openRuntime,
   PhoneDispatcher,
   type Runtime,
   redactingLogger,
+  runHeadsUps,
   shippedDir,
+  TelegramBot,
+  unreadCount,
   verifyDeviceToken,
 } from "@rocky/core";
 import { createApp } from "./app.ts";
+import { runAsk } from "./ask-run.ts";
 import { Auth, newToken } from "./auth.ts";
 import { CONNECTOR_HOST_ENTRY, registerConnectors } from "./connectors.ts";
 
@@ -138,6 +146,47 @@ export async function startDaemon(opts: {
       })
     : forkChannelHost(CHANNEL_HOST_ENTRY, ["--data-dir", opts.dataDir], log);
   const phone = new PhoneDispatcher({ db: rt.db, host: channels, config: () => rt.config, log });
+  // Telegram (D-066): the channel host polls; messages from allowed users come here.
+  const bot = new TelegramBot({
+    send: (m) => channels.sendTelegram(m),
+    answerCallback: (id, text) => channels.answerCallback(id, text),
+    settings: () => ({
+      approveLowRiskInChat: rt.config.notifications.telegram.approveLowRiskInChat,
+      phoneHost: rt.config.daemon.allowedHosts[0],
+    }),
+    drafts: () => rt.actions.list("draft"),
+    approve: (id, hash) =>
+      rt.actions.approve(id, hash, { holdMs: APPROVAL_HOLD_MS, via: "telegram" }),
+    ask: (question) => runAsk(rt, { question }, undefined, { via: "Telegram" }),
+    status: () => ({
+      running: listRuns(rt.db, { status: "active" }).length,
+      approvals: rt.actions.list("draft").length,
+      unread: unreadCount(rt.db),
+    }),
+    today: () => {
+      const h = home(rt.db);
+      return { events: h.today.length, dueSoon: h.dueSoon.length, overdue: h.overdue.length };
+    },
+    log,
+  });
+  if (channels instanceof ChannelHostClient)
+    channels.onInbound((m) => {
+      const tg = rt.config.notifications.telegram;
+      // Checked again here: the host filters, but the daemon decides.
+      if (m.kind === "stranger" || rt.config.localOnly || !tg.enabled) return;
+      if (!tg.userIds.includes(m.fromId)) return;
+      void bot.handle(m);
+    });
+  // The host polls only while it runs; with Telegram on, keep it running (and restart it after a
+  // crash) by asking for its status every minute.
+  const keepTelegram = () => {
+    const tg = rt.config.notifications.telegram;
+    if (tg.enabled && !rt.config.localOnly)
+      void channels.status().catch((e: unknown) => log(`channel host: ${String(e)}`));
+  };
+  keepTelegram();
+  const telegramTimer = setInterval(keepTelegram, 60_000);
+  telegramTimer.unref();
   // Notifications (UI spec 16): follow the event log each second; in-app keeps the record, and
   // the phone gets what the preferences allow.
   const notifier = new Notifier({ db: rt.db, onNew: (n) => void phone.dispatch(n) });
@@ -151,6 +200,19 @@ export async function startDaemon(opts: {
   notify();
   const notifyTimer = setInterval(notify, 1000);
   notifyTimer.unref();
+  // Heads-ups (roadmap A7, D-067): checked at start and every 10 minutes; runs once a day from
+  // 08:00. Filed straight into notifications, so the phone gets them as it gets the rest.
+  const headsUp = () => {
+    try {
+      const perDay = rt.config.notifications.headsUp.perDay;
+      for (const n of runHeadsUps(rt.db, { perDay })) void phone.dispatch(n);
+    } catch (err) {
+      log(`heads-up run failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+  headsUp();
+  const headsUpTimer = setInterval(headsUp, 10 * 60_000);
+  headsUpTimer.unref();
 
   const webDir = opts.webDir ?? defaultWebDir;
   const app = createApp({
@@ -166,6 +228,8 @@ export async function startDaemon(opts: {
       clearInterval(routineTimer);
       clearInterval(backupTimer);
       clearInterval(notifyTimer);
+      clearInterval(telegramTimer);
+      clearInterval(headsUpTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();
@@ -197,6 +261,8 @@ export async function startDaemon(opts: {
       clearInterval(routineTimer);
       clearInterval(backupTimer);
       clearInterval(notifyTimer);
+      clearInterval(telegramTimer);
+      clearInterval(headsUpTimer);
       await scheduler.stop();
       await actionScheduler.stop();
       await watcher.stop();

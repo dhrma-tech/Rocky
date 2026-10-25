@@ -178,6 +178,15 @@ SCREENS.push(
 const SCENARIOS: Scenario[] = ["populated", "empty", "loading", "error"];
 
 async function check(page: Page, label: string, problems: string[]) {
+  // A toast still fading in reads as low contrast: let finite animations end first.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getTiming().iterations !== Number.POSITIVE_INFINITY)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
   const axe = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -624,6 +633,36 @@ test("notifications: the bell shows unread, Review goes to Approvals, mark all r
   expect(posts.filter((p) => p.endsWith("/read-all"))).toHaveLength(1);
 });
 
+test("heads-ups: Not useful dismisses one, and the daily number saves through settings", async ({
+  page,
+}) => {
+  const dismissed: unknown[] = [];
+  const puts: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().endsWith("/notifications/dismiss"))
+      dismissed.push(r.postDataJSON());
+    if (r.method() === "PUT" && r.url().endsWith("/settings")) puts.push(r.postDataJSON());
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/notifications?tab=updates");
+  const panel = page.getByRole("tabpanel", { name: "Updates" });
+  await expect(panel.getByText("Due tomorrow: Send Priya the revised pricing sheet")).toBeVisible();
+  // Only heads-ups can be marked not useful.
+  await expect(panel.getByRole("button", { name: "Not useful" })).toHaveCount(1);
+  await panel.getByRole("button", { name: "Not useful" }).click();
+  await expect.poll(() => dismissed).toEqual([{ ids: ["01JZ0000000000000000000004"] }]);
+  await expect(page.getByText(/nudge you less/)).toBeVisible();
+
+  await page.goto("/notifications?tab=preferences");
+  await page.getByLabel("How many").selectOption("1");
+  await expect.poll(() => puts.length).toBe(1);
+  expect(puts[0]).toMatchObject({ notifications: { headsUp: { perDay: 1 } } });
+  const problems: string[] = [];
+  await check(page, "heads-ups", problems);
+  expect(problems).toEqual([]);
+});
+
 test("notification preferences: a matrix change and quiet hours save through settings", async ({
   page,
 }) => {
@@ -791,7 +830,8 @@ test("phone notifications: a random topic goes to the keychain, then a test is s
   await mockApi(page, "empty");
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/notifications?tab=preferences");
-  await expect(page.getByRole("button", { name: "Send a test" })).toBeDisabled();
+  const ntfy = page.getByRole("region", { name: "Phone notifications (ntfy)" });
+  await expect(ntfy.getByRole("button", { name: "Send a test" })).toBeDisabled();
   await page.getByRole("button", { name: "Make one for me" }).click();
   const topic = page.getByLabel("Topic", { exact: true });
   await expect(topic).toHaveValue(/^rocky_[a-z0-9]{20}$/);
@@ -804,5 +844,38 @@ test("phone notifications: a random topic goes to the keychain, then a test is s
   await expect(topic).toHaveValue("");
   const problems: string[] = [];
   await check(page, "phone channel", problems);
+  expect(problems).toEqual([]);
+});
+
+test("telegram: save a bot token, allow the person who sent /start, approve in chat stays off", async ({
+  page,
+}) => {
+  const puts: unknown[] = [];
+  const posts: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "PUT" && r.url().endsWith("/settings")) puts.push(r.postDataJSON());
+    if (r.method() === "POST" && r.url().includes("/channels/"))
+      posts.push(new URL(r.url()).pathname);
+  });
+  await mockApi(page, "populated");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/notifications?tab=preferences");
+  await expect(page.getByLabel("Bot token (set, @rocky_dana_bot)")).toBeVisible();
+  await page
+    .getByLabel("Bot token (set, @rocky_dana_bot)")
+    .fill("123456789:AAbbccddeeffgghhiijjkkllmmnnooppqq");
+  await page.getByRole("button", { name: "Save token" }).last().click();
+  await expect.poll(() => posts).toContain("/api/v1/channels/telegram/token");
+  await expect(page.getByText("sent /start")).toBeVisible();
+  await page.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect.poll(() => puts.length).toBe(1);
+  expect(puts[0]).toMatchObject({
+    notifications: { telegram: { userIds: [52_184_330], approveLowRiskInChat: false } },
+  });
+  await expect(
+    page.getByRole("switch", { name: "Approve low-risk drafts in the chat" }),
+  ).toHaveAttribute("aria-checked", "false");
+  const problems: string[] = [];
+  await check(page, "telegram", problems);
   expect(problems).toEqual([]);
 });

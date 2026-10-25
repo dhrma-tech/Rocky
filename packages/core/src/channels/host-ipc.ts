@@ -1,7 +1,8 @@
 import { type ChildProcess, fork } from "node:child_process";
-import type { ChannelHost, ChannelSecret, ChannelStatus } from "./host.ts";
+import type { ChannelHost, ChannelName, ChannelSecret, ChannelStatus } from "./host.ts";
 import { ChannelBlocked } from "./host.ts";
 import type { PhoneMessage } from "./ntfy.ts";
+import type { TelegramInbound, TelegramOutbound } from "./telegram.ts";
 
 /**
  * The wire between the daemon and the channel host process (D-065), the same shape as the
@@ -14,11 +15,25 @@ export interface Wire {
   onMessage(cb: (msg: unknown) => void): void;
 }
 
-type Op = "sendNtfy" | "setSecret" | "deleteSecrets" | "status";
+type Op =
+  | "sendNtfy"
+  | "sendTelegram"
+  | "answerCallback"
+  | "telegramIdentity"
+  | "setSecret"
+  | "deleteSecrets"
+  | "status";
 type ToHost = { t: "call"; id: number; op: Op; args: unknown[] };
 type FromHost =
   | { t: "res"; id: number; value?: unknown; error?: { message: string; code?: string } }
-  | { t: "log"; msg: string };
+  | { t: "log"; msg: string }
+  /** A Telegram message from an allowed user, for the daemon to answer (D-066). */
+  | { t: "inbound"; inbound: TelegramInbound };
+
+/** Host side: hands the daemon one Telegram message from an allowed user. */
+export function emitInbound(wire: Wire, inbound: TelegramInbound): void {
+  wire.send({ t: "inbound", inbound } satisfies FromHost);
+}
 
 /** Host side: answers calls with the in-process host. */
 export function serveChannelHost(wire: Wire, host: ChannelHost): void {
@@ -57,6 +72,7 @@ export class ChannelHostClient implements ChannelHost {
   >();
   private readonly connect: (onExit: () => void) => Conn;
   private readonly log: ((msg: string) => void) | undefined;
+  private inbound: ((m: TelegramInbound) => void) | null = null;
 
   constructor(opts: { connect: (onExit: () => void) => Conn; log?: (msg: string) => void }) {
     this.connect = opts.connect;
@@ -74,6 +90,7 @@ export class ChannelHostClient implements ChannelHost {
     conn.onMessage((raw) => {
       const m = raw as FromHost;
       if (m?.t === "log") return this.log?.(`channel host: ${m.msg}`);
+      if (m?.t === "inbound") return this.inbound?.(m.inbound);
       if (m?.t !== "res") return;
       const p = this.pending.get(m.id);
       if (!p) return;
@@ -98,14 +115,28 @@ export class ChannelHostClient implements ChannelHost {
     });
   }
 
+  /** Telegram messages from allowed users arrive here while the host runs. */
+  onInbound(cb: (m: TelegramInbound) => void): void {
+    this.inbound = cb;
+  }
+
   sendNtfy(m: PhoneMessage): Promise<void> {
     return this.call("sendNtfy", m);
+  }
+  sendTelegram(m: TelegramOutbound): Promise<void> {
+    return this.call("sendTelegram", m);
+  }
+  answerCallback(callbackId: string, text: string): Promise<void> {
+    return this.call("answerCallback", callbackId, text);
+  }
+  telegramIdentity(): Promise<string> {
+    return this.call("telegramIdentity");
   }
   setSecret(name: ChannelSecret, value: string): Promise<void> {
     return this.call("setSecret", name, value);
   }
-  deleteSecrets(): Promise<void> {
-    return this.call("deleteSecrets");
+  deleteSecrets(channel: ChannelName): Promise<void> {
+    return this.call("deleteSecrets", channel);
   }
   status(): Promise<ChannelStatus> {
     return this.call("status");

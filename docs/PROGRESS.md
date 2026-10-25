@@ -22,7 +22,7 @@ Manual checks for the owner: run `pnpm dev` with the daemon; approve a draft and
 
 ## Current phase
 
-P2 in progress on `main` (see "P2 status" below).
+P3 in progress on `main` (see "P3 status" below).
 
 ## Known limits
 
@@ -36,3 +36,10 @@ Shipped on `main`: I3 autostart + daily backups, M5 encryption by default, A8 mo
 Verified 2026-10-13: typecheck, lint; `pnpm test` 736 passed, 1 skipped; `test:security` 18 files, 157 passed; `test:e2e` 34 passed (every P2 screen in four states at 360/768/1280 with axe, plus interaction tests); `build:web` ok.
 Left in P2: A1 Docker fallback (D-052, owner decision). Every P2 screen is built.
 Open: routing default after A8 numbers; possible `rocky/db-key` keychain entry from a test run; flaky brief test (~1 in 6); one e2e run under heavy load failed once and passed on rerun (not identified); macOS/Linux autostart and builds unverified.
+
+## P3 status (2026-10-25)
+
+Shipped on `main`: Notifications (UI spec 16), the phone layout (UI spec 23, D-063), phone access over Tailscale with pairing and the PWA (D-064), ntfy from the channel host (D-065), the Telegram bot (D-066), A7 heads-ups (D-067).
+Verified 2026-10-25: typecheck, lint (477 files); unit 85 files, 614 passed; `test:security` 21 files, 174 passed; spikes 14 passed, 1 skipped; `test:e2e` all passed (one full run lost 23 tests when Windows ran out of resources (0xC0000142) and the Vite server died; those 23 passed on rerun). Run the vitest projects one at a time here: together they die with "Zone Allocation failed" (out of commit memory), not a test failure. Fixed on the way: notification preferences' optimistic save now cancels an in-flight settings fetch; the axe check waits for finite animations (a toast fading in read as low contrast).
+Left in P3: M4 + X2, A11 + browser snapshot viewer.
+Unverified: a real phone over a real tailnet, a live ntfy delivery, a live Telegram bot.

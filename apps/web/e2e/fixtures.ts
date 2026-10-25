@@ -453,7 +453,9 @@ const SETTINGS = {
     system: { needsYou: true, updates: false, headsUp: true },
     phone: { needsYou: true, updates: false, headsUp: true },
     quietHours: { enabled: false, start: "22:00", end: "07:00" },
+    headsUp: { perDay: 3 },
     ntfy: { enabled: false, server: "https://ntfy.sh", details: false },
+    telegram: { enabled: false, userIds: [], approveLowRiskInChat: false, details: false },
   },
   dataDir: "E:/RockyData",
   secrets: {},
@@ -471,6 +473,17 @@ export const NOTIFICATIONS = {
       actionLabel: "Review",
       runId: "a1",
       readAt: null,
+      snoozedUntil: null,
+    },
+    {
+      id: "01JZ0000000000000000000004",
+      at: NOW - 1_800_000,
+      kind: "heads_up",
+      sentence: "Due tomorrow: Send Priya the revised pricing sheet (for Priya)",
+      link: "/commitments",
+      actionLabel: "Open",
+      runId: null,
+      readAt: NOW - 600_000,
       snoozedUntil: null,
     },
     {
@@ -567,7 +580,17 @@ export async function mockApi(page: Page, scenario: Scenario) {
     if (path.startsWith("/devices/") && path.endsWith("/revoke"))
       return json(route, { revoked: "x" });
     if (path === "/channels")
-      return json(route, { ntfy: { topicSet: full, tokenSet: false }, localOnly: false });
+      return json(route, {
+        ntfy: { topicSet: full, tokenSet: false },
+        telegram: {
+          tokenSet: full,
+          bot: full ? "rocky_dana_bot" : null,
+          stranger: full ? { id: 52_184_330, name: "dana", at: NOW - MIN } : null,
+        },
+        localOnly: false,
+      });
+    if (path === "/channels/telegram/token")
+      return json(route, { stored: true, bot: "rocky_dana_bot" });
     if (path.startsWith("/channels/"))
       return json(route, { stored: true, sent: true, deleted: true });
     if (path === "/notifications")

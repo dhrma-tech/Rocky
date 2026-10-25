@@ -19,12 +19,13 @@ import {
   Checkbox,
   ErrorState,
   Input,
+  Select,
   Skeleton,
   Switch,
   Tabs,
   useToast,
 } from "../ui/index.tsx";
-import { PhoneChannel } from "./PhoneChannel.tsx";
+import { PhoneChannel, TelegramChannel } from "./PhoneChannel.tsx";
 import "./screens.css";
 
 /**
@@ -161,7 +162,9 @@ function Preferences() {
   // Optimistic: the box changes at once; a failed save puts it back and says so.
   const save = useMutation({
     mutationFn: (notifications: NotificationPrefs) => api.saveSettings({ notifications }),
-    onMutate: (notifications) => {
+    onMutate: async (notifications) => {
+      // A fetch still in flight would land after this and put the old value back.
+      await qc.cancelQueries({ queryKey: ["settings"] });
       const before = qc.getQueryData<Settings>(["settings"]);
       if (before) qc.setQueryData<Settings>(["settings"], { ...before, notifications });
       return { before };
@@ -286,13 +289,55 @@ function Preferences() {
         </table>
         <p className="rk-small rk-muted" style={{ margin: "var(--space-3) 0 0" }}>
           Approvals always say Review, never Approve, so a glance can't approve anything. The Phone
-          column takes effect once ntfy is set up below.
+          column takes effect once ntfy or Telegram is set up below.
         </p>
       </Card>
 
+      <HeadsUps prefs={prefs} saving={save.isPending} onSave={set} />
       <QuietHours prefs={prefs} saving={save.isPending} onSave={set} />
       <PhoneChannel prefs={prefs} saving={save.isPending} onSave={set} />
+      <TelegramChannel prefs={prefs} saving={save.isPending} onSave={set} />
     </div>
+  );
+}
+
+const PER_DAY = [
+  { value: "0", label: "Off" },
+  { value: "1", label: "1 a day" },
+  { value: "2", label: "2 a day" },
+  { value: "3", label: "3 a day" },
+  { value: "5", label: "5 a day" },
+];
+
+/** Roadmap A7, D-067: the daily nudge about commitments coming due. */
+function HeadsUps({
+  prefs,
+  saving,
+  onSave,
+}: {
+  prefs: NotificationPrefs;
+  saving: boolean;
+  onSave: (p: NotificationPrefs) => void;
+}) {
+  const perDay = prefs.headsUp.perDay;
+  const options = PER_DAY.some((o) => o.value === String(perDay))
+    ? PER_DAY
+    : [...PER_DAY, { value: String(perDay), label: `${perDay} a day` }];
+  return (
+    <Card>
+      <h3 className="rk-h3">Heads-ups</h3>
+      <p className="rk-small rk-muted" style={{ marginTop: 0 }}>
+        Each morning from 8:00, Rocky picks the commitments you owe that are coming due or have sat
+        open a long time. Mark one "Not useful" and you'll hear less about things like it.
+      </p>
+      <Select
+        label="How many"
+        value={String(perDay)}
+        options={options}
+        disabled={saving}
+        onChange={(v) => onSave({ ...prefs, headsUp: { perDay: Number(v) } })}
+      />
+    </Card>
   );
 }
 

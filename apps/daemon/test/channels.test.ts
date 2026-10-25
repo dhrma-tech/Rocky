@@ -36,7 +36,10 @@ beforeEach(async () => {
   const channels = new InProcessChannelHost({
     secrets: channelOnlySecrets(raw),
     fetch: (async (url: string) => {
-      posted.push(url);
+      posted.push(url.replace(/bot[^/]+\//, "bot<token>/"));
+      if (url.endsWith("/getMe"))
+        return Response.json({ ok: true, result: { username: "rocky_dana_bot" } });
+      if (url.includes("api.telegram.org")) return Response.json({ ok: true, result: {} });
       return new Response("", { status: 200 });
     }) as unknown as typeof fetch,
     config: () => rt.config,
@@ -62,6 +65,7 @@ describe("channel routes", () => {
   it("stores the topic write-only and reports only whether it is set", async () => {
     expect(await (await call("/channels")).json()).toEqual({
       ntfy: { topicSet: false, tokenSet: false },
+      telegram: { tokenSet: false, bot: null, stranger: null },
       localOnly: false,
     });
     const bad = await call("/channels/ntfy/secret", {
@@ -97,5 +101,40 @@ describe("channel routes", () => {
       .all() as { meta: string }[];
     expect(rows.map((r) => JSON.parse(r.meta))).toEqual([{ channel: "ntfy", kind: "test" }]);
     expect(JSON.stringify(rows)).not.toContain("rocky_dana_7f3k");
+  });
+
+  it("a bot token must look like one, is checked with getMe, and is never returned", async () => {
+    const bad = await call("/channels/telegram/token", {
+      method: "POST",
+      body: JSON.stringify({ value: "not-a-token" }),
+    });
+    expect(bad.status).toBe(400);
+    const token = "123456789:AAbbccddeeffgghhiijjkkllmmnnooppqq";
+    const ok = await call("/channels/telegram/token", {
+      method: "POST",
+      body: JSON.stringify({ value: token }),
+    });
+    expect(await ok.json()).toEqual({ stored: true, bot: "rocky_dana_bot" });
+    expect(posted).toEqual(["https://api.telegram.org/bot<token>/getMe"]);
+    const status = JSON.stringify(await (await call("/channels")).json());
+    expect(status).toContain('"bot":"rocky_dana_bot"');
+    expect(status).not.toContain(token);
+  });
+
+  it("a Telegram test goes only to allowed users, and needs one first", async () => {
+    raw.set("channel.telegram-token", "123456789:AAbbccddeeffgghhiijjkkllmmnnooppqq");
+    rt.config.notifications.telegram.enabled = true;
+    const none = await call("/channels/test", {
+      method: "POST",
+      body: JSON.stringify({ channel: "telegram" }),
+    });
+    expect(none.status).toBe(409);
+    rt.config.notifications.telegram.userIds = [42];
+    const ok = await call("/channels/test", {
+      method: "POST",
+      body: JSON.stringify({ channel: "telegram" }),
+    });
+    expect(ok.status).toBe(200);
+    expect(posted).toEqual(["https://api.telegram.org/bot<token>/sendMessage"]);
   });
 });

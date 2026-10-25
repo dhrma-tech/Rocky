@@ -69,6 +69,8 @@ export const NotificationPrefsSchema = z.object({
       end: HHMM.default("07:00"),
     })
     .prefault({}),
+  /** Heads-ups about commitments (roadmap A7, D-067): at most this many a day; 0 turns them off. */
+  headsUp: z.object({ perDay: z.number().int().min(0).max(10).default(3) }).prefault({}),
   /**
    * ntfy (D-065): off by default. The topic and an optional access token are secrets in the
    * keychain, never here. Without `details`, a message says only what kind of thing is waiting.
@@ -84,6 +86,20 @@ export const NotificationPrefsSchema = z.object({
           "an https:// address (http only for a server on this computer)",
         )
         .default("https://ntfy.sh"),
+      details: z.boolean().default(false),
+    })
+    .prefault({}),
+  /**
+   * Telegram (D-066): off by default. The bot token is a secret in the keychain. Only these user
+   * IDs are heard; Approve in the chat only for low-risk writes, and only with this switch on
+   * (D-002). Sends, spends and deletes always get a Review link.
+   */
+  telegram: z
+    .object({
+      enabled: z.boolean().default(false),
+      userIds: z.array(z.number().int().positive()).max(5).default([]),
+      approveLowRiskInChat: z.boolean().default(false),
+      /** As for ntfy: without it, a notification names only the kind of thing waiting. */
       details: z.boolean().default(false),
     })
     .prefault({}),

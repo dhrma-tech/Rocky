@@ -132,9 +132,15 @@ describe("PhoneDispatcher", () => {
           if (fail) throw new Error("ntfy answered 500.");
           sent.push(m);
         },
+        sendTelegram: async () => {},
+        answerCallback: async () => {},
+        telegramIdentity: async () => "rocky_bot",
         setSecret: async () => {},
         deleteSecrets: async () => {},
-        status: async () => ({ ntfy: { topicSet: true, tokenSet: false } }),
+        status: async () => ({
+          ntfy: { topicSet: true, tokenSet: false },
+          telegram: { tokenSet: false, bot: null, stranger: null },
+        }),
         close: async () => {},
       },
     };
@@ -188,10 +194,10 @@ describe("channel host", () => {
     await host.setSecret("channel.ntfy-topic", "rocky_x1");
     await host.sendNtfy(m);
     expect(calls[0]?.url).toBe("https://ntfy.sh/rocky_x1");
-    expect(await host.status()).toEqual({ ntfy: { topicSet: true, tokenSet: false } });
+    expect((await host.status()).ntfy).toEqual({ topicSet: true, tokenSet: false });
     cfg = config({ localOnly: true });
     await expect(host.sendNtfy(m)).rejects.toMatchObject({ code: "EGRESS_BLOCKED" });
-    await host.deleteSecrets();
+    await host.deleteSecrets("ntfy");
     expect(secrets.list()).toEqual([]);
   });
 

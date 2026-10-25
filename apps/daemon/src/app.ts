@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -21,8 +20,6 @@ import {
 import {
   APPROVAL_HOLD_MS,
   addWatchedFolder,
-  appendTurn,
-  ask,
   blobPath,
   type ChannelHost,
   createConversation,
@@ -36,7 +33,6 @@ import {
   loadPolicy,
   meetingSegments,
   type Runtime,
-  recordEvent,
   redact,
   removeWatchedFolder,
   runDoctor,
@@ -51,6 +47,7 @@ import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
+import { runAsk } from "./ask-run.ts";
 import { registerAssistantRoutes } from "./assistant-routes.ts";
 import { type Auth, SESSION_COOKIE } from "./auth.ts";
 import { registerCaptureRoutes } from "./capture-routes.ts";
@@ -337,54 +334,16 @@ export function createApp({
     const { conversationId, ...req } = parsed.data;
     if (conversationId && !getConversation(rt.db, conversationId))
       return c.json({ error: "No such conversation.", code: "NOT_FOUND" }, 404);
-    const runId = `ask:${randomUUID()}`;
-    const title = `Ask: ${req.question.length > 60 ? `${req.question.slice(0, 59)}…` : req.question}`;
-    const status = (state: "thinking" | "working" | "completed" | "failed", line?: string) =>
-      recordEvent(rt.db, {
-        kind: "status",
-        runId,
-        state,
-        runKind: "ask",
-        title,
-        ...(line ? { line } : {}),
-      });
     return streamSSE(c, async (stream) => {
       let chain = Promise.resolve();
-      let drafting = false;
       const send = (e: AskEvent) => {
-        if (e.type === "draft_sentence" && !drafting) {
-          drafting = true;
-          status("working", "Checking each statement against its source");
-        }
         const { type, ...data } = e;
         chain = chain.then(() => stream.writeSSE({ event: type, data: JSON.stringify(data) }));
       };
-      status("thinking", "Searching your sources");
       try {
-        const result = await ask(
-          { db: rt.db, router: rt.router, embedder: rt.embedder },
-          req,
-          send,
-        );
-        if (conversationId) appendTurn(rt.db, conversationId, req.question, result);
-        const sources = new Set([
-          ...result.answer.flatMap((x) => x.citations.map((ci) => ci.documentId)),
-          ...result.closestMatches.map((m) => m.documentId),
-        ]).size;
-        recordEvent(rt.db, {
-          kind: "receipt",
-          runId,
-          tool: "Ask",
-          verb: result.notFound ? "found nothing in" : "cited",
-          count: sources,
-          unit: sources === 1 ? "source" : "sources",
-          notDone: "0 changed",
-        });
-        status("completed");
+        await runAsk(rt, req, send, conversationId ? { conversationId } : {});
       } catch (err) {
         const body = errorBody(err);
-        recordEvent(rt.db, { kind: "error", runId, code: body.code, message: body.error });
-        status("failed");
         chain = chain.then(() => stream.writeSSE({ event: "error", data: JSON.stringify(body) }));
       }
       await chain;

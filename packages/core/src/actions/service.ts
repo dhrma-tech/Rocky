@@ -354,6 +354,8 @@ export class ActionService {
       acknowledgeSources?: boolean;
       /** Undo window before the daemon runs it; omitted means it runs only by hand (the CLI). */
       holdMs?: number;
+      /** Where the click came from when not the app ("telegram", D-066); kept in the audit row. */
+      via?: string;
     } = {},
   ): ActionRecord {
     const r = this.row(id);
@@ -388,7 +390,9 @@ export class ActionService {
           payloadHash,
         ).changes;
       if (n !== 1) throw new ActionError("HASH_MISMATCH", "The action changed while approving.");
-      this.audit("action_approved", "user", id, { meta: { payloadHash, review } });
+      this.audit("action_approved", "user", id, {
+        meta: { payloadHash, review, ...(opts.via ? { via: opts.via } : {}) },
+      });
     })();
     return this.get(id);
   }
